@@ -5,6 +5,8 @@
 ! iterations in areas with errors < threshold, with some overhead for the adaptivity.
 !#define DISPERSIVE_JACOBI_ADAPTIVE
 
+!#define DISPERSIVE_PEREGRINE
+
 module linear_dispersive_solver_mod
     !
     ! Type for solving the linear dispersive equation as per:
@@ -217,9 +219,14 @@ module linear_dispersive_solver_mod
         real(dp), intent(out) :: solution_uh(:,:), solution_vh(:,:)
         logical, intent(in) :: update_UH, update_VH
 
-        integer(ip) :: i, j
+        integer(ip) :: i, j, ip2, jp2
         real(dp) :: R_coslat_dlat, R_coslat_dlon, coslat_jph, coslat_jmh, d_iph_j, d_i_jph, dispersive_premult
         real(dp) :: r_dlat, R_coslat_dlon_jp1, R_coslat_dlon_j, R_coslat_dlat_jp1, R_coslat_dlat_j, coslat_jp1h
+        real(dp) :: dinv_ip1h_j, dinv_iph_j, dinv_imh_j, &
+                    dinv_ip1_jph, dinv_ip1_jmh, &
+                    dinv_i_jph, dinv_i_jmh, &
+                    dinv_iph_jp1, dinv_imh_jp1, &
+                    dinv_i_jp1h
 
         !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(uh, vh, elev, msl_linear, solution_uh, solution_vh, &
         !$OMP                                  dlat, dlon, td1, td2, &
@@ -227,12 +234,12 @@ module linear_dispersive_solver_mod
 
         if(update_UH) then
             !$OMP DO
-            do j = 1, size(uh, 2)
+            do j = 2, size(uh, 2)-1
 
-                if(j == 1 .or. j == size(uh, 2)) then
-                    solution_uh(:,j) = uh(:,j)
-                    cycle
-                end if
+                !if(j == 1 .or. j == size(uh, 2)) then
+                !    solution_uh(:,j) = uh(:,j)
+                !    cycle
+                !end if
 
                 ! See comments at the start of this code for explanation of these formulas, which apply in both spherical and
                 ! cartesian coordinates.
@@ -249,7 +256,49 @@ module linear_dispersive_solver_mod
                     ! Depth at location of uh(i,j) -- or zero if either neighbour is dry
                     d_iph_j = merge(0.5_dp * (msl_linear - elev(i,j) + msl_linear - elev(i+1,j)), 0.0_dp, &
                         elev(i,j) < msl_linear .and. elev(i+1, j) < msl_linear)
+#ifdef DISPERSIVE_PEREGRINE
+                    !
+                    ! Peregrine dispersion
+                    !
+                    dispersive_premult = d_iph_j*d_iph_j / (R_coslat_dlon) * &
+                        ! Linear taper
+                        min(1.0_dp, max(0.0_dp, (d_iph_j - td2)/(td1 - td2)))
 
+                    ! Compute various inverse depth terms, which are zeroed at 'dry' cells.
+                    ! FIXME: Could avoid recomputing some of these (noting the loop order)
+                    ip2 = min(i+2, size(uh, 1)) ! Safe i+2 index
+                    dinv_ip1h_j = merge(1.0_dp/(0.5_dp * (msl_linear - elev(i+1,j) + msl_linear - elev(ip2,j))), 0.0_dp, &
+                        elev(i+1,j) < msl_linear .and. elev(ip2, j) < msl_linear)
+                    dinv_iph_j = merge(1.0_dp/d_iph_j, 0.0_dp, d_iph_j > 0.0_dp)
+                    dinv_imh_j = merge(1.0_dp/(0.5_dp * (msl_linear - elev(i-1,j) + msl_linear - elev(i,j))), 0.0_dp, &
+                        elev(i-1,j) < msl_linear .and. elev(i, j) < msl_linear)
+                    dinv_ip1_jph = merge(1.0_dp/(0.5_dp * (msl_linear - elev(i+1,j+1) + msl_linear - elev(i+1,j))), 0.0_dp, &
+                        elev(i+1,j+1) < msl_linear .and. elev(i+1, j) < msl_linear)
+                    dinv_ip1_jmh = merge(1.0_dp/(0.5_dp * (msl_linear - elev(i+1,j) + msl_linear - elev(i+1,j-1))), 0.0_dp, &
+                        elev(i+1,j) < msl_linear .and. elev(i+1, j-1) < msl_linear)
+                    dinv_i_jph = merge(1.0_dp/(0.5_dp * (msl_linear - elev(i,j+1) + msl_linear - elev(i,j))), 0.0_dp, &
+                        elev(i,j+1) < msl_linear .and. elev(i, j) < msl_linear)
+                    dinv_i_jmh = merge(1.0_dp/(0.5_dp * (msl_linear - elev(i,j) + msl_linear - elev(i,j-1))), 0.0_dp, &
+                        elev(i,j) < msl_linear .and. elev(i, j-1) < msl_linear)
+
+                    solution_uh(i,j) = &
+                        ! Include all terms in A_uh%*%x here
+                        dispersive_premult * 0.5_dp * ( &
+                            ! lon-diff{ 1/(R_coslat) * d/dlon(uh) }
+                            1.0_dp / R_coslat_dlon * ( uh(i+1,j) - 2.0_dp * uh(i,j) + uh(i-1,j) ) + &
+                            ! lon-diff{ 1/(R_coslat) * d/dlat( coslat * vh ) }
+                            1.0_dp / R_coslat_dlat * ( (coslat_jph * vh(i+1,j) - coslat_jmh * vh(i+1,j-1)) - &
+                                                       (coslat_jph * vh(i  ,j) - coslat_jmh * vh(i  ,j-1)) ) ) &
+                        - dispersive_premult * (1.0_dp/6.0_dp) * d_iph_j * ( &
+                            ! lon-diff{ 1/(R_coslat) * d/dlon(u) }
+                            1.0_dp / R_coslat_dlon*(uh(i+1,j)*dinv_ip1h_j - 2.0_dp*uh(i,j)*dinv_iph_j + uh(i-1,j)*dinv_imh_j ) + &
+                            ! lon-diff{ 1/(R_coslat) * d/dlat( coslat * v ) }
+                            1.0_dp / R_coslat_dlat*((coslat_jph*vh(i+1,j)*dinv_ip1_jph - coslat_jmh*vh(i+1,j-1)*dinv_ip1_jmh) - &
+                                                    (coslat_jph*vh(i  ,j)*dinv_i_jph   - coslat_jmh*vh(i  ,j-1)*dinv_i_jmh )) )
+#else
+                    !
+                    ! Simplest dispersive model, matching JAGURS
+                    !
                     dispersive_premult = d_iph_j*d_iph_j / (3.0_dp * R_coslat_dlon) * &
                         ! Linear taper
                         min(1.0_dp, max(0.0_dp, (d_iph_j - td2)/(td1 - td2)))
@@ -262,6 +311,7 @@ module linear_dispersive_solver_mod
                             ! lon-diff{ 1/(R_coslat) * d/dlat( coslat * vh ) }
                             1.0_dp / R_coslat_dlat * ( (coslat_jph * vh(i+1,j) - coslat_jmh * vh(i+1,j-1)) - &
                                                        (coslat_jph * vh(i  ,j) - coslat_jmh * vh(i  ,j-1)) ) )
+#endif
                 end do
             end do
             !$OMP END DO NOWAIT
@@ -269,12 +319,12 @@ module linear_dispersive_solver_mod
 
         if(update_VH) then
             !$OMP DO
-            do j = 2, size(vh, 2) - 1
+            do j = 2, size(vh, 2)-1
 
-                if(j == 1 .or. j == size(vh, 2)) then
-                    solution_vh(:,j) = vh(:,j)
-                    cycle
-                end if
+                !if(j == 1 .or. j == size(vh, 2)) then
+                !    solution_vh(:,j) = vh(:,j)
+                !    cycle
+                !end if
 
                 ! See comments at the start of this code for explanation of these formulas, which apply in both spherical and
                 ! cartesian coordinates.
@@ -295,7 +345,53 @@ module linear_dispersive_solver_mod
                     ! Depth at location of vh(i,j) -- or zero if either neighbour is dry
                     d_i_jph = merge(0.5_dp * (msl_linear - elev(i,j) + msl_linear - elev(i,j+1)), 0.0_dp, &
                         elev(i,j) < msl_linear .and. elev(i, j+1) < msl_linear)
+#ifdef DISPERSIVE_PEREGRINE
+                    !
+                    ! Peregrine dispersion
+                    !
+                    dispersive_premult = d_i_jph*d_i_jph / (r_dlat) * &
+                        ! Linear taper
+                        min(1.0_dp, max(0.0_dp, (d_i_jph - td2)/(td1 - td2)))
 
+                    ! Compute various inverse depth terms, which are zeroed at 'dry' cells.
+                    ! FIXME: Could avoid recomputing some of these (noting the loop order)
+                    dinv_iph_jp1 = merge(1.0_dp / (0.5_dp * (msl_linear - elev(i,j+1) + msl_linear - elev(i+1,j+1))), 0.0_dp, &
+                        elev(i,j+1) < msl_linear .and. elev(i+1, j+1) < msl_linear)
+                    dinv_imh_jp1 = merge(1.0_dp / (0.5_dp * (msl_linear - elev(i,j+1) + msl_linear - elev(i-1,j+1))), 0.0_dp, &
+                        elev(i,j+1) < msl_linear .and. elev(i-1, j+1) < msl_linear)
+                    dinv_iph_j = merge(1.0_dp / (0.5_dp * (msl_linear - elev(i,j) + msl_linear - elev(i+1,j))), 0.0_dp, &
+                        elev(i,j) < msl_linear .and. elev(i+1, j) < msl_linear)
+                    dinv_imh_j = merge(1.0_dp / (0.5_dp * (msl_linear - elev(i,j) + msl_linear - elev(i-1,j))), 0.0_dp, &
+                        elev(i,j) < msl_linear .and. elev(i-1, j) < msl_linear)
+                    jp2 = min(j+2, size(vh, 2)) ! Safe j+2
+                    dinv_i_jp1h = merge(1.0_dp / (0.5_dp * (msl_linear - elev(i,j+1) + msl_linear - elev(i,jp2))), 0.0_dp, &
+                        elev(i,j+1) < msl_linear .and. elev(i, jp2) < msl_linear)
+                    dinv_i_jph = merge(1.0_dp/d_i_jph, 0.0_dp, d_i_jph > 0.0_dp)
+                    dinv_i_jmh = merge(1.0_dp / (0.5_dp * (msl_linear - elev(i,j) + msl_linear - elev(i,j-1))), 0.0_dp, &
+                        elev(i,j) < msl_linear .and. elev(i, j-1) < msl_linear)
+
+                    solution_vh(i,j) = &
+                        ! Include all terms in A_vh%*%x here
+                        dispersive_premult * 0.5_dp * ( &
+                            ! lat-diff{ 1/R_coslat duh/dlon }
+                            ( 1.0_dp / R_coslat_dlon_jp1 * (uh(i  , j+1) - uh(i-1, j+1)) - &
+                              1.0_dp / R_coslat_dlon_j   * (uh(i  , j  ) - uh(i-1, j  )) ) + &
+                            ! lat-diff{ 1/R_coslat d(coslat vh)/dlat }
+                            ( 1.0_dp / R_coslat_dlat_jp1 * ( coslat_jp1h * vh(i, j+1) - coslat_jph * vh(i, j  )) - &
+                              1.0_dp / R_coslat_dlat_j   * ( coslat_jph  * vh(i, j  ) - coslat_jmh * vh(i, j-1)) ) ) & 
+                        - dispersive_premult * (1.0_dp/6.0_dp) * d_i_jph * ( &
+                            ! lat-diff{ 1/R_coslat du/dlon }
+                            ( 1.0_dp / R_coslat_dlon_jp1 * (uh(i  , j+1)*dinv_iph_jp1 - uh(i-1, j+1)*dinv_imh_jp1) - &
+                              1.0_dp / R_coslat_dlon_j   * (uh(i  , j  )*dinv_iph_j   - uh(i-1, j  )*dinv_imh_j  )  ) + &
+                            ! lat-diff{ 1/R_coslat d(coslat v)/dlat }
+                            ( 1.0_dp / R_coslat_dlat_jp1 *(coslat_jp1h*vh(i, j+1)*dinv_i_jp1h-coslat_jph*vh(i, j  )*dinv_i_jph) - &
+                              1.0_dp / R_coslat_dlat_j   *(coslat_jph *vh(i, j  )*dinv_i_jph -coslat_jmh*vh(i, j-1)*dinv_i_jmh) ) )
+
+
+#else
+                    !
+                    ! Simplest dispersive model, matching JAGURS
+                    !
                     dispersive_premult = d_i_jph*d_i_jph / (3.0_dp * r_dlat) * &
                         ! Linear taper
                         min(1.0_dp, max(0.0_dp, (d_i_jph - td2)/(td1 - td2)))
@@ -309,6 +405,7 @@ module linear_dispersive_solver_mod
                             ! lat-diff{ 1/R_coslat d(coslat vh)/dlat }
                             ( 1.0_dp / R_coslat_dlat_jp1 * ( coslat_jp1h * vh(i, j+1) - coslat_jph * vh(i, j  )) - &
                               1.0_dp / R_coslat_dlat_j   * ( coslat_jph  * vh(i, j  ) - coslat_jmh * vh(i, j-1)) ) )
+#endif
                 end do
             end do
             !$OMP END DO
@@ -343,6 +440,9 @@ module linear_dispersive_solver_mod
         integer(ip) :: i, j
         real(dp) :: R_coslat_dlat, R_coslat_dlon, coslat_jp1, coslat_j, coslat_jm1, d_i_j, dispersive_premult
         real(dp) :: r_dlat, R_coslat_dlon_jph, R_coslat_dlon_jmh, R_coslat_dlat_jph, R_coslat_dlat_jmh
+        real(dp) :: dinv_ip1_j, dinv_i_j, dinv_im1_j, &
+                    dinv_ip1_jp1, dinv_i_jp1, dinv_im1_jp1, &
+                    dinv_ip1_jm1, dinv_i_jm1, dinv_im1_jm1
 
         !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(uh, vh, elev, msl_linear, solution_uh, solution_vh, &
         !$OMP                                  dlat, dlon, td1, td2, &
@@ -350,12 +450,12 @@ module linear_dispersive_solver_mod
 
         if(update_UH) then
             !$OMP DO
-            do j = 1, size(uh, 2)
+            do j = 2, size(uh, 2)-1
 
-                if(j == 1 .or. j == size(uh, 2)) then
-                    solution_uh(:,j) = uh(:,j)
-                    cycle
-                end if
+                !if(j == 1 .or. j == size(uh, 2)) then
+                !    solution_uh(:,j) = uh(:,j)
+                !    cycle
+                !end if
 
                 ! See comments at the start of this code for explanation of these formulas, which apply in both spherical and
                 ! cartesian coordinates.
@@ -378,11 +478,52 @@ module linear_dispersive_solver_mod
                     ! UH dispersive term
 
                     ! Depth at location of uh(i,j)
-                    !d_iph_j = merge(0.5_dp * (msl_linear - elev(i,j) + msl_linear - elev(i+1,j)), 0.0_dp, &
-                    !    elev(i,j) < msl_linear .and. elev(i+1, j) < msl_linear)
                     d_i_j = merge(msl_linear - elev(i, j), 0.0_dp, elev(i,j) < msl_linear)
 
-                    !dispersive_premult = d_iph_j*d_iph_j / (3.0_dp * R_coslat_dlon)
+#ifdef DISPERSIVE_PEREGRINE
+                    !
+                    ! Peregrine dispersion
+                    !
+                    dispersive_premult = d_i_j*d_i_j / (R_coslat_dlon) * &
+                        ! Linear taper
+                        min(1.0_dp, max(0.0_dp, (d_i_j - td2)/(td1 - td2)))
+
+                    ! Compute various inverse depth terms, which are zeroed at 'dry' cells.
+                    ! FIXME: Could avoid recomputing some of these (noting the loop order)
+                    dinv_ip1_j = merge(1.0_dp/(msl_linear - elev(i+1,j)), 0.0_dp, elev(i+1,j) < msl_linear)
+                    dinv_i_j = merge(1.0_dp/(msl_linear - elev(i,j)), 0.0_dp, elev(i,j) < msl_linear)
+                    dinv_im1_j = merge(1.0_dp/(msl_linear - elev(i-1,j)), 0.0_dp, elev(i-1,j) < msl_linear)
+                    dinv_ip1_jp1 = merge(1.0_dp/(msl_linear - elev(i+1,j+1)), 0.0_dp, elev(i+1,j+1) < msl_linear)
+                    dinv_ip1_jm1 = merge(1.0_dp/(msl_linear - elev(i+1,j-1)), 0.0_dp, elev(i+1,j-1) < msl_linear)
+                    dinv_im1_jp1 = merge(1.0_dp/(msl_linear - elev(i-1,j+1)), 0.0_dp, elev(i-1,j+1) < msl_linear)
+                    dinv_im1_jm1 = merge(1.0_dp/(msl_linear - elev(i-1,j-1)), 0.0_dp, elev(i-1,j-1) < msl_linear)
+
+                    solution_uh(i,j) = &
+                        ! Include all terms in A_uh%*%x here
+                        ! h0^2 / (2 R_coslat) * d/dlon
+                        dispersive_premult * 0.5_dp * ( &
+                            ! lon-diff { 1/(R_coslat) * d/dlon(uh) }
+                            1.0_dp / R_coslat_dlon * ( uh(i+1,j) - 2.0_dp * uh(i,j) + uh(i-1,j) ) + &
+                            ! lon-diff { 1/(R_coslat) * d/dlat( coslat * vh ) }
+                            1.0_dp / R_coslat_dlat * ( &
+                                (coslat_jp1 * vh(i+1,j+1) - coslat_jm1 * vh(i+1,j-1))*0.25_dp - &
+                                (coslat_jp1 * vh(i-1,j+1) - coslat_jm1 * vh(i-1,j-1))*0.25_dp)  &
+                                ) &
+                        ! -h0^3 / (6 R_coslat) * d/dlon
+                        - dispersive_premult * (1.0_dp/6.0_dp) * d_i_j * ( &
+                            ! lon-diff { 1/(R_coslat) * d/dlon(u) }
+                            1.0_dp / R_coslat_dlon * (uh(i+1,j)*dinv_ip1_j - 2.0_dp * uh(i,j)*dinv_i_j + uh(i-1,j)*dinv_im1_j ) + &
+                            ! lon-diff { 1/(R_coslat) * d/dlat( coslat * v) }
+                            1.0_dp / R_coslat_dlat * ( &
+                                (coslat_jp1 * vh(i+1,j+1)*dinv_ip1_jp1 - coslat_jm1 * vh(i+1,j-1)*dinv_ip1_jm1)*0.25_dp - &
+                                (coslat_jp1 * vh(i-1,j+1)*dinv_im1_jp1 - coslat_jm1 * vh(i-1,j-1)*dinv_im1_jm1)*0.25_dp)  &
+                                )
+
+#else
+                    !
+                    ! Simplest dispersive model, matching JAGURS
+                    !
+
                     dispersive_premult = d_i_j*d_i_j / (3.0_dp * R_coslat_dlon) * &
                         ! Linear taper
                         min(1.0_dp, max(0.0_dp, (d_i_j - td2)/(td1 - td2)))
@@ -398,6 +539,7 @@ module linear_dispersive_solver_mod
                                 (coslat_jp1 * vh(i+1,j+1) - coslat_jm1 * vh(i+1,j-1))*0.25_dp - &
                                 (coslat_jp1 * vh(i-1,j+1) - coslat_jm1 * vh(i-1,j-1))*0.25_dp)  &
                                 )
+#endif
                 end do
             end do
             !$OMP END DO NOWAIT
@@ -407,10 +549,10 @@ module linear_dispersive_solver_mod
             !$OMP DO
             do j = 2, size(vh, 2) - 1
 
-                if(j == 1 .or. j == size(vh, 2)) then
-                    solution_vh(:,j) = vh(:,j)
-                    cycle
-                end if
+                !if(j == 1 .or. j == size(vh, 2)) then
+                !    solution_vh(:,j) = vh(:,j)
+                !    cycle
+                !end if
 
                 ! See comments at the start of this code for explanation of these formulas, which apply in both spherical and
                 ! cartesian coordinates.
@@ -433,6 +575,57 @@ module linear_dispersive_solver_mod
                     !    elev(i,j) < msl_linear .and. elev(i, j+1) < msl_linear)
                     d_i_j = merge(msl_linear - elev(i,j), 0.0_dp, elev(i,j) < msl_linear)
 
+#ifdef DISPERSIVE_PEREGRINE
+                    !
+                    ! Peregrine dispersion
+                    !
+                    dispersive_premult = d_i_j*d_i_j / (r_dlat) * &
+                        ! Linear taper
+                        min(1.0_dp, max(0.0_dp, (d_i_j - td2)/(td1 - td2)))
+
+                    ! Compute various inverse depth terms, which are zeroed at 'dry' cells.
+                    ! FIXME: Could avoid recomputing some of these (noting the loop order)
+                    dinv_ip1_jp1 = merge(1.0_dp / (msl_linear - elev(i+1,j+1)), 0.0_dp,  elev(i+1, j+1) < msl_linear)
+                    dinv_i_jp1 = merge(1.0_dp / (msl_linear - elev(i,j+1)), 0.0_dp,  elev(i, j+1) < msl_linear)
+                    dinv_im1_jp1 = merge(1.0_dp / (msl_linear - elev(i-1,j+1)), 0.0_dp,  elev(i-1, j+1) < msl_linear)
+                    dinv_ip1_j = merge(1.0_dp / (msl_linear - elev(i+1,j)), 0.0_dp,  elev(i+1, j) < msl_linear)
+                    dinv_im1_j = merge(1.0_dp / (msl_linear - elev(i-1,j)), 0.0_dp,  elev(i-1, j) < msl_linear)
+                    dinv_i_j = merge(1.0_dp / (msl_linear - elev(i,j)), 0.0_dp,  elev(i, j) < msl_linear)
+                    dinv_ip1_jm1 = merge(1.0_dp / (msl_linear - elev(i+1,j-1)), 0.0_dp,  elev(i+1, j-1) < msl_linear)
+                    dinv_i_jm1 = merge(1.0_dp / (msl_linear - elev(i,j-1)), 0.0_dp,  elev(i, j-1) < msl_linear) 
+                    dinv_im1_jm1 = merge(1.0_dp / (msl_linear - elev(i-1,j-1)), 0.0_dp,  elev(i-1, j-1) < msl_linear)
+
+                    solution_vh(i,j) = &
+                        ! Include all terms in A_vh%*%x here
+                        ! h0**2 / (2 * R) * d/dlat * (
+                        dispersive_premult * 0.5_dp * ( &
+                            ! uh term = lat-diff{ 1/Rcoslat duh/dlon }
+                            !   1/(R coslat) d(uh)/dlon @ i, j+1/2, by mean of centred differences at j+1 and j.
+                            ( 1.0_dp / R_coslat_dlon_jph * (uh(i+1, j+1) - uh(i-1,j+1) + uh(i+1,j) - uh(i-1,j))*0.25_dp - &
+                            !   1/(R coslat) d(uh)/dlon @ i, j-1/2, by mean of centred differences at j and j-1
+                              1.0_dp / R_coslat_dlon_jmh * (uh(i+1, j-1) - uh(i-1,j-1) + uh(i+1,j) - uh(i-1,j))*0.25_dp ) + &
+                            ! vh term = lat-diff{ 1/Rcoslat d(coslatvh)/dlat }
+                            !   1/(R coslat ) d(coslat vh)/dlat @ i, j+1/2
+                            ( 1.0_dp / R_coslat_dlat_jph * ( coslat_jp1 * vh(i, j+1) - coslat_j   * vh(i, j  )) - &
+                            !   1/(R coslat ) d(coslat vh)/dlat @ i, j-1/2
+                              1.0_dp / R_coslat_dlat_jmh * ( coslat_j   * vh(i, j  ) - coslat_jm1 * vh(i, j-1)) ) ) &
+                        - dispersive_premult * (1.0_dp / 6.0_dp) * d_i_j * ( &
+                            ! uh term = lat-diff{ 1/Rcoslat du/dlon }
+                            !   1/(R coslat) d(u)/dlon @ i, j+1/2, by mean of centred differences at j+1 and j.
+                            ( 1.0_dp / R_coslat_dlon_jph * (uh(i+1, j+1)*dinv_ip1_jp1 - uh(i-1,j+1)*dinv_im1_jp1 + &
+                                                            uh(i+1,j)*dinv_ip1_j      - uh(i-1,j)*dinv_im1_j)*0.25_dp - &
+                            !   1/(R coslat) d(u)/dlon @ i, j-1/2, by mean of centred differences at j and j-1
+                              1.0_dp / R_coslat_dlon_jmh * (uh(i+1, j-1)*dinv_ip1_jm1 - uh(i-1,j-1)*dinv_im1_jm1 + &
+                                                            uh(i+1,j)*dinv_ip1_j      - uh(i-1,j)*dinv_im1_j)*0.25_dp ) + &
+                            ! vh term = lat-diff{ 1/Rcoslat d(coslatv)/dlat }
+                            !   1/(R coslat ) d(coslat v)/dlat @ i, j+1/2
+                            ( 1.0_dp / R_coslat_dlat_jph * ( coslat_jp1*vh(i, j+1)*dinv_i_jp1 - coslat_j*vh(i, j)*dinv_i_j) - &
+                            !   1/(R coslat ) d(coslat v)/dlat @ i, j-1/2
+                              1.0_dp / R_coslat_dlat_jmh * ( coslat_j*vh(i, j)*dinv_i_j - coslat_jm1*vh(i, j-1)*dinv_i_jm1) ) )
+#else
+                    !
+                    ! Simplest dispersive model, matching JAGURS
+                    !
                     dispersive_premult = d_i_j*d_i_j / (3.0_dp * r_dlat) * &
                         ! Linear taper
                         min(1.0_dp, max(0.0_dp, (d_i_j - td2)/(td1 - td2)))
@@ -451,6 +644,7 @@ module linear_dispersive_solver_mod
                             ( 1.0_dp / R_coslat_dlat_jph * ( coslat_jp1 * vh(i, j+1) - coslat_j   * vh(i, j  )) - &
                             !   1/(R coslat ) d(coslat vh)/dlat @ i, j-1/2
                               1.0_dp / R_coslat_dlat_jmh * ( coslat_j   * vh(i, j  ) - coslat_jm1 * vh(i, j-1)) ) )
+#endif
                 end do
             end do
             !$OMP END DO
@@ -472,13 +666,18 @@ module linear_dispersive_solver_mod
         real(dp), intent(inout) :: uh(:,:), vh(:,:)
         logical, intent(in) :: update_UH, update_VH
 
-        integer(ip) :: i, j
+        integer(ip) :: i, j, ip2, jp2
         integer :: N, INFO
         real(dp) :: R_coslat_dlat, R_coslat_dlon, coslat_jph, coslat_jmh, d_iph_j, d_i_jph, dispersive_premult
         real(dp) :: r_dlat, R_coslat_dlon_jp1, R_coslat_dlon_j, R_coslat_dlat_jp1, R_coslat_dlat_j, coslat_jp1h
         ! Arrays for tridagonal solves
         real(dp) :: diagonalA_uh(size(uh, 1)), lowerA_uh(size(uh, 1)), upperA_uh(size(uh, 1)), b_uh(size(uh,1))
         real(dp) :: diagonalA_vh(size(vh, 2)), lowerA_vh(size(vh, 2)), upperA_vh(size(vh, 2)), b_vh(size(vh,2))
+        real(dp) :: dinv_ip1h_j, dinv_iph_j, dinv_imh_j, &
+                    dinv_ip1_jph, dinv_ip1_jmh, &
+                    dinv_i_jph, dinv_i_jmh, &
+                    dinv_iph_jp1, dinv_imh_jp1, &
+                    dinv_i_jp1h
 
         !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(uh, vh, elev, RHS_uh, RHS_vh, msl_linear, &
         !$OMP                                  dlat, dlon, td1, td2, &
@@ -514,7 +713,53 @@ module linear_dispersive_solver_mod
                     ! Depth at location of uh(i,j) -- or zero if either neighbour is dry
                     d_iph_j = merge(0.5_dp * (msl_linear - elev(i,j) + msl_linear - elev(i+1,j)), 0.0_dp, &
                         elev(i,j) < msl_linear .and. elev(i+1, j) < msl_linear)
+#ifdef DISPERSIVE_PEREGRINE
+                    !
+                    ! Peregrine dispersion
+                    !
+                    dispersive_premult = d_iph_j*d_iph_j / (R_coslat_dlon) * &
+                        ! Linear taper
+                        min(1.0_dp, max(0.0_dp, (d_iph_j - td2)/(td1 - td2)))
 
+                    ! Compute various inverse depth terms, which are zeroed at 'dry' cells.
+                    ! FIXME: Could avoid recomputing some of these (noting the loop order)
+                    ip2 = min(i+2, size(uh, 1)) ! Safe i+2 index
+                    dinv_ip1h_j = merge(1.0_dp/(0.5_dp * (msl_linear - elev(i+1,j) + msl_linear - elev(ip2,j))), 0.0_dp, &
+                        elev(i+1,j) < msl_linear .and. elev(ip2, j) < msl_linear)
+                    dinv_iph_j = merge(1.0_dp/d_iph_j, 0.0_dp, d_iph_j > 0.0_dp)
+                    dinv_imh_j = merge(1.0_dp/(0.5_dp * (msl_linear - elev(i-1,j) + msl_linear - elev(i,j))), 0.0_dp, &
+                        elev(i-1,j) < msl_linear .and. elev(i, j) < msl_linear)
+                    dinv_ip1_jph = merge(1.0_dp/(0.5_dp * (msl_linear - elev(i+1,j+1) + msl_linear - elev(i+1,j))), 0.0_dp, &
+                        elev(i+1,j+1) < msl_linear .and. elev(i+1, j) < msl_linear)
+                    dinv_ip1_jmh = merge(1.0_dp/(0.5_dp * (msl_linear - elev(i+1,j) + msl_linear - elev(i+1,j-1))), 0.0_dp, &
+                        elev(i+1,j) < msl_linear .and. elev(i+1, j-1) < msl_linear)
+                    dinv_i_jph = merge(1.0_dp/(0.5_dp * (msl_linear - elev(i,j+1) + msl_linear - elev(i,j))), 0.0_dp, &
+                        elev(i,j+1) < msl_linear .and. elev(i, j) < msl_linear)
+                    dinv_i_jmh = merge(1.0_dp/(0.5_dp * (msl_linear - elev(i,j) + msl_linear - elev(i,j-1))), 0.0_dp, &
+                        elev(i,j) < msl_linear .and. elev(i, j-1) < msl_linear)
+
+                    ! Terms related to the uh derivative (with 1.0 --> time update)
+                    diagonalA_uh(i) = 1.0_dp + 2.0_dp * dispersive_premult * 0.5_dp/R_coslat_dlon &
+                        -2.0_dp * dispersive_premult * (1.0_dp/6.0_dp) * d_iph_j / R_coslat_dlon * dinv_iph_j
+                    lowerA_uh(i) = -dispersive_premult * 0.5_dp/R_coslat_dlon &
+                        + dispersive_premult * (1.0_dp/6.0_dp) * d_iph_j / R_coslat_dlon * dinv_imh_j
+                    upperA_uh(i) = -dispersive_premult * 0.5_dp/R_coslat_dlon &
+                        + dispersive_premult * (1.0_dp/6.0_dp) * d_iph_j / R_coslat_dlon * dinv_ip1h_j
+
+                    b_uh(i) = RHS_uh(i,j) + &
+                        dispersive_premult * 0.5_dp * ( &
+                            ! lon-diff{ 1/(R_coslat) * d/dlat( coslat * vh ) }
+                            1.0_dp / R_coslat_dlat * ( (coslat_jph * vh(i+1,j) - coslat_jmh * vh(i+1,j-1)) - &
+                                                       (coslat_jph * vh(i  ,j) - coslat_jmh * vh(i  ,j-1)) ) ) & 
+                        -dispersive_premult * (1.0_dp/6.0_dp) * d_iph_j * ( &
+                            ! lon-diff{ 1/(R_coslat) * d/dlat( coslat * v ) }
+                            1.0_dp / R_coslat_dlat*((coslat_jph*vh(i+1,j)*dinv_ip1_jph - coslat_jmh*vh(i+1,j-1)*dinv_ip1_jmh) - &
+                                                    (coslat_jph*vh(i  ,j)*dinv_i_jph   - coslat_jmh*vh(i  ,j-1)*dinv_i_jmh )) )
+
+#else
+                    !
+                    ! Simplest dispersive model, matching JAGURS
+                    !
                     dispersive_premult = d_iph_j*d_iph_j / (3.0_dp * R_coslat_dlon) * &
                         ! Linear taper
                         min(1.0_dp, max(0.0_dp, (d_iph_j - td2)/(td1 - td2)))
@@ -526,9 +771,10 @@ module linear_dispersive_solver_mod
 
                     b_uh(i) = RHS_uh(i,j) + &
                         dispersive_premult * ( &
-                            ! 1/(R_coslat) * d/dlat( coslat * vh )
+                            ! lon-diff{ 1/(R_coslat) * d/dlat( coslat * vh ) }
                             1.0_dp / R_coslat_dlat * ( (coslat_jph * vh(i+1,j) - coslat_jmh * vh(i+1,j-1)) - &
                                                        (coslat_jph * vh(i  ,j) - coslat_jmh * vh(i  ,j-1)) ) )
+#endif
                 end do
                 ! Compute the solution with lapack's tridiagonal solver
 #ifdef REALFLOAT
@@ -577,6 +823,59 @@ module linear_dispersive_solver_mod
                     ! Depth at location of vh(i,j) -- or zero if either neighbour is dry
                     d_i_jph = merge(0.5_dp * (msl_linear - elev(i,j) + msl_linear - elev(i,j+1)), 0.0_dp, &
                         elev(i,j) < msl_linear .and. elev(i, j+1) < msl_linear)
+#ifdef DISPERSIVE_PEREGRINE
+                    !
+                    ! Peregrine dispersion
+                    !
+                    dispersive_premult = d_i_jph*d_i_jph / (r_dlat) * &
+                        ! Linear taper
+                        min(1.0_dp, max(0.0_dp, (d_i_jph - td2)/(td1 - td2)))
+
+                    ! Compute various inverse depth terms, which are zeroed at 'dry' cells.
+                    ! FIXME: Could avoid recomputing some of these (noting the loop order)
+                    dinv_iph_jp1 = merge(1.0_dp / (0.5_dp * (msl_linear - elev(i,j+1) + msl_linear - elev(i+1,j+1))), 0.0_dp, &
+                        elev(i,j+1) < msl_linear .and. elev(i+1, j+1) < msl_linear)
+                    dinv_imh_jp1 = merge(1.0_dp / (0.5_dp * (msl_linear - elev(i,j+1) + msl_linear - elev(i-1,j+1))), 0.0_dp, &
+                        elev(i,j+1) < msl_linear .and. elev(i-1, j+1) < msl_linear)
+                    dinv_iph_j = merge(1.0_dp / (0.5_dp * (msl_linear - elev(i,j) + msl_linear - elev(i+1,j))), 0.0_dp, &
+                        elev(i,j) < msl_linear .and. elev(i+1, j) < msl_linear)
+                    dinv_imh_j = merge(1.0_dp / (0.5_dp * (msl_linear - elev(i,j) + msl_linear - elev(i-1,j))), 0.0_dp, &
+                        elev(i,j) < msl_linear .and. elev(i-1, j) < msl_linear)
+                    jp2 = min(j+2, size(vh, 2)) ! Safe j+2
+                    dinv_i_jp1h = merge(1.0_dp / (0.5_dp * (msl_linear - elev(i,j+1) + msl_linear - elev(i,jp2))), 0.0_dp, &
+                        elev(i,j+1) < msl_linear .and. elev(i, jp2) < msl_linear)
+                    dinv_i_jph = merge(1.0_dp/d_i_jph, 0.0_dp, d_i_jph > 0.0_dp)
+                    dinv_i_jmh = merge(1.0_dp / (0.5_dp * (msl_linear - elev(i,j) + msl_linear - elev(i,j-1))), 0.0_dp, &
+                        elev(i,j) < msl_linear .and. elev(i, j-1) < msl_linear)
+
+
+                    ! Terms related to the vh derivative (with 1.0 --> time update)
+                    diagonalA_vh(j) = 1.0_dp &
+                        + dispersive_premult * 0.5_dp * &
+                            (1.0_dp / R_coslat_dlat_jp1 * coslat_jph + &
+                             1.0_dp / R_coslat_dlat_j   * coslat_jph ) &
+                        -dispersive_premult * (1.0_dp/6.0_dp) * d_i_jph * (&
+                            1.0_dp / R_coslat_dlat_jp1 * coslat_jph * dinv_i_jph + &
+                            1.0_dp / R_coslat_dlat_j   * coslat_jph * dinv_i_jph ) 
+                    lowerA_vh(j) = -dispersive_premult * 0.5_dp / R_coslat_dlat_j   * coslat_jmh &
+                        +dispersive_premult * (1.0_dp/6.0_dp) * d_i_jph /R_coslat_dlat_j * coslat_jmh*dinv_i_jmh 
+                    upperA_vh(j) = -dispersive_premult * 0.5_dp / R_coslat_dlat_jp1 * coslat_jp1h &
+                        +dispersive_premult * (1.0_dp/6.0_dp) * d_i_jph /R_coslat_dlat_jp1 * coslat_jp1h*dinv_i_jp1h
+
+                    b_vh(j) = RHS_vh(i,j) + &
+                        dispersive_premult * 0.5_dp * ( &
+                            ! uh term
+                            ( 1.0_dp / R_coslat_dlon_jp1 * (uh(i  , j+1) - uh(i-1, j+1)) - &
+                              1.0_dp / R_coslat_dlon_j   * (uh(i  , j  ) - uh(i-1, j  )) ) ) &
+                        - dispersive_premult * (1.0_dp/6.0_dp) * d_i_jph * ( &
+                            ! lat-diff{ 1/R_coslat du/dlon }
+                            ( 1.0_dp / R_coslat_dlon_jp1 * (uh(i  , j+1)*dinv_iph_jp1 - uh(i-1, j+1)*dinv_imh_jp1) - &
+                              1.0_dp / R_coslat_dlon_j   * (uh(i  , j  )*dinv_iph_j   - uh(i-1, j  )*dinv_imh_j  )  ))
+
+#else
+                    !
+                    ! Simplest dispersive model, matching JAGURS
+                    !
 
                     dispersive_premult = d_i_jph*d_i_jph / (3.0_dp * r_dlat) * &
                         ! Linear taper
@@ -594,6 +893,7 @@ module linear_dispersive_solver_mod
                             ! uh term
                             ( 1.0_dp / R_coslat_dlon_jp1 * (uh(i  , j+1) - uh(i-1, j+1)) - &
                               1.0_dp / R_coslat_dlon_j   * (uh(i  , j  ) - uh(i-1, j  )) ) )
+#endif
                 end do
                 ! Compute the solution with lapack's tridiagonal solver
 #ifdef REALFLOAT
@@ -628,6 +928,9 @@ module linear_dispersive_solver_mod
         real(dp) :: R_coslat_dlat, R_coslat_dlon, coslat_jp1, coslat_jm1, coslat_j, d_i_j,dispersive_premult
         real(dp) :: r_dlat, R_coslat_dlon_jp1, R_coslat_dlon_j, R_coslat_dlat_jp1, R_coslat_dlat_j
         real(dp) :: R_coslat_dlon_jph, R_coslat_dlon_jmh, R_coslat_dlat_jph, R_coslat_dlat_jmh
+        real(dp) :: dinv_ip1_j, dinv_i_j, dinv_im1_j, &
+                    dinv_ip1_jp1, dinv_i_jp1, dinv_im1_jp1, &
+                    dinv_ip1_jm1, dinv_i_jm1, dinv_im1_jm1
         ! Arrays for tridagonal solves
         real(dp) :: diagonalA_uh(size(uh, 1)), lowerA_uh(size(uh, 1)), upperA_uh(size(uh, 1)), b_uh(size(uh,1))
         real(dp) :: diagonalA_vh(size(vh, 2)), lowerA_vh(size(vh, 2)), upperA_vh(size(vh, 2)), b_vh(size(vh,2))
@@ -672,9 +975,53 @@ module linear_dispersive_solver_mod
                     ! Depth at location of uh(i,j) -- or zero if either neighbour is dry
                     d_i_j = merge((msl_linear - elev(i,j)), 0.0_dp, elev(i,j) < msl_linear)
 
+#ifdef DISPERSIVE_PEREGRINE
+                    !
+                    ! Peregrine dispersion
+                    !
+                    dispersive_premult = d_i_j*d_i_j / (R_coslat_dlon) * &
+                        ! Linear taper
+                        min(1.0_dp, max(0.0_dp, (d_i_j - td2)/(td1 - td2)))
+
+                    ! Compute various inverse depth terms, which are zeroed at 'dry' cells.
+                    ! FIXME: Could avoid recomputing some of these (noting the loop order)
+                    dinv_ip1_j = merge(1.0_dp/(msl_linear - elev(i+1,j)), 0.0_dp, elev(i+1,j) < msl_linear)
+                    dinv_i_j = merge(1.0_dp/(msl_linear - elev(i,j)), 0.0_dp, elev(i,j) < msl_linear)
+                    dinv_im1_j = merge(1.0_dp/(msl_linear - elev(i-1,j)), 0.0_dp, elev(i-1,j) < msl_linear)
+                    dinv_ip1_jp1 = merge(1.0_dp/(msl_linear - elev(i+1,j+1)), 0.0_dp, elev(i+1,j+1) < msl_linear)
+                    dinv_ip1_jm1 = merge(1.0_dp/(msl_linear - elev(i+1,j-1)), 0.0_dp, elev(i+1,j-1) < msl_linear)
+                    dinv_im1_jp1 = merge(1.0_dp/(msl_linear - elev(i-1,j+1)), 0.0_dp, elev(i-1,j+1) < msl_linear)
+                    dinv_im1_jm1 = merge(1.0_dp/(msl_linear - elev(i-1,j-1)), 0.0_dp, elev(i-1,j-1) < msl_linear)
+
+                    ! Terms related to the uh derivative (with 1.0 --> time update)
+                    diagonalA_uh(i) = 1.0_dp + 2.0_dp * dispersive_premult * 0.5_dp/R_coslat_dlon &
+                         -2.0_dp * dispersive_premult * (1.0_dp/6.0_dp) * d_i_j /R_coslat_dlon * dinv_i_j
+                    lowerA_uh(i) = -dispersive_premult * 0.5_dp/R_coslat_dlon &
+                        + dispersive_premult * (1.0_dp/6.0_dp) * d_i_j /R_coslat_dlon * dinv_im1_j
+                    upperA_uh(i) = -dispersive_premult * 0.5_dp/R_coslat_dlon &
+                        + dispersive_premult * (1.0_dp/6.0_dp) * d_i_j /R_coslat_dlon * dinv_ip1_j
+
+                    b_uh(i) = RHS_uh(i,j) + &
+                        dispersive_premult * 0.5_dp * ( &
+                            ! lon-diff{ 1/(R_coslat) * d/dlat( coslat * vh ) }
+                            1.0_dp / R_coslat_dlat * ( &
+                                (coslat_jp1 * vh(i+1,j+1) - coslat_jm1 * vh(i+1,j-1))*0.25_dp - &
+                                (coslat_jp1 * vh(i-1,j+1) - coslat_jm1 * vh(i-1,j-1))*0.25_dp ) &
+                            ) &
+                        - dispersive_premult * (1.0_dp/6.0_dp) * d_i_j * ( &
+                            ! lon-diff { 1/(R_coslat) * d/dlat( coslat * v) }
+                            1.0_dp / R_coslat_dlat * ( &
+                                (coslat_jp1 * vh(i+1,j+1)*dinv_ip1_jp1 - coslat_jm1 * vh(i+1,j-1)*dinv_ip1_jm1)*0.25_dp - &
+                                (coslat_jp1 * vh(i-1,j+1)*dinv_im1_jp1 - coslat_jm1 * vh(i-1,j-1)*dinv_im1_jm1)*0.25_dp)  &
+                                )
+#else
+                    !
+                    ! Simplest dispersive model, matching JAGURS
+                    !
                     dispersive_premult = d_i_j*d_i_j / (3.0_dp * R_coslat_dlon) * &
                         ! Linear taper
                         min(1.0_dp, max(0.0_dp, (d_i_j - td2)/(td1 - td2)))
+
 
                     ! Terms related to the uh derivative (with 1.0 --> time update)
                     diagonalA_uh(i) = 1.0_dp + 2.0_dp * dispersive_premult * 1.0_dp/R_coslat_dlon
@@ -688,6 +1035,7 @@ module linear_dispersive_solver_mod
                                 (coslat_jp1 * vh(i+1,j+1) - coslat_jm1 * vh(i+1,j-1))*0.25_dp - &
                                 (coslat_jp1 * vh(i-1,j+1) - coslat_jm1 * vh(i-1,j-1))*0.25_dp ) &
                             )
+#endif
                 end do
                 ! Compute the solution with lapack's tridiagonal solver
 #ifdef REALFLOAT
@@ -738,6 +1086,59 @@ module linear_dispersive_solver_mod
                     ! Depth at location of vh(i,j) -- or zero if either neighbour is dry
                     d_i_j = merge((msl_linear - elev(i,j)), 0.0_dp, elev(i,j) < msl_linear)
 
+#ifdef DISPERSIVE_PEREGRINE
+                    !
+                    ! Peregrine dispersion
+                    !
+                    dispersive_premult = d_i_j*d_i_j / (r_dlat) * &
+                        ! Linear taper
+                        min(1.0_dp, max(0.0_dp, (d_i_j - td2)/(td1 - td2)))
+
+                    ! Compute various inverse depth terms, which are zeroed at 'dry' cells.
+                    ! FIXME: Could avoid recomputing some of these (noting the loop order)
+                    dinv_ip1_jp1 = merge(1.0_dp / (msl_linear - elev(i+1,j+1)), 0.0_dp,  elev(i+1, j+1) < msl_linear)
+                    dinv_i_jp1 = merge(1.0_dp / (msl_linear - elev(i,j+1)), 0.0_dp,  elev(i, j+1) < msl_linear)
+                    dinv_im1_jp1 = merge(1.0_dp / (msl_linear - elev(i-1,j+1)), 0.0_dp,  elev(i-1, j+1) < msl_linear)
+                    dinv_ip1_j = merge(1.0_dp / (msl_linear - elev(i+1,j)), 0.0_dp,  elev(i+1, j) < msl_linear)
+                    dinv_im1_j = merge(1.0_dp / (msl_linear - elev(i-1,j)), 0.0_dp,  elev(i-1, j) < msl_linear)
+                    dinv_i_j = merge(1.0_dp / (msl_linear - elev(i,j)), 0.0_dp,  elev(i, j) < msl_linear)
+                    dinv_ip1_jm1 = merge(1.0_dp / (msl_linear - elev(i+1,j-1)), 0.0_dp,  elev(i+1, j-1) < msl_linear)
+                    dinv_i_jm1 = merge(1.0_dp / (msl_linear - elev(i,j-1)), 0.0_dp,  elev(i, j-1) < msl_linear) 
+                    dinv_im1_jm1 = merge(1.0_dp / (msl_linear - elev(i-1,j-1)), 0.0_dp,  elev(i-1, j-1) < msl_linear)
+
+                    ! Terms related to the vh derivative (with 1.0 --> time update)
+                    diagonalA_vh(j) = 1.0_dp + dispersive_premult * 0.5_dp * &
+                            (1.0_dp / R_coslat_dlat_jph * coslat_j + &
+                             1.0_dp / R_coslat_dlat_jmh * coslat_j ) &
+                        - dispersive_premult * (1.0_dp/6.0_dp) * d_i_j * &
+                            (1.0_dp / R_coslat_dlat_jph * coslat_j * dinv_i_j + &
+                             1.0_dp / R_coslat_dlat_jmh * coslat_j * dinv_i_j )
+                    lowerA_vh(j) = -dispersive_premult * 0.5_dp / R_coslat_dlat_jmh * coslat_jm1 &
+                        + dispersive_premult * (1.0_dp/6.0_dp) * d_i_j / R_coslat_dlat_jmh * coslat_jm1 * dinv_i_jm1
+                    upperA_vh(j) = -dispersive_premult * 0.5_dp / R_coslat_dlat_jph * coslat_jp1 &
+                        + dispersive_premult * (1.0_dp/6.0_dp) * d_i_j / R_coslat_dlat_jph * coslat_jp1 * dinv_i_jp1
+
+                    b_vh(j) = RHS_vh(i,j) + &
+                        dispersive_premult * 0.5_dp * ( &
+                            ! uh term
+                            ! 1/(R coslat) d(uh)/dlon @ i, j+1/2, by mean of central differences at j+1 and j.
+                            ( 1.0_dp / R_coslat_dlon_jph * (uh(i+1, j+1) - uh(i-1,j+1) + uh(i+1,j) - uh(i-1,j))*0.25_dp - &
+                            ! 1/(R coslat) d(uh)/dlon @ i, j-1/2, by mean of central differences at j and j-1
+                              1.0_dp / R_coslat_dlon_jmh * (uh(i+1, j-1) - uh(i-1,j-1) + uh(i+1,j) - uh(i-1,j))*0.25_dp ) ) &
+                        - dispersive_premult * (1.0_dp / 6.0_dp) * d_i_j * ( &
+                            ! uh term = lat-diff{ 1/Rcoslat du/dlon }
+                            !   1/(R coslat) d(u)/dlon @ i, j+1/2, by mean of centred differences at j+1 and j.
+                            ( 1.0_dp / R_coslat_dlon_jph * (uh(i+1, j+1)*dinv_ip1_jp1 - uh(i-1,j+1)*dinv_im1_jp1 + &
+                                                            uh(i+1,j)*dinv_ip1_j      - uh(i-1,j)*dinv_im1_j)*0.25_dp - &
+                            !   1/(R coslat) d(u)/dlon @ i, j-1/2, by mean of centred differences at j and j-1
+                              1.0_dp / R_coslat_dlon_jmh * (uh(i+1, j-1)*dinv_ip1_jm1 - uh(i-1,j-1)*dinv_im1_jm1 + &
+                                                            uh(i+1,j)*dinv_ip1_j      - uh(i-1,j)*dinv_im1_j)*0.25_dp ) )
+
+#else
+                    !
+                    ! Simplest dispersive model, matching JAGURS
+                    !
+
                     dispersive_premult = d_i_j*d_i_j / (3.0_dp * r_dlat) * &
                         ! Linear taper
                         min(1.0_dp, max(0.0_dp, (d_i_j - td2)/(td1 - td2)))
@@ -755,6 +1156,7 @@ module linear_dispersive_solver_mod
                             ( 1.0_dp / R_coslat_dlon_jph * (uh(i+1, j+1) - uh(i-1,j+1) + uh(i+1,j) - uh(i-1,j))*0.25_dp - &
                             ! 1/(R coslat) d(uh)/dlon @ i, j-1/2, by mean of central differences at j and j-1
                               1.0_dp / R_coslat_dlon_jmh * (uh(i+1, j-1) - uh(i-1,j-1) + uh(i+1,j) - uh(i-1,j))*0.25_dp ) )
+#endif
                 end do
                 ! Compute the solution with lapack's tridiagonal solver
 #ifdef REALFLOAT
