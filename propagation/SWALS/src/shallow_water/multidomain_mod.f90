@@ -2671,7 +2671,7 @@ __FILE__
             !! stores the dx values for all domains in multidomain (i.e. copy of all_dx)
         integer(ip), allocatable, intent(inout) :: all_timestepping_methods_md(:,:)
             !! stores the all_timestepping_methods variable in the multidomain.
-        character(len=charlen) :: md_label
+        character(len=charlen), intent(in) :: md_label
             !! md_label a character label for the multidomain, which will be included in the parallel communication tags.
         type(p2p_comms_type), intent(inout) :: md_p2p
             !! The point2point communicator used for this multidomain.

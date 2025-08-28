@@ -216,7 +216,7 @@ module linear_dispersive_solver_mod
         real(dp), intent(in) :: elev(:,:), uh(:,:), vh(:,:), &
             dlon, dlat, msl_linear, td1, td2, &
             distance_bottom_edge(:), distance_left_edge(:)
-        real(dp), intent(out) :: solution_uh(:,:), solution_vh(:,:)
+        real(dp), intent(inout) :: solution_uh(:,:), solution_vh(:,:)
         logical, intent(in) :: update_UH, update_VH
 
         integer(ip) :: i, j, ip2, jp2
@@ -434,7 +434,7 @@ module linear_dispersive_solver_mod
         real(dp), intent(in) :: elev(:,:), uh(:,:), vh(:,:), &
             dlon, dlat, msl_linear, td1, td2, &
             distance_bottom_edge(:), distance_left_edge(:)
-        real(dp), intent(out) :: solution_uh(:,:), solution_vh(:,:)
+        real(dp), intent(inout) :: solution_uh(:,:), solution_vh(:,:)
         logical, intent(in) :: update_UH, update_VH
 
         integer(ip) :: i, j
@@ -1356,7 +1356,7 @@ module linear_dispersive_solver_mod
         real(dp), intent(in) :: elev(:,:), uh(:,:), vh(:,:), &
             dlon, dlat, msl_linear,  &
             distance_bottom_edge(:), distance_left_edge(:)
-        real(dp), intent(out) :: offdiagonalAx_uh(:,:), offdiagonalAx_vh(:,:), diagonalA_uh(:,:), diagonalA_vh(:,:)
+        real(dp), intent(inout) :: offdiagonalAx_uh(:,:), offdiagonalAx_vh(:,:), diagonalA_uh(:,:), diagonalA_vh(:,:)
         logical, intent(in) :: update_UH, update_VH
 
         integer(ip) :: i, j
@@ -1478,7 +1478,7 @@ module linear_dispersive_solver_mod
         real(dp), intent(in) :: elev(:,:), uh(:,:), vh(:,:), &
             dlon, dlat, msl_linear,  &
             distance_bottom_edge(:), distance_left_edge(:)
-        real(dp), intent(out) :: offdiagonalAx_uh(:,:), offdiagonalAx_vh(:,:), diagonalA_uh(:,:), diagonalA_vh(:,:)
+        real(dp), intent(inout) :: offdiagonalAx_uh(:,:), offdiagonalAx_vh(:,:), diagonalA_uh(:,:), diagonalA_vh(:,:)
         logical, intent(in) :: update_UH, update_VH
 
         integer(ip) :: i, j
@@ -1783,7 +1783,7 @@ module linear_dispersive_solver_mod
 !        real(dp), intent(in) :: elev(:,:), uh(:,:), vh(:,:), &
 !            dlon, dlat, msl_linear,  &
 !            distance_bottom_edge(:), distance_left_edge(:)
-!        real(dp), intent(out) :: offdiagonalAx_uh(:,:), offdiagonalAx_vh(:,:), diagonalA_uh(:,:), diagonalA_vh(:,:)
+!        real(dp), intent(inout) :: offdiagonalAx_uh(:,:), offdiagonalAx_vh(:,:), diagonalA_uh(:,:), diagonalA_vh(:,:)
 !        logical, intent(in) :: update_UH, update_VH, needs_update(:,:)
 !        integer(ip), intent(in) :: i0(:), i1(:)
 !        real(dp), intent(in) :: td1, td2 ! "Depths below msl" used to taper off dispersion
@@ -1920,7 +1920,7 @@ module linear_dispersive_solver_mod
 !        real(dp), intent(in) :: elev(:,:), uh(:,:), vh(:,:), &
 !            dlon, dlat, msl_linear,  &
 !            distance_bottom_edge(:), distance_left_edge(:)
-!        real(dp), intent(out) :: offdiagonalAx_uh(:,:), offdiagonalAx_vh(:,:), diagonalA_uh(:,:), diagonalA_vh(:,:)
+!        real(dp), intent(inout) :: offdiagonalAx_uh(:,:), offdiagonalAx_vh(:,:), diagonalA_uh(:,:), diagonalA_vh(:,:)
 !        logical, intent(in) :: update_UH, update_VH, needs_update(:,:)
 !        integer(ip), intent(in) :: i0(:), i1(:)
 !        real(dp), intent(in) :: td1, td2 ! "Depth below MSL" used to linear taper off dispersive terms
