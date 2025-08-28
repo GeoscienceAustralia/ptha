@@ -170,7 +170,7 @@ program BP05
     character(charlen):: test_case, bc_file
     real(dp):: tank_bases(4), tank_slopes(4) 
 
-    integer(ip), parameter :: boundary_buffer_cells = 10_ip ! So we can force the boundary with the NLSW
+    integer(ip) :: boundary_buffer_cells ! So we can force the boundary with the NLSW
     real(dp) :: boundary_buffer
 
     ! Get the case. Values should be caseA, caseB, caseC
@@ -193,8 +193,9 @@ program BP05
     call get_command_argument(2, timestepping_method)  
     
     ! Resolution
-    dx = 0.01_dp ! Needs to evenly divide tank_length
-    boundary_buffer = dx * boundary_buffer_cells
+    dx = 0.01_dp ! Needs to evenly divide tank_length, and boundary_buffer
+    boundary_buffer = 0.3_dp 
+    boundary_buffer_cells = boundary_buffer / dx
  
     ! Tank geometry  -- add a little extra at the end so the reflective wall is in the right place
     tank_bases = [base_L, 4.36_dp, 2.93_dp, 0.9_dp + 2.0_dp*dx]
