@@ -228,9 +228,12 @@ module multidomain_mod
             !! and for such messages, the file locations may be messed up if using more than one multidomain
         logical :: use_dispersion = .FALSE.
             !! This will be .TRUE. if any domain uses dispersion, and .FALSE. otherwise
-        integer :: dispersive_outer_iterations_count = 2
+        integer(ip) :: dispersive_outer_iterations_count = 2_ip
             !! When doing dispersive solves, we solve the dispersive term on each domain individually, communicate, and repeat
             !! dispersive_outer_iterations times. Larger numbers could allow information to cross domains more easily.
+        integer(ip) :: dispersive_nt_max = -1_ip
+            !! When doing dispersive solves, the global timestep is split into substeps of size nt_max. Communication happens
+            !! in each substep, so in parallel we need to ensure every image uses the same nt_max, which is stored here.
 
         contains
 
@@ -1215,11 +1218,7 @@ TIMER_START('before_stepping')
         end do
 
         ! Timestepping levels
-        nt_max = maxval(md%domains(:)%timestepping_refinement_factor)
-
-#ifdef COARRAY
-        call co_max(nt_max) ! FIXME: Only do this once
-#endif
+        nt_max = md%dispersive_nt_max
 
         domain_stepcycles = nt_max / md%domains(:)%timestepping_refinement_factor !This MUST be a nonzero integer without roundoff
 TIMER_STOP('before_stepping')
@@ -2588,6 +2587,12 @@ __FILE__
 
         ! If any domain does a dispersive solve, the multidomain will need to do iteration.
         md%use_dispersion = any(md%domains(:)%use_dispersion)
+
+        if(md%use_dispersion) then
+            ! If dispersion is used, all (parallel) multidomains must use the same value of the
+            ! maximum timestepping refinement factor
+            md%dispersive_nt_max = maxval(md%domains(:)%timestepping_refinement_factor)
+        end if
 
         ! Split up domains among images, and create all md%domains(i)%myid
         call md%partition_domains()
