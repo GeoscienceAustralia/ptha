@@ -10,65 +10,65 @@
 !#define DISPERSIVE_PEREGRINE
 
 module linear_dispersive_solver_mod
-    !
-    ! Type for solving the linear dispersive equation as per:
-    !   Baba, T.; Takahashi, N.; Kaneda, Y.; Ando, K.; Matsuoka, D. & Kato, T. Parallel Implementation of Dispersive Tsunami Wave
-    !       Modeling with a Nesting Algorithm for the 2011 Tohoku Tsunami Pure and Applied Geophysics, 2015, 172, 3455-3472
-    ! Or
-    !   Baba, T.; Allgeyer, S.; Hossen, J.; Cummins, P. R.; Tsushima, H.; Imai, K.; Yamashita, K. & Kato, T. Accurate numerical
-    !   simulation of the far-field tsunami caused by the 2011 Tohoku earthquake, including the effects of Boussinesq dispersion,
-    !   seawater density stratification, elastic loading, and gravitational potential change Ocean Modelling, Elsevier BV, 2017, 111,
-    !   46–54
-    ! The equations are:
-    !     d( uh ) / dt + {...nonlinear-shallow-water-terms...} = &
-    !        h0^2 / ( 3 R_coslat) * d/dlon [ 1/R_coslat ( d^2( uh ) / (dt dlon) + d^2(vh coslat) / (dt dlat) ) ]
-    !     d (vh ) / dt + {...nonlinear-shallow-water-terms...} = &
-    !        h0^2 / ( 3 R       ) * d/dlat [ 1/R_coslat ( d^2( uh ) / (dt dlon) + d^2(vh coslat) / (dt dlat) ) ]
-    !
-    ! Where 'h0' is the depth below MSL_linear. Note that Baba et al use 'co-latitude' instead of latitude, so my
-    ! cos(theta) is their sin(theta)
-    !
-    ! In tensor notation (with time as a parameter), if writing the NLSW in contravariant form, this would be written as 
-    !     g^{lj} \nabla_j( \frac{\partial (\nabla_i q^{i})}{\partial t} )
-    ! where 
-    !     q^i = hu^i = contravariant components of flux = [ uh/(Rcoslat), vh/R ]  and 
-    !     \nabla_{j} is the covariant derivative and 
-    !     g^{lj} is the metric tensor, used to raise an index (so the term is a contravariant tensor). 
-    ! (Conversion to the conventional form in spherical coordinates would also involve multiplying the UH equation
-    ! by Rcoslat and the VH equation by R). Notice the term inside the \nabla_j covariant derivative
-    ! is a scalar (so this covariant derivative reduces to the partial derivative) and that scalar is the time derivative of the 
-    ! mass flux terms (as appears in the mass conservation equation). So there are no other "hidden" terms caused by
-    ! Christoffel symbols.
-    !
-    ! ** Notice we can bring the time-derivative out to the front. This is key to solving the equation numerically. **
-    !     d( uh ) / dt + {...nonlinear-shallow-water-terms...} = &
-    !        d/dt * { h0^2 / ( 3 R_coslat) * d/dlon [ 1/R_coslat ( d( uh ) / (dlon) + d(vh coslat) / (dlat) ) ] }
-    !     d (vh ) / dt + {...nonlinear-shallow-water-terms...} = &
-    !        d/dt * { h0^2 / ( 3 R       ) * d/dlat [ 1/R_coslat ( d( uh ) / (dlon) + d(vh coslat) / (dlat) ) ] }
-    !
-    ! A variant on these equations is Peregrine dispersion, which has the form
-    !     d( uh ) / dt + {...nonlinear-shallow-water-terms...} = &
-    !        h0^2 / ( 2 R_coslat) * d/dlon [ 1/R_coslat ( d^2( uh ) / (dt dlon) + d^2(vh coslat) / (dt dlat) ) ] &
-    !       -h0^3 / ( 6 R_coslat) * d/dlon [ 1/R_coslat ( d^2( u  ) / (dt dlon) + d^2(v  coslat) / (dt dlat) ) ]
-    !     d (vh ) / dt + {...nonlinear-shallow-water-terms...} = &
-    !        h0^2 / ( 2 R       ) * d/dlat [ 1/R_coslat ( d^2( uh ) / (dt dlon) + d^2(vh coslat) / (dt dlat) ) ] &
-    !       -h0^3 / ( 6 R       ) * d/dlat [ 1/R_coslat ( d^2( u  ) / (dt dlon) + d^2(v  coslat) / (dt dlat) ) ]
-    ! and reduces to the other dispersive model with flat topography.
-    !
-    ! To implement this in both cartesian and spherical coordinates, note that
-    !     radius_earth = distance_cell_left_edge / dy_in_radians ! This is independent of the latitude or longitude.
-    ! and
-    !     R_coslat = distance_cell_bottom_edge / dx_in_radians ! Need to compute the cell-bottom distance at the right 'latitude'.
-    ! So
-    !     coslat = (distance_cell_bottom_edge / dx_in_radians) / ( distance_cell_left_edge / dy_in_radians )
-    !     ! Note the factor to convert from degrees to radians will drop out in this equation.
-    ! Also
-    !     R_coslat_dlon = distance_cell_bottom_edge ! Here we need to compute the cell-bottom distance at the right 'latitude'.
-    ! and
-    !     R_dlat = distance_cell_left_edge ! This is independent of the latitude or longitude
-    ! and
-    !     R_dlat_coslat = distance_cell_left_edge * coslat = ( distance_cell_bottom_edge / dx_in_radians) * dy_in_radians
-    !
+    !!
+    !! Type for solving the linear dispersive equation as per:
+    !!   Baba, T.; Takahashi, N.; Kaneda, Y.; Ando, K.; Matsuoka, D. & Kato, T. Parallel Implementation of Dispersive Tsunami Wave
+    !!       Modeling with a Nesting Algorithm for the 2011 Tohoku Tsunami Pure and Applied Geophysics, 2015, 172, 3455-3472
+    !! Or
+    !!   Baba, T.; Allgeyer, S.; Hossen, J.; Cummins, P. R.; Tsushima, H.; Imai, K.; Yamashita, K. & Kato, T. Accurate numerical
+    !!   simulation of the far-field tsunami caused by the 2011 Tohoku earthquake, including the effects of Boussinesq dispersion,
+    !!   seawater density stratification, elastic loading, and gravitational potential change Ocean Modelling, Elsevier BV, 2017, 111,
+    !!   46–54
+    !! The equations are:
+    !!     d( uh ) / dt + {...nonlinear-shallow-water-terms...} = &
+    !!        h0^2 / ( 3 R_coslat) * d/dlon [ 1/R_coslat ( d^2( uh ) / (dt dlon) + d^2(vh coslat) / (dt dlat) ) ]
+    !!     d (vh ) / dt + {...nonlinear-shallow-water-terms...} = &
+    !!        h0^2 / ( 3 R       ) * d/dlat [ 1/R_coslat ( d^2( uh ) / (dt dlon) + d^2(vh coslat) / (dt dlat) ) ]
+    !!
+    !! Where 'h0' is the depth below MSL_linear. Note that Baba et al use 'co-latitude' instead of latitude, so my
+    !! cos(theta) is their sin(theta)
+    !!
+    !! In tensor notation (with time as a parameter), if writing the NLSW in contravariant form, this would be written as 
+    !!     g^{lj} \nabla_j( \frac{\partial (\nabla_i q^{i})}{\partial t} )
+    !! where 
+    !!     q^i = hu^i = contravariant components of flux = [ uh/(Rcoslat), vh/R ]  and 
+    !!     \nabla_{j} is the covariant derivative and 
+    !!     g^{lj} is the metric tensor, used to raise an index (so the term is a contravariant tensor). 
+    !! (Conversion to the conventional form in spherical coordinates would also involve multiplying the UH equation
+    !! by Rcoslat and the VH equation by R). Notice the term inside the \nabla_j covariant derivative
+    !! is a scalar (so this covariant derivative reduces to the partial derivative) and that scalar is the time derivative of the 
+    !! mass flux terms (as appears in the mass conservation equation). So there are no other "hidden" terms caused by
+    !! Christoffel symbols.
+    !!
+    !! ** Notice we can bring the time-derivative out to the front. This is key to solving the equation numerically. **
+    !!     d( uh ) / dt + {...nonlinear-shallow-water-terms...} = &
+    !!        d/dt * { h0^2 / ( 3 R_coslat) * d/dlon [ 1/R_coslat ( d( uh ) / (dlon) + d(vh coslat) / (dlat) ) ] }
+    !!     d (vh ) / dt + {...nonlinear-shallow-water-terms...} = &
+    !!        d/dt * { h0^2 / ( 3 R       ) * d/dlat [ 1/R_coslat ( d( uh ) / (dlon) + d(vh coslat) / (dlat) ) ] }
+    !!
+    !! Another dispersive model supported here is is Peregrine dispersion, which has the form
+    !!     d( uh ) / dt + {...nonlinear-shallow-water-terms...} = &
+    !!        h0^2 / ( 2 R_coslat) * d/dlon [ 1/R_coslat ( d^2( uh ) / (dt dlon) + d^2(vh coslat) / (dt dlat) ) ] &
+    !!       -h0^3 / ( 6 R_coslat) * d/dlon [ 1/R_coslat ( d^2( u  ) / (dt dlon) + d^2(v  coslat) / (dt dlat) ) ]
+    !!     d (vh ) / dt + {...nonlinear-shallow-water-terms...} = &
+    !!        h0^2 / ( 2 R       ) * d/dlat [ 1/R_coslat ( d^2( uh ) / (dt dlon) + d^2(vh coslat) / (dt dlat) ) ] &
+    !!       -h0^3 / ( 6 R       ) * d/dlat [ 1/R_coslat ( d^2( u  ) / (dt dlon) + d^2(v  coslat) / (dt dlat) ) ]
+    !! and reduces to the other dispersive model with flat topography.
+    !!
+    !! To implement this in both cartesian and spherical coordinates, note that
+    !!     radius_earth = distance_cell_left_edge / dy_in_radians ! This is independent of the latitude or longitude.
+    !! and
+    !!     R_coslat = distance_cell_bottom_edge / dx_in_radians ! Need to compute the cell-bottom distance at the right 'latitude'.
+    !! So
+    !!     coslat = (distance_cell_bottom_edge / dx_in_radians) / ( distance_cell_left_edge / dy_in_radians )
+    !!     ! Note the factor to convert from degrees to radians will drop out in this equation.
+    !! Also
+    !!     R_coslat_dlon = distance_cell_bottom_edge ! Here we need to compute the cell-bottom distance at the right 'latitude'.
+    !! and
+    !!     R_dlat = distance_cell_left_edge ! This is independent of the latitude or longitude
+    !! and
+    !!     R_dlat_coslat = distance_cell_left_edge * coslat = ( distance_cell_bottom_edge / dx_in_radians) * dy_in_radians
+    !!
 
     use global_mod, only: dp, ip
     use logging_mod, only: log_output_unit
@@ -1308,436 +1308,436 @@ module linear_dispersive_solver_mod
 
     end subroutine
 
-#ifdef DISPERSIVE_JACOBI
-    !
-    ! JACOBI ITERATION -- not yet integrated
-    !
-
-    subroutine linear_dispersive_staggered_matmult_JACOBI(elev, uh, vh, msl_linear, &
-            distance_bottom_edge, distance_left_edge, &
-            dlon, dlat, offdiagonalAx_uh, offdiagonalAx_vh, diagonalA_uh, diagonalA_vh, &
-            update_UH, update_VH)
-        !
-        ! Towards solving the linear dispersive equation as per:
-        !   Baba, T.; Takahashi, N.; Kaneda, Y.; Ando, K.; Matsuoka, D. & Kato, T. Parallel Implementation of Dispersive Tsunami Wave
-        !       Modeling with a Nesting Algorithm for the 2011 Tohoku Tsunami Pure and Applied Geophysics, 2015, 172, 3455-3472
-        ! Or
-        !   Baba, T.; Allgeyer, S.; Hossen, J.; Cummins, P. R.; Tsushima, H.; Imai, K.; Yamashita, K. & Kato, T. Accurate numerical
-        !   simulation of the far-field tsunami caused by the 2011 Tohoku earthquake, including the effects of Boussinesq dispersion,
-        !   seawater density stratification, elastic loading, and gravitational potential change Ocean Modelling, Elsevier BV, 2017,
-        !   111, 46–54
-        !
-        ! BACKGROUND:
-        !
-        ! The shallow water equation for depth-integrated-x-velocity, with a dispersive term, can be organised like:
-        !    d(uh)/dt + { other shallow water equations terms } = dispersive_term_uh
-        ! where dispersive_term_uh contains a time-derivative of some second-order spatial derivatives, see further explanation
-        ! in the comments at the start of this file.
-        !
-        ! This can be written as
-        !     uh  = [ shallow_water_solution ] + dt*dispersive_term_uh
-        ! Since dispersive_term_uh contains a single derivative wrt time, it turns out that (dt * dispersive_term_uh)
-        ! does not contain the term 'dt' (although it depends on the flow variables at the last timestep)
-        !
-        ! Suppose that ( dt * dispersive_term_uh) is written as:
-        !    (dt * dispersive_term_uh) = { A_uh%*%x - A_uh%*%x_lasttimestep }
-        ! , where 'A_uh' is a sparse matrix that discretizes the spatial derivatives in the dispersive term, 'x' is the flow
-        ! variables [stage, uh, vh, elevation] at the next time-step, and %*% is matrix multiplication.
-        !
-        ! Then this routine computes:
-        ! -- The diagonal part of A_uh for the uh variables, denoted D_uh (stored in diagonalA_uh).
-        !    Note this is NOT multiplied by x.
-        ! -- The off-diagonal part of A_uh when multiplied by x, i.e. [ (A_uh - D_uh)%*%x ] (stored in
-        !    offdiagonalAx_uh and offdiagonalAx_vh respectively).
-        !
-        ! All of the above is repeated for vh (with somewhat different equations in spherical coordinates).
-        !
-        ! This can be used to implement Jacobi iteration. The idea is that to solve:
-        !     uh = [shallow_water_solution_uh - A_uh%*%x_last_timestep ] + A_uh%*%x
-        !     vh = [shallow_water_solution_vh - A_vh%*%x_last_timestep ] + A_vh%*%x
-        ! we can iteratively solve (for i = 1, 2, 3, .....) :
-        !     uh_(i+1) = RHS_uh + ( A_uh - D_uh)%*%x_i + D_uh%*%x_(i+1)
-        !     vh_(i+1) = RHS_vh + ( A_vh - D_vh)%*%x_i + D_vh%*%x_(i+1)
-        ! until the differences between x_(i+1) and x_(i) are negligable. The RHS terms:
-        !     RHS_uh = [shallow_water_solution_uh - A_uh%*%x_last_timestep ]
-        !     RHS_vh = [shallow_water_solution_vh - A_vh%*%x_last_timestep ]
-        ! do not change in time.
-        !
-        !
-        real(dp), intent(in) :: elev(:,:), uh(:,:), vh(:,:), &
-            dlon, dlat, msl_linear,  &
-            distance_bottom_edge(:), distance_left_edge(:)
-        real(dp), intent(inout) :: offdiagonalAx_uh(:,:), offdiagonalAx_vh(:,:), diagonalA_uh(:,:), diagonalA_vh(:,:)
-        logical, intent(in) :: update_UH, update_VH
-
-        integer(ip) :: i, j
-        real(dp) :: R_coslat_dlat, R_coslat_dlon, coslat_jph, coslat_jmh, d_iph_j, d_i_jph, dispersive_premult
-        real(dp) :: r_dlat, R_coslat_dlon_jp1, R_coslat_dlon_j, R_coslat_dlat_jp1, R_coslat_dlat_j, coslat_jp1h
-
-        ! BEWARE: THE JAGURS PAPER USES A DIFFERENT COORDINATE SYSTEM TO SWALS
-        ! They use co-latitude -- so sin(lat) becomes cos(lat) in SWALS coordinates.
-
-        !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(uh, vh, elev, msl_linear, offdiagonalAx_uh, offdiagonalAx_vh, &
-        !$OMP                                  diagonalA_uh, diagonalA_vh, dlat, dlon, &
-        !$OMP                                  distance_left_edge, distance_bottom_edge, update_UH, update_VH)
-
-        if(update_UH) then
-            !$OMP DO
-            do j = 2, size(uh, 2) - 1
-
-                ! See comments at the start of this code for explanation of these formulas, which apply in both spherical and
-                ! cartesian coordinates.
-                R_coslat_dlon   = 0.5_dp * (distance_bottom_edge(j+1) + distance_bottom_edge(j  )) ! x-cell-distance at uh(i,j)
-                R_coslat_dlat   = R_coslat_dlon * dlat / dlon
-                coslat_jph = distance_bottom_edge(j+1) * dlat / (dlon * distance_left_edge(1))
-                coslat_jmh = distance_bottom_edge(j+0) * dlat / (dlon * distance_left_edge(1))
-
-                do i = 2, size(uh, 1) - 1
-                    ! UH dispersive term
-
-                    ! Depth at location of uh(i,j) -- or zero if either neighbour is dry
-                    d_iph_j = merge(0.5_dp * (msl_linear - elev(i,j) + msl_linear - elev(i+1,j)), 0.0_dp, &
-                        elev(i,j) < msl_linear .and. elev(i+1, j) < msl_linear)
-
-                    dispersive_premult = d_iph_j*d_iph_j / (3.0_dp * R_coslat_dlon)
-
-                    ! The diagonal component of A_uh (related to uh(i,j) )
-                    diagonalA_uh(i,j) = dispersive_premult * 1.0_dp/R_coslat_dlon * (-2.0_dp)
-
-                    offdiagonalAx_uh(i,j) = &
-                        ! First subtract the diagonal_uh%*%x component
-                        -diagonalA_uh(i,j) * uh(i,j) + &
-                        ! Then include all terms in A_uh%*%x here (easier bookkeeping to write it this way)
-                        dispersive_premult * ( &
-                            ! 1/(R_coslat) * d/dlon(uh)
-                            1.0_dp / R_coslat_dlon * ( uh(i+1,j) - 2.0_dp * uh(i,j) + uh(i-1,j) ) + &
-                            ! 1/(R_coslat) * d/dlat( coslat * vh )
-                            1.0_dp / R_coslat_dlat * ( (coslat_jph * vh(i+1,j) - coslat_jmh * vh(i+1,j-1)) - &
-                                                       (coslat_jph * vh(i  ,j) - coslat_jmh * vh(i  ,j-1)) ) )
-                end do
-            end do
-            !$OMP END DO
-        end if
-
-        if(update_VH) then
-            !$OMP DO
-            do j = 2, size(vh, 2) - 1
-
-                ! See comments at the start of this code for explanation of these formulas, which apply in both spherical and
-                ! cartesian coordinates.
-                r_dlat = distance_left_edge(1)
-                R_coslat_dlon_jp1 = 0.5_dp * ( distance_bottom_edge(j+2) + distance_bottom_edge(j+1) )
-                R_coslat_dlon_j   = 0.5_dp * ( distance_bottom_edge(j+1) + distance_bottom_edge(j+0) )
-                R_coslat_dlat_jp1 = R_coslat_dlon_jp1 * dlat / dlon
-                R_coslat_dlat_j   = R_coslat_dlon_j   * dlat / dlon
-
-                coslat_jp1h = distance_bottom_edge(j+2) * dlat / ( r_dlat  * dlon )
-                coslat_jph  = distance_bottom_edge(j+1) * dlat / ( r_dlat  * dlon )
-                coslat_jmh  = distance_bottom_edge(j+0) * dlat / ( r_dlat  * dlon )
-
-                do i = 2, size(vh, 1) - 1
-
-                    ! Depth at location of vh(i,j) -- or zero if either neighbour is dry
-                    d_i_jph = merge(0.5_dp * (msl_linear - elev(i,j) + msl_linear - elev(i,j+1)), 0.0_dp, &
-                        elev(i,j) < msl_linear .and. elev(i, j+1) < msl_linear)
-
-                    dispersive_premult = d_i_jph*d_i_jph / (3.0_dp * r_dlat)
-
-                    ! The diagonal component of A_vh (related to vh(i,j))
-                    diagonalA_vh(i,j) = -dispersive_premult * (1.0_dp / R_coslat_dlat_jp1 * coslat_jph + &
-                                                               1.0_dp / R_coslat_dlat_j   * coslat_jph )
-
-                    offdiagonalAx_vh(i,j) = &
-                        ! First subtract the diagonal_vh%*%x component
-                        -diagonalA_vh(i,j) * vh(i,j) + &
-                        ! Then include all terms in A_vh%*%x here (easier bookkeeping to write it this way)
-                        dispersive_premult * ( &
-                            ! uh term
-                            ( 1.0_dp / R_coslat_dlon_jp1 * (uh(i  , j+1) - uh(i-1, j+1)) - &
-                              1.0_dp / R_coslat_dlon_j   * (uh(i  , j  ) - uh(i-1, j  )) ) + &
-                            ! vh term
-                            ( 1.0_dp / R_coslat_dlat_jp1 * ( coslat_jp1h * vh(i, j+1) - coslat_jph * vh(i, j  )) - &
-                              1.0_dp / R_coslat_dlat_j   * ( coslat_jph  * vh(i, j  ) - coslat_jmh * vh(i, j-1)) ) )
-                end do
-            end do
-            !$OMP END DO
-        end if
-
-        !$OMP END PARALLEL
-
-    end subroutine
-
-    subroutine linear_dispersive_cellcentred_matmult_JACOBI(elev, uh, vh, msl_linear, &
-            distance_bottom_edge, distance_left_edge, &
-            dlon, dlat, offdiagonalAx_uh, offdiagonalAx_vh, diagonalA_uh, diagonalA_vh, &
-            update_UH, update_VH)
-        !
-        ! Towards solving the linear dispersive equation as per:
-        !   Baba, T.; Takahashi, N.; Kaneda, Y.; Ando, K.; Matsuoka, D. & Kato, T. Parallel Implementation of Dispersive Tsunami Wave
-        !       Modeling with a Nesting Algorithm for the 2011 Tohoku Tsunami Pure and Applied Geophysics, 2015, 172, 3455-3472
-        ! Or
-        !   Baba, T.; Allgeyer, S.; Hossen, J.; Cummins, P. R.; Tsushima, H.; Imai, K.; Yamashita, K. & Kato, T. Accurate numerical
-        !   simulation of the far-field tsunami caused by the 2011 Tohoku earthquake, including the effects of Boussinesq dispersion,
-        !   seawater density stratification, elastic loading, and gravitational potential change Ocean Modelling, Elsevier BV, 2017,
-        !   111, 46–54
-        !
-        ! BACKGROUND:
-        !   This is a cell-centred version of linear_dispersive_staggered_matmult_JACOBI_ADAPTIVE
-        !   See that routine for documentation
-        !
-        !
-        real(dp), intent(in) :: elev(:,:), uh(:,:), vh(:,:), &
-            dlon, dlat, msl_linear,  &
-            distance_bottom_edge(:), distance_left_edge(:)
-        real(dp), intent(inout) :: offdiagonalAx_uh(:,:), offdiagonalAx_vh(:,:), diagonalA_uh(:,:), diagonalA_vh(:,:)
-        logical, intent(in) :: update_UH, update_VH
-
-        integer(ip) :: i, j
-        real(dp) :: R_coslat_dlat, R_coslat_dlon, coslat_jp1, coslat_j, coslat_jm1, d_i_j, dispersive_premult
-        real(dp) :: r_dlat, R_coslat_dlon_jph, R_coslat_dlon_jmh, R_coslat_dlat_jph, R_coslat_dlat_jmh
-
-        ! BEWARE: THE JAGURS PAPER USES A DIFFERENT COORDINATE SYSTEM TO SWALS
-        ! They use co-latitude -- so sin(lat) becomes cos(lat) in SWALS coordinates.
-
-        !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(uh, vh, elev, msl_linear, offdiagonalAx_uh, offdiagonalAx_vh, &
-        !$OMP                                  diagonalA_uh, diagonalA_vh, dlat, dlon, &
-        !$OMP                                  distance_left_edge, distance_bottom_edge, update_UH, update_VH)
-
-        if(update_UH) then
-            !!$OMP DO SCHEDULE(DYNAMIC, 10)
-            !!$OMP DO SCHEDULE(STATIC)
-            !$OMP DO
-            do j = 2, size(uh, 2) - 1
-
-                ! See comments at the start of this code for explanation of these formulas, which apply in both spherical and
-                ! cartesian coordinates.
-                R_coslat_dlon   = 0.5_dp * (distance_bottom_edge(j+1) + distance_bottom_edge(j  ))
-                R_coslat_dlat   = R_coslat_dlon * dlat / dlon
-
-                ! NOTE regarding array bounds. 
-                ! - We know j > 1 and j < size(uh,2). 
-                ! - Also distance_bottom_edge has size == size(uh,2)+1
-                coslat_jp1 = 0.5_dp * (distance_bottom_edge(j+2) + distance_bottom_edge(j+1)) * &
-                    dlat / (dlon * distance_left_edge(1))
-                coslat_jm1 = 0.5_dp * (distance_bottom_edge(j+0) + distance_bottom_edge(j-1)) * &
-                    dlat / (dlon * distance_left_edge(1))
-
-                do i = 2, size(uh, 1) - 1
-                    ! UH dispersive term
-
-                    ! Depth at location of uh(i,j) -- or zero if either neighbour is dry
-                    !d_iph_j = merge(0.5_dp * (msl_linear - elev(i,j) + msl_linear - elev(i+1,j)), 0.0_dp, &
-                    !    elev(i,j) < msl_linear .and. elev(i+1, j) < msl_linear)
-                    d_i_j = merge(msl_linear - elev(i, j), 0.0_dp, elev(i,j) < msl_linear)
-
-                    dispersive_premult = d_i_j*d_i_j / (3.0_dp * R_coslat_dlon) !* &
-                        ! Linear taper
-                        !min(1.0_dp, max(0.0_dp, (d_i_j - td2)/(td1 - td2)))
-
-                    ! The diagonal component of A_uh (related to uh(i,j) )
-                    diagonalA_uh(i,j) = dispersive_premult * 1.0_dp/R_coslat_dlon * (-2.0_dp)
-
-                    offdiagonalAx_uh(i,j) = &
-                        ! First subtract the diagonal_uh%*%x component
-                        -diagonalA_uh(i,j) * uh(i,j) + &
-                        ! Then include all terms in A_uh%*%x here (easier bookkeeping to write it this way)
-                        ! h0^2 / (3 R_coslat) * d/dlon
-                        dispersive_premult * ( &
-                            ! lon-diff of { 1/(R_coslat) * d/dlon(uh) }
-                            1.0_dp / R_coslat_dlon * ( uh(i+1,j) - 2.0_dp * uh(i,j) + uh(i-1,j) ) + &
-                            ! lon-diff of { 1/(R_coslat) * d/dlat( coslat * vh ) }
-                            1.0_dp / R_coslat_dlat * ( &
-                                (coslat_jp1 * vh(i+1,j+1) - coslat_jm1 * vh(i+1,j-1))*0.25_dp - &
-                                (coslat_jp1 * vh(i-1,j+1) - coslat_jm1 * vh(i-1,j-1))*0.25_dp)  &
-                            )
-
-                end do
-            end do
-            !$OMP END DO
-        end if
-
-        if(update_VH) then
-            !!$OMP DO SCHEDULE(DYNAMIC, 10)
-            !!$OMP DO SCHEDULE(STATIC)
-            !$OMP DO
-            do j = 2, size(vh, 2) - 1
-
-                ! See comments at the start of this code for explanation of these formulas, which apply in both spherical and
-                ! cartesian coordinates.
-                r_dlat = distance_left_edge(1)
-                R_coslat_dlon_jph = distance_bottom_edge(j+1)
-                R_coslat_dlon_jmh = distance_bottom_edge(j+0)
-                R_coslat_dlat_jph = R_coslat_dlon_jph * dlat / dlon
-                R_coslat_dlat_jmh = R_coslat_dlon_jmh * dlat / dlon
-
-                coslat_jp1 = 0.5_dp*(distance_bottom_edge(j+2)+distance_bottom_edge(j+1)) * dlat / (distance_left_edge(1) * dlon)
-                coslat_j   = 0.5_dp*(distance_bottom_edge(j+1)+distance_bottom_edge(j+0)) * dlat / (distance_left_edge(1) * dlon)
-                coslat_jm1 = 0.5_dp*(distance_bottom_edge(j+0)+distance_bottom_edge(j-1)) * dlat / (distance_left_edge(1) * dlon)
-
-
-                do i = 2, size(vh, 1) - 1
-
-                    ! Depth at location of vh(i,j) -- or zero if either neighbour is dry
-                    !d_i_jph = merge(0.5_dp * (msl_linear - elev(i,j) + msl_linear - elev(i,j+1)), 0.0_dp, &
-                    !    elev(i,j) < msl_linear .and. elev(i, j+1) < msl_linear)
-                    d_i_j = merge(msl_linear - elev(i,j), 0.0_dp, elev(i,j) < msl_linear)
-
-                    dispersive_premult = d_i_j*d_i_j / (3.0_dp * r_dlat) !* &
-                        ! Linear taper
-                        !min(1.0_dp, max(0.0_dp, (d_i_j - td2)/(td1 - td2)))
-
-                    ! The diagonal component of A_vh (related to vh(i,j))
-                    !diagonalA_vh(i,j) = -dispersive_premult * (1.0_dp / R_coslat_dlat_jp1 * coslat_jph + &
-                    !                                           1.0_dp / R_coslat_dlat_j   * coslat_jph )
-                    diagonalA_vh(i,j) = -dispersive_premult * (1.0_dp/R_coslat_dlat_jph * coslat_j  + &
-                                                               1.0_dp/R_coslat_dlat_jmh * coslat_j )
-
-                    offdiagonalAx_vh(i,j) = &
-                        ! First subtract the diagonal_vh%*%x component
-                        -diagonalA_vh(i,j) * vh(i,j) + &
-                        ! Then include all terms in A_vh%*%x here (easier bookkeeping to write it this way)
-                        ! h0**2 / (3 * R) * d/dlat * (
-                        dispersive_premult * ( &
-                            ! uh term
-                            ! 1/(R coslat) d(uh)/dlon @ i, j+1/2, by mean of central differences at j+1 and j.
-                            ( 1.0_dp / R_coslat_dlon_jph * (uh(i+1, j+1) - uh(i-1,j+1) + uh(i+1,j) - uh(i-1,j))*0.25_dp - &
-                            ! 1/(R coslat) d(uh)/dlon @ i, j-1/2, by mean of central differences at j and j-1
-                              1.0_dp / R_coslat_dlon_jmh * (uh(i+1, j-1) - uh(i-1,j-1) + uh(i+1,j) - uh(i-1,j))*0.25_dp ) + &
-                            ! vh term
-                            ! 1/(R coslat ) d(coslat vh)/dlat @ i, j+1/2
-                            ( 1.0_dp / R_coslat_dlat_jph * ( coslat_jp1 * vh(i, j+1) - coslat_j   * vh(i, j  )) - &
-                            ! 1/(R coslat ) d(coslat vh)/dlat @ i, j-1/2
-                              1.0_dp / R_coslat_dlat_jmh * ( coslat_j   * vh(i, j  ) - coslat_jm1 * vh(i, j-1)) ) )
-                end do
-            end do
-            !$OMP END DO
-        end if
-
-        !$OMP END PARALLEL
-
-    end subroutine
-
-    subroutine linear_dispersive_solve_staggered_grid_JACOBI(ds, U, &
-            dlon, dlat, distance_bottom_edge, distance_left_edge, msl_linear)
-        ! Use Jacobi iteration to solve the linear dispersive discretization presented in
-        ! Baba, T.; Takahashi, N.; Kaneda, Y.; Ando, K.; Matsuoka, D. & Kato, T. Parallel Implementation of Dispersive Tsunami Wave
-        ! Modeling with a Nesting Algorithm for the 2011 Tohoku Tsunami Pure and Applied Geophysics, 2015, 172, 3455-3472
-        class(dispersive_solver_type), intent(inout) :: ds
-        real(dp), intent(inout) :: U(:,:,:)
-            ! domain%U after an explicit shallow water update
-        real(dp), intent(in) :: dlon, dlat, distance_bottom_edge(:), distance_left_edge(:), msl_linear
-            ! cell dx, dy, edge distances, and mean-sea-level for the linear solver
-
-        integer :: i, j, iter
-        real(dp) :: max_err, last_U
-
-        ! Get the explicit part of the dispersive terms
-        call linear_dispersive_staggered_matmult_JACOBI(&
-            ds%last_U(:,:,ELV), ds%last_U(:,:,UH), ds%last_U(:,:,VH), &
-            msl_linear, distance_bottom_edge, distance_left_edge, dlon, dlat, &
-            ds%offdiagonalAx(:,:,UH), ds%offdiagonalAx(:,:,VH), &
-            ds%diagonalA(:,:,UH), ds%diagonalA(:,:,VH), &
-            update_UH=.true., update_VH=.true.)
-
-        ! Setup the right-hand-side term, combining the shallow-water solution with the explicit part
-        ! of the dispersive term
-        !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(ds, U)
-        !$OMP DO
-        do j = 2, size(U,2) - 1
-            ds%RHS(:,j,UH) = U(:,j,UH) - (ds%offdiagonalAx(:,j,UH) + ds%diagonalA(:,j,UH) * ds%last_U(:,j,UH))
-        end do
-        !$OMP END DO NOWAIT
-        ! Do-nothing boundary conditions
-        ds%RHS(:,1,UH) = U(:,1,UH)
-        ds%RHS(:,size(U,2),UH) = U(:,size(U,2),UH)
-        ds%RHS(1,:,UH) = U(1,:,UH)
-        ds%RHS(size(U,1),:,UH) = U(size(U,1),:,UH)
-
-        !$OMP DO
-        do j = 2, size(U,2) - 1
-            ds%RHS(:,j,VH) = U(:,j,VH) - (ds%offdiagonalAx(:,j,VH) + ds%diagonalA(:,j,VH) * ds%last_U(:,j,VH))
-        end do
-        !$OMP END DO
-        ! Do-nothing boundary conditions
-        ds%RHS(:,1,VH) = U(:,1,VH)
-        ds%RHS(:,size(U,2),VH) = U(:,size(U,2),VH)
-        ds%RHS(1,:,VH) = U(1,:,VH)
-        ds%RHS(size(U,1),:,VH) = U(size(U,1),:,VH)
-
-        !$OMP END PARALLEL
-
-        jacobi_iter: do iter = 1, ds%max_iter
-
-            ! Jacobi iteration
-            ds%last_iter = iter
-
-            !
-            !UH update
-            !
-            call linear_dispersive_staggered_matmult_JACOBI(U(:,:,ELV), U(:,:,UH), U(:,:,VH), &
-                msl_linear, distance_bottom_edge, distance_left_edge, dlon, dlat, &
-                ds%offdiagonalAx(:,:,UH), ds%offdiagonalAx(:,:,VH), &
-                ds%diagonalA(:,:,UH), ds%diagonalA(:,:,VH), &
-                update_UH=.true., update_VH=.false.)
-
-            max_err = 0.0_dp
-            !$OMP PARALLEL DO DEFAULT(PRIVATE) SHARED(ds, U, msl_linear) REDUCTION(max: max_err)
-            do j = 2, size(U,2) - 1
-                do i = 2, size(U, 1) - 1
-                    last_U = U(i,j,UH)
-                    U(i,j,UH) = (ds%RHS(i,j,UH) + ds%offdiagonalAx(i,j,UH))/(1.0_dp - ds%diagonalA(i,j,UH))
-                    U(i,j,UH) = U(i,j,UH) + jacobi_overrelax*(U(i,j,UH)-last_U)
-
-                    ! Record the max abs_uh_difference/depth, reducing to abs_uh_difference in depths < 1m
-                    max_err = max( max_err, &
-                        (abs(U(i,j,UH) - last_U)/&
-                         max(msl_linear - 0.5_dp * (U(i+1,j,ELV) + U(i,j,ELV)), 1.0_dp)) )
-                end do
-            end do
-            !$OMP END PARALLEL DO
-
-            !
-            ! VH update
-            !
-            call linear_dispersive_staggered_matmult_JACOBI(U(:,:,ELV), U(:,:,UH), U(:,:,VH), &
-                msl_linear, distance_bottom_edge, distance_left_edge, dlon, dlat, &
-                ds%offdiagonalAx(:,:,UH), ds%offdiagonalAx(:,:,VH), &
-                ds%diagonalA(:,:,UH), ds%diagonalA(:,:,VH), &
-                update_UH=.false., update_VH=.true.)
-
-            !$OMP PARALLEL DO DEFAULT(PRIVATE) SHARED(ds, U, msl_linear) REDUCTION(max: max_err)
-            do j = 2, size(U,2) - 1
-                do i = 2, size(U, 1) - 1
-                    last_U = U(i,j,VH)
-                    U(i,j,VH) = (ds%RHS(i,j,VH) + ds%offdiagonalAx(i,j,VH))/(1.0_dp - ds%diagonalA(i,j,VH))
-                    U(i,j,VH) = U(i,j,VH) + jacobi_overrelax*(U(i,j,VH)-last_U)
-                    ! Record the max abs_vh_difference/depth, reducing to abs_vh_difference in depths < 1m
-                    max_err = max( max_err, &
-                        (abs(U(i, j,VH) - last_U)/&
-                         max(msl_linear - 0.5_dp * (U(i,j,ELV) + U(i,j+1,ELV)), 1.0_dp)) )
-                end do
-            end do
-            !$OMP END PARALLEL DO
-
-            !print*, '      err', max_err, '; iter ', iter
-
-            ! Check for tolerance
-            if(max_err < ds%tol) exit jacobi_iter
-
-        end do jacobi_iter
-
-        !!print*, 'Jacobi iter: ', ds%last_iter, max_err!, maxval(abs(U(:,:,UH:VH) - ds%last_U(:,:,UH:VH)))
-        !if(ds%last_iter == ds%max_iter) then
-        !    write(log_output_unit, *) 'Jacobi iteration hit max iterations (', ds%max_iter, ') with error ', max_err
-        !end if
-
-    end subroutine
-
-    !subroutine linear_dispersive_solve_cellcentred_grid_JACOBI(ds, U, &
-    !        dlon, dlat, distance_bottom_edge, distance_left_edge, msl_linear)
-    !
-    !end subroutine
-
+!#ifdef DISPERSIVE_JACOBI
+!    !
+!    ! JACOBI ITERATION -- not yet integrated
+!    !
+!
+!    subroutine linear_dispersive_staggered_matmult_JACOBI(elev, uh, vh, msl_linear, &
+!            distance_bottom_edge, distance_left_edge, &
+!            dlon, dlat, offdiagonalAx_uh, offdiagonalAx_vh, diagonalA_uh, diagonalA_vh, &
+!            update_UH, update_VH)
+!        !
+!        ! Towards solving the linear dispersive equation as per:
+!        !   Baba, T.; Takahashi, N.; Kaneda, Y.; Ando, K.; Matsuoka, D. & Kato, T. Parallel Implementation of Dispersive Tsunami Wave
+!        !       Modeling with a Nesting Algorithm for the 2011 Tohoku Tsunami Pure and Applied Geophysics, 2015, 172, 3455-3472
+!        ! Or
+!        !   Baba, T.; Allgeyer, S.; Hossen, J.; Cummins, P. R.; Tsushima, H.; Imai, K.; Yamashita, K. & Kato, T. Accurate numerical
+!        !   simulation of the far-field tsunami caused by the 2011 Tohoku earthquake, including the effects of Boussinesq dispersion,
+!        !   seawater density stratification, elastic loading, and gravitational potential change Ocean Modelling, Elsevier BV, 2017,
+!        !   111, 46–54
+!        !
+!        ! BACKGROUND:
+!        !
+!        ! The shallow water equation for depth-integrated-x-velocity, with a dispersive term, can be organised like:
+!        !    d(uh)/dt + { other shallow water equations terms } = dispersive_term_uh
+!        ! where dispersive_term_uh contains a time-derivative of some second-order spatial derivatives, see further explanation
+!        ! in the comments at the start of this file.
+!        !
+!        ! This can be written as
+!        !     uh  = [ shallow_water_solution ] + dt*dispersive_term_uh
+!        ! Since dispersive_term_uh contains a single derivative wrt time, it turns out that (dt * dispersive_term_uh)
+!        ! does not contain the term 'dt' (although it depends on the flow variables at the last timestep)
+!        !
+!        ! Suppose that ( dt * dispersive_term_uh) is written as:
+!        !    (dt * dispersive_term_uh) = { A_uh%*%x - A_uh%*%x_lasttimestep }
+!        ! , where 'A_uh' is a sparse matrix that discretizes the spatial derivatives in the dispersive term, 'x' is the flow
+!        ! variables [stage, uh, vh, elevation] at the next time-step, and %*% is matrix multiplication.
+!        !
+!        ! Then this routine computes:
+!        ! -- The diagonal part of A_uh for the uh variables, denoted D_uh (stored in diagonalA_uh).
+!        !    Note this is NOT multiplied by x.
+!        ! -- The off-diagonal part of A_uh when multiplied by x, i.e. [ (A_uh - D_uh)%*%x ] (stored in
+!        !    offdiagonalAx_uh and offdiagonalAx_vh respectively).
+!        !
+!        ! All of the above is repeated for vh (with somewhat different equations in spherical coordinates).
+!        !
+!        ! This can be used to implement Jacobi iteration. The idea is that to solve:
+!        !     uh = [shallow_water_solution_uh - A_uh%*%x_last_timestep ] + A_uh%*%x
+!        !     vh = [shallow_water_solution_vh - A_vh%*%x_last_timestep ] + A_vh%*%x
+!        ! we can iteratively solve (for i = 1, 2, 3, .....) :
+!        !     uh_(i+1) = RHS_uh + ( A_uh - D_uh)%*%x_i + D_uh%*%x_(i+1)
+!        !     vh_(i+1) = RHS_vh + ( A_vh - D_vh)%*%x_i + D_vh%*%x_(i+1)
+!        ! until the differences between x_(i+1) and x_(i) are negligable. The RHS terms:
+!        !     RHS_uh = [shallow_water_solution_uh - A_uh%*%x_last_timestep ]
+!        !     RHS_vh = [shallow_water_solution_vh - A_vh%*%x_last_timestep ]
+!        ! do not change in time.
+!        !
+!        !
+!        real(dp), intent(in) :: elev(:,:), uh(:,:), vh(:,:), &
+!            dlon, dlat, msl_linear,  &
+!            distance_bottom_edge(:), distance_left_edge(:)
+!        real(dp), intent(inout) :: offdiagonalAx_uh(:,:), offdiagonalAx_vh(:,:), diagonalA_uh(:,:), diagonalA_vh(:,:)
+!        logical, intent(in) :: update_UH, update_VH
+!
+!        integer(ip) :: i, j
+!        real(dp) :: R_coslat_dlat, R_coslat_dlon, coslat_jph, coslat_jmh, d_iph_j, d_i_jph, dispersive_premult
+!        real(dp) :: r_dlat, R_coslat_dlon_jp1, R_coslat_dlon_j, R_coslat_dlat_jp1, R_coslat_dlat_j, coslat_jp1h
+!
+!        ! BEWARE: THE JAGURS PAPER USES A DIFFERENT COORDINATE SYSTEM TO SWALS
+!        ! They use co-latitude -- so sin(lat) becomes cos(lat) in SWALS coordinates.
+!
+!        !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(uh, vh, elev, msl_linear, offdiagonalAx_uh, offdiagonalAx_vh, &
+!        !$OMP                                  diagonalA_uh, diagonalA_vh, dlat, dlon, &
+!        !$OMP                                  distance_left_edge, distance_bottom_edge, update_UH, update_VH)
+!
+!        if(update_UH) then
+!            !$OMP DO
+!            do j = 2, size(uh, 2) - 1
+!
+!                ! See comments at the start of this code for explanation of these formulas, which apply in both spherical and
+!                ! cartesian coordinates.
+!                R_coslat_dlon   = 0.5_dp * (distance_bottom_edge(j+1) + distance_bottom_edge(j  )) ! x-cell-distance at uh(i,j)
+!                R_coslat_dlat   = R_coslat_dlon * dlat / dlon
+!                coslat_jph = distance_bottom_edge(j+1) * dlat / (dlon * distance_left_edge(1))
+!                coslat_jmh = distance_bottom_edge(j+0) * dlat / (dlon * distance_left_edge(1))
+!
+!                do i = 2, size(uh, 1) - 1
+!                    ! UH dispersive term
+!
+!                    ! Depth at location of uh(i,j) -- or zero if either neighbour is dry
+!                    d_iph_j = merge(0.5_dp * (msl_linear - elev(i,j) + msl_linear - elev(i+1,j)), 0.0_dp, &
+!                        elev(i,j) < msl_linear .and. elev(i+1, j) < msl_linear)
+!
+!                    dispersive_premult = d_iph_j*d_iph_j / (3.0_dp * R_coslat_dlon)
+!
+!                    ! The diagonal component of A_uh (related to uh(i,j) )
+!                    diagonalA_uh(i,j) = dispersive_premult * 1.0_dp/R_coslat_dlon * (-2.0_dp)
+!
+!                    offdiagonalAx_uh(i,j) = &
+!                        ! First subtract the diagonal_uh%*%x component
+!                        -diagonalA_uh(i,j) * uh(i,j) + &
+!                        ! Then include all terms in A_uh%*%x here (easier bookkeeping to write it this way)
+!                        dispersive_premult * ( &
+!                            ! 1/(R_coslat) * d/dlon(uh)
+!                            1.0_dp / R_coslat_dlon * ( uh(i+1,j) - 2.0_dp * uh(i,j) + uh(i-1,j) ) + &
+!                            ! 1/(R_coslat) * d/dlat( coslat * vh )
+!                            1.0_dp / R_coslat_dlat * ( (coslat_jph * vh(i+1,j) - coslat_jmh * vh(i+1,j-1)) - &
+!                                                       (coslat_jph * vh(i  ,j) - coslat_jmh * vh(i  ,j-1)) ) )
+!                end do
+!            end do
+!            !$OMP END DO
+!        end if
+!
+!        if(update_VH) then
+!            !$OMP DO
+!            do j = 2, size(vh, 2) - 1
+!
+!                ! See comments at the start of this code for explanation of these formulas, which apply in both spherical and
+!                ! cartesian coordinates.
+!                r_dlat = distance_left_edge(1)
+!                R_coslat_dlon_jp1 = 0.5_dp * ( distance_bottom_edge(j+2) + distance_bottom_edge(j+1) )
+!                R_coslat_dlon_j   = 0.5_dp * ( distance_bottom_edge(j+1) + distance_bottom_edge(j+0) )
+!                R_coslat_dlat_jp1 = R_coslat_dlon_jp1 * dlat / dlon
+!                R_coslat_dlat_j   = R_coslat_dlon_j   * dlat / dlon
+!
+!                coslat_jp1h = distance_bottom_edge(j+2) * dlat / ( r_dlat  * dlon )
+!                coslat_jph  = distance_bottom_edge(j+1) * dlat / ( r_dlat  * dlon )
+!                coslat_jmh  = distance_bottom_edge(j+0) * dlat / ( r_dlat  * dlon )
+!
+!                do i = 2, size(vh, 1) - 1
+!
+!                    ! Depth at location of vh(i,j) -- or zero if either neighbour is dry
+!                    d_i_jph = merge(0.5_dp * (msl_linear - elev(i,j) + msl_linear - elev(i,j+1)), 0.0_dp, &
+!                        elev(i,j) < msl_linear .and. elev(i, j+1) < msl_linear)
+!
+!                    dispersive_premult = d_i_jph*d_i_jph / (3.0_dp * r_dlat)
+!
+!                    ! The diagonal component of A_vh (related to vh(i,j))
+!                    diagonalA_vh(i,j) = -dispersive_premult * (1.0_dp / R_coslat_dlat_jp1 * coslat_jph + &
+!                                                               1.0_dp / R_coslat_dlat_j   * coslat_jph )
+!
+!                    offdiagonalAx_vh(i,j) = &
+!                        ! First subtract the diagonal_vh%*%x component
+!                        -diagonalA_vh(i,j) * vh(i,j) + &
+!                        ! Then include all terms in A_vh%*%x here (easier bookkeeping to write it this way)
+!                        dispersive_premult * ( &
+!                            ! uh term
+!                            ( 1.0_dp / R_coslat_dlon_jp1 * (uh(i  , j+1) - uh(i-1, j+1)) - &
+!                              1.0_dp / R_coslat_dlon_j   * (uh(i  , j  ) - uh(i-1, j  )) ) + &
+!                            ! vh term
+!                            ( 1.0_dp / R_coslat_dlat_jp1 * ( coslat_jp1h * vh(i, j+1) - coslat_jph * vh(i, j  )) - &
+!                              1.0_dp / R_coslat_dlat_j   * ( coslat_jph  * vh(i, j  ) - coslat_jmh * vh(i, j-1)) ) )
+!                end do
+!            end do
+!            !$OMP END DO
+!        end if
+!
+!        !$OMP END PARALLEL
+!
+!    end subroutine
+!
+!    subroutine linear_dispersive_cellcentred_matmult_JACOBI(elev, uh, vh, msl_linear, &
+!            distance_bottom_edge, distance_left_edge, &
+!            dlon, dlat, offdiagonalAx_uh, offdiagonalAx_vh, diagonalA_uh, diagonalA_vh, &
+!            update_UH, update_VH)
+!        !
+!        ! Towards solving the linear dispersive equation as per:
+!        !   Baba, T.; Takahashi, N.; Kaneda, Y.; Ando, K.; Matsuoka, D. & Kato, T. Parallel Implementation of Dispersive Tsunami Wave
+!        !       Modeling with a Nesting Algorithm for the 2011 Tohoku Tsunami Pure and Applied Geophysics, 2015, 172, 3455-3472
+!        ! Or
+!        !   Baba, T.; Allgeyer, S.; Hossen, J.; Cummins, P. R.; Tsushima, H.; Imai, K.; Yamashita, K. & Kato, T. Accurate numerical
+!        !   simulation of the far-field tsunami caused by the 2011 Tohoku earthquake, including the effects of Boussinesq dispersion,
+!        !   seawater density stratification, elastic loading, and gravitational potential change Ocean Modelling, Elsevier BV, 2017,
+!        !   111, 46–54
+!        !
+!        ! BACKGROUND:
+!        !   This is a cell-centred version of linear_dispersive_staggered_matmult_JACOBI_ADAPTIVE
+!        !   See that routine for documentation
+!        !
+!        !
+!        real(dp), intent(in) :: elev(:,:), uh(:,:), vh(:,:), &
+!            dlon, dlat, msl_linear,  &
+!            distance_bottom_edge(:), distance_left_edge(:)
+!        real(dp), intent(inout) :: offdiagonalAx_uh(:,:), offdiagonalAx_vh(:,:), diagonalA_uh(:,:), diagonalA_vh(:,:)
+!        logical, intent(in) :: update_UH, update_VH
+!
+!        integer(ip) :: i, j
+!        real(dp) :: R_coslat_dlat, R_coslat_dlon, coslat_jp1, coslat_j, coslat_jm1, d_i_j, dispersive_premult
+!        real(dp) :: r_dlat, R_coslat_dlon_jph, R_coslat_dlon_jmh, R_coslat_dlat_jph, R_coslat_dlat_jmh
+!
+!        ! BEWARE: THE JAGURS PAPER USES A DIFFERENT COORDINATE SYSTEM TO SWALS
+!        ! They use co-latitude -- so sin(lat) becomes cos(lat) in SWALS coordinates.
+!
+!        !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(uh, vh, elev, msl_linear, offdiagonalAx_uh, offdiagonalAx_vh, &
+!        !$OMP                                  diagonalA_uh, diagonalA_vh, dlat, dlon, &
+!        !$OMP                                  distance_left_edge, distance_bottom_edge, update_UH, update_VH)
+!
+!        if(update_UH) then
+!            !!$OMP DO SCHEDULE(DYNAMIC, 10)
+!            !!$OMP DO SCHEDULE(STATIC)
+!            !$OMP DO
+!            do j = 2, size(uh, 2) - 1
+!
+!                ! See comments at the start of this code for explanation of these formulas, which apply in both spherical and
+!                ! cartesian coordinates.
+!                R_coslat_dlon   = 0.5_dp * (distance_bottom_edge(j+1) + distance_bottom_edge(j  ))
+!                R_coslat_dlat   = R_coslat_dlon * dlat / dlon
+!
+!                ! NOTE regarding array bounds. 
+!                ! - We know j > 1 and j < size(uh,2). 
+!                ! - Also distance_bottom_edge has size == size(uh,2)+1
+!                coslat_jp1 = 0.5_dp * (distance_bottom_edge(j+2) + distance_bottom_edge(j+1)) * &
+!                    dlat / (dlon * distance_left_edge(1))
+!                coslat_jm1 = 0.5_dp * (distance_bottom_edge(j+0) + distance_bottom_edge(j-1)) * &
+!                    dlat / (dlon * distance_left_edge(1))
+!
+!                do i = 2, size(uh, 1) - 1
+!                    ! UH dispersive term
+!
+!                    ! Depth at location of uh(i,j) -- or zero if either neighbour is dry
+!                    !d_iph_j = merge(0.5_dp * (msl_linear - elev(i,j) + msl_linear - elev(i+1,j)), 0.0_dp, &
+!                    !    elev(i,j) < msl_linear .and. elev(i+1, j) < msl_linear)
+!                    d_i_j = merge(msl_linear - elev(i, j), 0.0_dp, elev(i,j) < msl_linear)
+!
+!                    dispersive_premult = d_i_j*d_i_j / (3.0_dp * R_coslat_dlon) !* &
+!                        ! Linear taper
+!                        !min(1.0_dp, max(0.0_dp, (d_i_j - td2)/(td1 - td2)))
+!
+!                    ! The diagonal component of A_uh (related to uh(i,j) )
+!                    diagonalA_uh(i,j) = dispersive_premult * 1.0_dp/R_coslat_dlon * (-2.0_dp)
+!
+!                    offdiagonalAx_uh(i,j) = &
+!                        ! First subtract the diagonal_uh%*%x component
+!                        -diagonalA_uh(i,j) * uh(i,j) + &
+!                        ! Then include all terms in A_uh%*%x here (easier bookkeeping to write it this way)
+!                        ! h0^2 / (3 R_coslat) * d/dlon
+!                        dispersive_premult * ( &
+!                            ! lon-diff of { 1/(R_coslat) * d/dlon(uh) }
+!                            1.0_dp / R_coslat_dlon * ( uh(i+1,j) - 2.0_dp * uh(i,j) + uh(i-1,j) ) + &
+!                            ! lon-diff of { 1/(R_coslat) * d/dlat( coslat * vh ) }
+!                            1.0_dp / R_coslat_dlat * ( &
+!                                (coslat_jp1 * vh(i+1,j+1) - coslat_jm1 * vh(i+1,j-1))*0.25_dp - &
+!                                (coslat_jp1 * vh(i-1,j+1) - coslat_jm1 * vh(i-1,j-1))*0.25_dp)  &
+!                            )
+!
+!                end do
+!            end do
+!            !$OMP END DO
+!        end if
+!
+!        if(update_VH) then
+!            !!$OMP DO SCHEDULE(DYNAMIC, 10)
+!            !!$OMP DO SCHEDULE(STATIC)
+!            !$OMP DO
+!            do j = 2, size(vh, 2) - 1
+!
+!                ! See comments at the start of this code for explanation of these formulas, which apply in both spherical and
+!                ! cartesian coordinates.
+!                r_dlat = distance_left_edge(1)
+!                R_coslat_dlon_jph = distance_bottom_edge(j+1)
+!                R_coslat_dlon_jmh = distance_bottom_edge(j+0)
+!                R_coslat_dlat_jph = R_coslat_dlon_jph * dlat / dlon
+!                R_coslat_dlat_jmh = R_coslat_dlon_jmh * dlat / dlon
+!
+!                coslat_jp1 = 0.5_dp*(distance_bottom_edge(j+2)+distance_bottom_edge(j+1)) * dlat / (distance_left_edge(1) * dlon)
+!                coslat_j   = 0.5_dp*(distance_bottom_edge(j+1)+distance_bottom_edge(j+0)) * dlat / (distance_left_edge(1) * dlon)
+!                coslat_jm1 = 0.5_dp*(distance_bottom_edge(j+0)+distance_bottom_edge(j-1)) * dlat / (distance_left_edge(1) * dlon)
+!
+!
+!                do i = 2, size(vh, 1) - 1
+!
+!                    ! Depth at location of vh(i,j) -- or zero if either neighbour is dry
+!                    !d_i_jph = merge(0.5_dp * (msl_linear - elev(i,j) + msl_linear - elev(i,j+1)), 0.0_dp, &
+!                    !    elev(i,j) < msl_linear .and. elev(i, j+1) < msl_linear)
+!                    d_i_j = merge(msl_linear - elev(i,j), 0.0_dp, elev(i,j) < msl_linear)
+!
+!                    dispersive_premult = d_i_j*d_i_j / (3.0_dp * r_dlat) !* &
+!                        ! Linear taper
+!                        !min(1.0_dp, max(0.0_dp, (d_i_j - td2)/(td1 - td2)))
+!
+!                    ! The diagonal component of A_vh (related to vh(i,j))
+!                    !diagonalA_vh(i,j) = -dispersive_premult * (1.0_dp / R_coslat_dlat_jp1 * coslat_jph + &
+!                    !                                           1.0_dp / R_coslat_dlat_j   * coslat_jph )
+!                    diagonalA_vh(i,j) = -dispersive_premult * (1.0_dp/R_coslat_dlat_jph * coslat_j  + &
+!                                                               1.0_dp/R_coslat_dlat_jmh * coslat_j )
+!
+!                    offdiagonalAx_vh(i,j) = &
+!                        ! First subtract the diagonal_vh%*%x component
+!                        -diagonalA_vh(i,j) * vh(i,j) + &
+!                        ! Then include all terms in A_vh%*%x here (easier bookkeeping to write it this way)
+!                        ! h0**2 / (3 * R) * d/dlat * (
+!                        dispersive_premult * ( &
+!                            ! uh term
+!                            ! 1/(R coslat) d(uh)/dlon @ i, j+1/2, by mean of central differences at j+1 and j.
+!                            ( 1.0_dp / R_coslat_dlon_jph * (uh(i+1, j+1) - uh(i-1,j+1) + uh(i+1,j) - uh(i-1,j))*0.25_dp - &
+!                            ! 1/(R coslat) d(uh)/dlon @ i, j-1/2, by mean of central differences at j and j-1
+!                              1.0_dp / R_coslat_dlon_jmh * (uh(i+1, j-1) - uh(i-1,j-1) + uh(i+1,j) - uh(i-1,j))*0.25_dp ) + &
+!                            ! vh term
+!                            ! 1/(R coslat ) d(coslat vh)/dlat @ i, j+1/2
+!                            ( 1.0_dp / R_coslat_dlat_jph * ( coslat_jp1 * vh(i, j+1) - coslat_j   * vh(i, j  )) - &
+!                            ! 1/(R coslat ) d(coslat vh)/dlat @ i, j-1/2
+!                              1.0_dp / R_coslat_dlat_jmh * ( coslat_j   * vh(i, j  ) - coslat_jm1 * vh(i, j-1)) ) )
+!                end do
+!            end do
+!            !$OMP END DO
+!        end if
+!
+!        !$OMP END PARALLEL
+!
+!    end subroutine
+!
+!    subroutine linear_dispersive_solve_staggered_grid_JACOBI(ds, U, &
+!            dlon, dlat, distance_bottom_edge, distance_left_edge, msl_linear)
+!        ! Use Jacobi iteration to solve the linear dispersive discretization presented in
+!        ! Baba, T.; Takahashi, N.; Kaneda, Y.; Ando, K.; Matsuoka, D. & Kato, T. Parallel Implementation of Dispersive Tsunami Wave
+!        ! Modeling with a Nesting Algorithm for the 2011 Tohoku Tsunami Pure and Applied Geophysics, 2015, 172, 3455-3472
+!        class(dispersive_solver_type), intent(inout) :: ds
+!        real(dp), intent(inout) :: U(:,:,:)
+!            ! domain%U after an explicit shallow water update
+!        real(dp), intent(in) :: dlon, dlat, distance_bottom_edge(:), distance_left_edge(:), msl_linear
+!            ! cell dx, dy, edge distances, and mean-sea-level for the linear solver
+!
+!        integer :: i, j, iter
+!        real(dp) :: max_err, last_U
+!
+!        ! Get the explicit part of the dispersive terms
+!        call linear_dispersive_staggered_matmult_JACOBI(&
+!            ds%last_U(:,:,ELV), ds%last_U(:,:,UH), ds%last_U(:,:,VH), &
+!            msl_linear, distance_bottom_edge, distance_left_edge, dlon, dlat, &
+!            ds%offdiagonalAx(:,:,UH), ds%offdiagonalAx(:,:,VH), &
+!            ds%diagonalA(:,:,UH), ds%diagonalA(:,:,VH), &
+!            update_UH=.true., update_VH=.true.)
+!
+!        ! Setup the right-hand-side term, combining the shallow-water solution with the explicit part
+!        ! of the dispersive term
+!        !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(ds, U)
+!        !$OMP DO
+!        do j = 2, size(U,2) - 1
+!            ds%RHS(:,j,UH) = U(:,j,UH) - (ds%offdiagonalAx(:,j,UH) + ds%diagonalA(:,j,UH) * ds%last_U(:,j,UH))
+!        end do
+!        !$OMP END DO NOWAIT
+!        ! Do-nothing boundary conditions
+!        ds%RHS(:,1,UH) = U(:,1,UH)
+!        ds%RHS(:,size(U,2),UH) = U(:,size(U,2),UH)
+!        ds%RHS(1,:,UH) = U(1,:,UH)
+!        ds%RHS(size(U,1),:,UH) = U(size(U,1),:,UH)
+!
+!        !$OMP DO
+!        do j = 2, size(U,2) - 1
+!            ds%RHS(:,j,VH) = U(:,j,VH) - (ds%offdiagonalAx(:,j,VH) + ds%diagonalA(:,j,VH) * ds%last_U(:,j,VH))
+!        end do
+!        !$OMP END DO
+!        ! Do-nothing boundary conditions
+!        ds%RHS(:,1,VH) = U(:,1,VH)
+!        ds%RHS(:,size(U,2),VH) = U(:,size(U,2),VH)
+!        ds%RHS(1,:,VH) = U(1,:,VH)
+!        ds%RHS(size(U,1),:,VH) = U(size(U,1),:,VH)
+!
+!        !$OMP END PARALLEL
+!
+!        jacobi_iter: do iter = 1, ds%max_iter
+!
+!            ! Jacobi iteration
+!            ds%last_iter = iter
+!
+!            !
+!            !UH update
+!            !
+!            call linear_dispersive_staggered_matmult_JACOBI(U(:,:,ELV), U(:,:,UH), U(:,:,VH), &
+!                msl_linear, distance_bottom_edge, distance_left_edge, dlon, dlat, &
+!                ds%offdiagonalAx(:,:,UH), ds%offdiagonalAx(:,:,VH), &
+!                ds%diagonalA(:,:,UH), ds%diagonalA(:,:,VH), &
+!                update_UH=.true., update_VH=.false.)
+!
+!            max_err = 0.0_dp
+!            !$OMP PARALLEL DO DEFAULT(PRIVATE) SHARED(ds, U, msl_linear) REDUCTION(max: max_err)
+!            do j = 2, size(U,2) - 1
+!                do i = 2, size(U, 1) - 1
+!                    last_U = U(i,j,UH)
+!                    U(i,j,UH) = (ds%RHS(i,j,UH) + ds%offdiagonalAx(i,j,UH))/(1.0_dp - ds%diagonalA(i,j,UH))
+!                    U(i,j,UH) = U(i,j,UH) + jacobi_overrelax*(U(i,j,UH)-last_U)
+!
+!                    ! Record the max abs_uh_difference/depth, reducing to abs_uh_difference in depths < 1m
+!                    max_err = max( max_err, &
+!                        (abs(U(i,j,UH) - last_U)/&
+!                         max(msl_linear - 0.5_dp * (U(i+1,j,ELV) + U(i,j,ELV)), 1.0_dp)) )
+!                end do
+!            end do
+!            !$OMP END PARALLEL DO
+!
+!            !
+!            ! VH update
+!            !
+!            call linear_dispersive_staggered_matmult_JACOBI(U(:,:,ELV), U(:,:,UH), U(:,:,VH), &
+!                msl_linear, distance_bottom_edge, distance_left_edge, dlon, dlat, &
+!                ds%offdiagonalAx(:,:,UH), ds%offdiagonalAx(:,:,VH), &
+!                ds%diagonalA(:,:,UH), ds%diagonalA(:,:,VH), &
+!                update_UH=.false., update_VH=.true.)
+!
+!            !$OMP PARALLEL DO DEFAULT(PRIVATE) SHARED(ds, U, msl_linear) REDUCTION(max: max_err)
+!            do j = 2, size(U,2) - 1
+!                do i = 2, size(U, 1) - 1
+!                    last_U = U(i,j,VH)
+!                    U(i,j,VH) = (ds%RHS(i,j,VH) + ds%offdiagonalAx(i,j,VH))/(1.0_dp - ds%diagonalA(i,j,VH))
+!                    U(i,j,VH) = U(i,j,VH) + jacobi_overrelax*(U(i,j,VH)-last_U)
+!                    ! Record the max abs_vh_difference/depth, reducing to abs_vh_difference in depths < 1m
+!                    max_err = max( max_err, &
+!                        (abs(U(i, j,VH) - last_U)/&
+!                         max(msl_linear - 0.5_dp * (U(i,j,ELV) + U(i,j+1,ELV)), 1.0_dp)) )
+!                end do
+!            end do
+!            !$OMP END PARALLEL DO
+!
+!            !print*, '      err', max_err, '; iter ', iter
+!
+!            ! Check for tolerance
+!            if(max_err < ds%tol) exit jacobi_iter
+!
+!        end do jacobi_iter
+!
+!        !!print*, 'Jacobi iter: ', ds%last_iter, max_err!, maxval(abs(U(:,:,UH:VH) - ds%last_U(:,:,UH:VH)))
+!        !if(ds%last_iter == ds%max_iter) then
+!        !    write(log_output_unit, *) 'Jacobi iteration hit max iterations (', ds%max_iter, ') with error ', max_err
+!        !end if
+!
+!    end subroutine
+!
+!    !subroutine linear_dispersive_solve_cellcentred_grid_JACOBI(ds, U, &
+!    !        dlon, dlat, distance_bottom_edge, distance_left_edge, msl_linear)
+!    !
+!    !end subroutine
+!
 !#ifdef DISPERSIVE_JACOBI_ADAPTIVE
 !
 !    subroutine linear_dispersive_staggered_matmult_JACOBI_ADAPTIVE(elev, uh, vh, msl_linear, &
