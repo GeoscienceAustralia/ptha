@@ -5,6 +5,8 @@
 ! iterations in areas with errors < threshold, with some overhead for the adaptivity.
 !#define DISPERSIVE_JACOBI_ADAPTIVE
 
+! Use definition below to use Peregrine dispersion which includes an additional topographic term
+! (by default we ignore this term, similar to JAGURS and many other tsunami codes)
 !#define DISPERSIVE_PEREGRINE
 
 module linear_dispersive_solver_mod
@@ -43,6 +45,15 @@ module linear_dispersive_solver_mod
     !        d/dt * { h0^2 / ( 3 R_coslat) * d/dlon [ 1/R_coslat ( d( uh ) / (dlon) + d(vh coslat) / (dlat) ) ] }
     !     d (vh ) / dt + {...nonlinear-shallow-water-terms...} = &
     !        d/dt * { h0^2 / ( 3 R       ) * d/dlat [ 1/R_coslat ( d( uh ) / (dlon) + d(vh coslat) / (dlat) ) ] }
+    !
+    ! A variant on these equations is Peregrine dispersion, which has the form
+    !     d( uh ) / dt + {...nonlinear-shallow-water-terms...} = &
+    !        h0^2 / ( 2 R_coslat) * d/dlon [ 1/R_coslat ( d^2( uh ) / (dt dlon) + d^2(vh coslat) / (dt dlat) ) ] &
+    !       -h0^3 / ( 6 R_coslat) * d/dlon [ 1/R_coslat ( d^2( u  ) / (dt dlon) + d^2(v  coslat) / (dt dlat) ) ]
+    !     d (vh ) / dt + {...nonlinear-shallow-water-terms...} = &
+    !        h0^2 / ( 2 R       ) * d/dlat [ 1/R_coslat ( d^2( uh ) / (dt dlon) + d^2(vh coslat) / (dt dlat) ) ] &
+    !       -h0^3 / ( 6 R       ) * d/dlat [ 1/R_coslat ( d^2( u  ) / (dt dlon) + d^2(v  coslat) / (dt dlat) ) ]
+    ! and reduces to the other dispersive model with flat topography.
     !
     ! To implement this in both cartesian and spherical coordinates, note that
     !     radius_earth = distance_cell_left_edge / dy_in_radians ! This is independent of the latitude or longitude.
