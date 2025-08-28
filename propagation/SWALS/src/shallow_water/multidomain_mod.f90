@@ -1216,6 +1216,11 @@ TIMER_START('before_stepping')
 
         ! Timestepping levels
         nt_max = maxval(md%domains(:)%timestepping_refinement_factor)
+
+#ifdef COARRAY
+        call co_max(nt_max) ! FIXME: Only do this once
+#endif
+
         domain_stepcycles = nt_max / md%domains(:)%timestepping_refinement_factor !This MUST be a nonzero integer without roundoff
 TIMER_STOP('before_stepping')
 
