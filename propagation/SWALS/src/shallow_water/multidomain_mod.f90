@@ -1192,7 +1192,8 @@ module multidomain_mod
         type(multidomain_type), intent(inout) :: md
         real(dp), intent(in) :: dt
 
-        integer(ip) :: j, substep, nt, dispersive_outer_iterations, nt_max, domain_stepcycles(size(md%domains))
+        integer(ip) :: dispersive_outer_iterations, disp_nt_max, domain_stepcycles(size(md%domains)), &
+            j, substep, nt, i, inner_steps
         real(dp) :: dt_local, max_dt_store(size(md%domains)), tend
         logical :: is_first_step
 
@@ -1217,21 +1218,55 @@ TIMER_START('before_stepping')
             end if
         end do
 
-        ! Timestepping levels
-        nt_max = md%dispersive_nt_max
+        ! Timestepping levels.
+        disp_nt_max = md%dispersive_nt_max
+        !   The timestepping is split into substeps (substep = 1, ... disp_nt_max), where disp_nt_max is
+        !   controlled by the dispersive domains with the worst time-step restrictions.
+        !
+        !   Dispersive domains can call evolve_one_step at most once each
+        !   substep, because they need to communicate for the implicit solve. But
+        !   if they can take a larger timestep, they don't have to evolve on every substep.
+        !
+        !   Non-dispersive domains can do the same, but also have the option of calling evolve_one_step more 
+        !   than once in a substep (for rapidly timestepping shallow water domains),
+        !   The latter is useful to reduce parallel communication overhead
+        !   (we have to communicate at least once per substep, but it's actually only required for the dispersive domains).
+        !
+        ! The following is a useful integer for determining which domains should evolve on which substep
+        domain_stepcycles = disp_nt_max / md%domains(:)%timestepping_refinement_factor 
+        !     For domains that use dispersion, this MUST be a nonzero integer without roundoff. 
+        !     For domains without dispersion, this can either be a nonzero integer without roundoff, or zero 
+        !     (in which case we take multiple shallow water steps within the smallest dispersive substep).
+        !     We timestep domain(j) if 
+        !        (domain_stepcycles(j) == 0)  ! Case of rapidly stepping non-dispersive domains
+        !     OR
+        !        (mod(substep - 1, domain_stepcycles(j)) == 0) ! Typical case
 
-        domain_stepcycles = nt_max / md%domains(:)%timestepping_refinement_factor !This MUST be a nonzero integer without roundoff
 TIMER_STOP('before_stepping')
 
-        if(any(abs(domain_stepcycles - &
-                   (nt_max*1.0_dp)/(md%domains(:)%timestepping_refinement_factor*1.0_dp)) > 1e-10_dp)) then
-            write(md%log_output_unit,*) 'Timestepping refinement factors must all divide nt_max'
-            write(md%log_output_unit,*) 'such as (nt_max=6) 1, 6, 2, 3 ... or (nt_max=27) 1, 3, 27 ...'
+        if(any(domain_stepcycles == 0 .and. (md%domains(:)%use_dispersion))) then
+            write(md%log_output_unit, *) 'BUG: Dispersive domains should never have domain_stepcycles == 0'
             call generic_stop
         end if
 
+        ! Ensure that if domain_stepcycles > 0, then the timestepping_refinement_factor EXACTLY divides disp_nt_max
+        if(any( &
+          (domain_stepcycles > 0) .and. &
+          (abs(domain_stepcycles - (disp_nt_max*1.0_dp)/(md%domains(:)%timestepping_refinement_factor*1.0_dp)) > 1e-10_dp ))) then
+            write(md%log_output_unit,*) &
+                'Timestepping refinement factors must EXACTLY divide md%dispersive_nt_max = ', md%dispersive_nt_max, &
+                    NEW_LINE(' '), &
+                '    (except non-dispersive domains that take smaller timesteps than all dispersive domains)', NEW_LINE(' '), &
+                'Consider using timestepping_refinement_factors that are powers of 2, e.g., (max = 8) 1, 2, 4, 8.', &
+                    NEW_LINE(' '), &
+                'Some other valid examples are (max=6) 1, 6, 2, 3 ... or (max=27) 1, 3, 27 ...'
+            call generic_stop
+        end if
+
+        !print*, 'disp_nt_max = ', disp_nt_max
+
         ! For all sub-timesteps
-        substeps_loop: do substep = 1, nt_max
+        substeps_loop: do substep = 1, disp_nt_max
 
             ! Evolve every domain, sending the data to communicate straight after
             ! the evolve
@@ -1242,40 +1277,47 @@ TIMER_STOP('before_stepping')
                 !is_first_step = (substep == domain_stepcycles(j))
 
                 ! Advance big-time-step domains ahead of short time-step domains
-                if(mod(substep-1, domain_stepcycles(j)) /= 0) cycle domain_SW_loop
+                if(domain_stepcycles(j) > 0) then
+                    if(mod(substep-1, domain_stepcycles(j)) /= 0) cycle domain_SW_loop
+                end if
                 is_first_step = (substep == 1)
 
 TIMER_START('domain_evolve')
                 ! Evolve each domain one or more steps, for a total time of dt
                 nt = md%domains(j)%timestepping_refinement_factor
-                !if(local_timestep_partitioned_domains .and. (.not. md%domains(j)%is_staggered_grid)) then
-                !    ! For nonlinear domains, allow fewer timesteps if it won't cause blowup.
-                !    ! Do not do this for staggered-grid domains, because the leap-frog numerical method needs
-                !    ! a constant time-step
-                !    !
-                !    ! This is most important in distributed-memory applications where the partitioned
-                !    ! domain could support substantially different time-steps in different parts of the
-                !    ! "big domain". In combination with load balancing, we can get large speedups.
-                !    !
-                !    ! NOTE: This will lead to different timestepping with different domain partitions,
-                !    ! so the results should depend on the number of cores unless we specify the partition
-                !    ! via a load_balance_file (which is good practice).
-                !    if(md%domains(j)%max_dt > 0.0_dp) then
-                !        nt = max(1, min(nt, ceiling(dt/(md%domains(j)%local_timestepping_scale * md%domains(j)%max_dt) )))
-                !    end if
-                !end if
-                dt_local = dt/(1.0_dp * nt)
 
-                ! If dispersion is used then backup the flow state
-                call md%domains(j)%copy_U_to_dispersive_last_timestep()
+                if(nt <= disp_nt_max) then
+                    ! Treat all dispersive domains, and any shallow water domain that does not
+                    ! need a shorter timestep than all dispersive domains.
+                    dt_local = dt/(1.0_dp * nt)
 
-                ! Take a shallow water step
-                call md%domains(j)%evolve_one_step(dt_local)
+                    ! If dispersion is used then backup the flow state
+                    call md%domains(j)%copy_U_to_dispersive_last_timestep()
 
-                ! Report max_dt as the peak dt during the first timestep
-                ! In practice max_dt may cycle between time-steps
-                if(is_first_step) max_dt_store(j) = md%domains(j)%max_dt
+                    ! Take a shallow water step
+                    call md%domains(j)%evolve_one_step(dt_local)
+
+                    ! Report max_dt as the peak dt during the first timestep
+                    ! In practice max_dt may cycle between time-steps
+                    if(is_first_step) max_dt_store(j) = md%domains(j)%max_dt
+                else
+                    ! Treat non-dispersive domains that need a shorter timestep than every dispersive domain.
+                    ! We take multiple timsteps in the substep (without parallel communication in-between).
+                    ! How many inner timesteps?
+                    inner_steps = ceiling((1.0_dp * nt)/(1.0_dp * disp_nt_max)) 
+                    ! What timestep should they take to advance a total time of dt/(1.0_dp * disp_nt_max)
+                    dt_local = dt/(1.0_dp * disp_nt_max * inner_steps)
+
+                    ! Evolve a few steps
+                    call md%domains(j)%evolve_one_step(dt_local)
+                    if(is_first_step) max_dt_store(j) = md%domains(j)%max_dt
+                    do i = 2, inner_steps                    
+                        call md%domains(j)%evolve_one_step(dt_local)
+                    end do
+
+                end if
                 md%domains(j)%max_dt = max_dt_store(j)
+
 TIMER_STOP('domain_evolve')
 
                 ! Send the halos only for domain j. Timing code inside
@@ -1309,18 +1351,16 @@ __FILE__
                     ! Only update dispersive domains
                     if(.not. md%domains(j)%use_dispersion) cycle domain_dispersive_loop
 
-                    ! Skip domains unless we updated their shallow water solution on this substep
-                    !if(mod(substep, domain_stepcycles(j)) /= 0) cycle domain_dispersive_loop 
-
-                    ! Skip domains unless we updated their shallow water solution on this substep
+                    ! Skip domains unless we updated their shallow water solution on this substep.
+                    ! ( Note that only dispersive domains get to this point - they always have domain_stepcycles(j) > 0 )
                     if(mod(substep-1, domain_stepcycles(j)) /= 0) cycle domain_dispersive_loop
 
                     call md%domains(j)%receive_halos(md%p2p, &
                         ! Only receive from domains that have advanced to the current timestep. 
                         ! Use a timestep window to protect against roundoff (only includes current timestep). 
                         ! Timing code inside
-                        skip_if_time_before_this_time = md%domains(j)%time - (0.1_dp*dt/nt_max), &
-                        skip_if_time_after_this_time  = md%domains(j)%time + (0.1_dp*dt/nt_max), &
+                        skip_if_time_before_this_time = md%domains(j)%time - (0.1_dp*dt/disp_nt_max), &
+                        skip_if_time_after_this_time  = md%domains(j)%time + (0.1_dp*dt/disp_nt_max), &
                         skip_if_unequal_cell_ratios = dispersive_outer_iterations > 1)
 
 TIMER_START('domain_dispersive_it')
@@ -1353,13 +1393,14 @@ TIMER_STOP('comms_disp')
             ! RECEIVE HALOS
             get_halos: do j = 1, size(md%domains)
                 ! Only receive if we just stepped or at the last step
-                if(mod(substep-1, domain_stepcycles(j)) /= 0 .and. substep /= nt_max) cycle get_halos
-                !if(mod(substep, domain_stepcycles(j)) /= 0 .and. substep /= nt_max) cycle get_halos
+                if(domain_stepcycles(j) > 0) then
+                    if(mod(substep-1, domain_stepcycles(j)) /= 0 .and. substep /= disp_nt_max) cycle get_halos
+                end if
 
                 ! Get the halo information from neighbours. Timing code inside
                 call md%domains(j)%receive_halos(md%p2p, &
-                    skip_if_time_before_this_time = md%domains(j)%time - (0.1_dp*dt/nt_max), &
-                    skip_if_time_after_this_time  = md%domains(j)%time + (0.1_dp*dt/nt_max) )
+                    skip_if_time_before_this_time = md%domains(j)%time - (0.1_dp*dt/disp_nt_max), &
+                    skip_if_time_after_this_time  = md%domains(j)%time + (0.1_dp*dt/disp_nt_max) )
             end do get_halos
 
         end do substeps_loop
@@ -2590,8 +2631,9 @@ __FILE__
 
         if(md%use_dispersion) then
             ! If dispersion is used, all (parallel) multidomains must use the same value of the
-            ! maximum timestepping refinement factor
-            md%dispersive_nt_max = maxval(md%domains(:)%timestepping_refinement_factor)
+            ! maximum "dispersive domain" timestepping refinement factor.
+            md%dispersive_nt_max = maxval(md%domains(:)%timestepping_refinement_factor, &
+                                          mask=md%domains%use_dispersion)
         end if
 
         ! Split up domains among images, and create all md%domains(i)%myid
