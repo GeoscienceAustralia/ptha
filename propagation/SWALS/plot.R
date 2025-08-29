@@ -1909,12 +1909,17 @@ get_domain_wallclock_times_in_log<-function(md_log_file, include_incremental_tim
     }else{
         i1 = length(x)
     }
-    local_wallclock_time_line_spacing = grep('Total WALLCLOCK time: ', 
-        x[inds[1]:i1])[1] - 1
-
+    #local_wallclock_time_line_spacing = grep('Total WALLCLOCK time: ', 
+    #    x[inds[1]:i1])[1] - 1
     # Get the time
-    times = as.numeric(gsub('Total WALLCLOCK time: ', '', 
-                            x[inds+local_wallclock_time_line_spacing]))
+    #times = as.numeric(gsub('Total WALLCLOCK time: ', '', 
+    #                        x[inds+local_wallclock_time_line_spacing]))
+
+    # Find the line following the output directory line for each domain
+    twt_match = grep('Total WALLCLOCK time: ', x)
+    twt = sapply(inds, function(x) min(twt_match[twt_match > x]))
+    times = as.numeric(gsub('Total WALLCLOCK time: ', '', x[twt]))
+
 
     output = data.frame(domains=domains, times=times, index=domain_number)
     if(include_incremental_time){
