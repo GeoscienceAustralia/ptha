@@ -1,4 +1,4 @@
-# Code and data for "Tsunami variability from stochastic earthquake models: Tests against fourteen tsunamis at Australian tide gauges: Journal of Geophysical Research Solid Earth".
+# Code and data for the paper "Tsunami variability from stochastic earthquake models: Tests against fourteen tsunamis at Australian tide gauges" in Journal of Geophysical Research Solid Earth.
 --------------------------------------------------------------------------------------------------------------------
 
 This folder contains code and links to data used for the accepted manuscript:
