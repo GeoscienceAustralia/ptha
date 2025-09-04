@@ -3746,7 +3746,8 @@ TIMER_START('send_halos')
             !!$OMP DO SCHEDULE(DYNAMIC)
             do i = 1, size(domain%nesting%send_comms, kind=ip)
 
-                call domain%nesting%send_comms(i)%process_data_to_send(domain%U, time=time)
+                call domain%nesting%send_comms(i)%process_data_to_send(domain%U, &
+                    domain%nesting%is_priority_domain_not_periodic, time=time)
                 call domain%nesting%send_comms(i)%send_data(p2p, send_to_recv_buffer=send_to_recv_buffer)
             end do
             !!$OMP END DO
