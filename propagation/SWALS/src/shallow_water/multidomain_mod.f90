@@ -2447,7 +2447,8 @@ __FILE__
 #endif
 
         do j = jmn, jmx
-            call md%domains(j)%send_halos(md%p2p, send_to_recv_buffer=send_to_recv_buffer_local, time=time)
+            call md%domains(j)%send_halos(md%p2p, send_to_recv_buffer=send_to_recv_buffer_local, time=time, &
+                use_dispersive_send = md%use_dispersion)
         end do
 
         TIMER_STOP('send_multidomain_halos')

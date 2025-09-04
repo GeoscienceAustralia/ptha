@@ -3724,7 +3724,7 @@ TIMER_STOP('receive_halos')
 
     end subroutine
 
-    subroutine send_halos(domain, p2p, send_to_recv_buffer, time)
+    subroutine send_halos(domain, p2p, send_to_recv_buffer, time, use_dispersive_send)
         !!
         !! Loop over domain%nesting%send_comms, and send the halo data
         !!
@@ -3736,8 +3736,13 @@ TIMER_STOP('receive_halos')
             !! to do all communications at once, which can be faster as it enables
             !! multiple sends between the same images to be collapsed into a single send).
         real(dp), intent(in), optional :: time
+        logical, intent(in), optional :: use_dispersive_send
 
         integer(ip) :: i
+        logical :: dispersive_send
+        
+        dispersive_send = .FALSE.
+        if(present(use_dispersive_send)) dispersive_send = use_dispersive_send
 
 TIMER_START('send_halos')
             !! Seems faster to do the openmp inside "process_data_to_send"?
@@ -3746,8 +3751,12 @@ TIMER_START('send_halos')
             !!$OMP DO SCHEDULE(DYNAMIC)
             do i = 1, size(domain%nesting%send_comms, kind=ip)
 
-                call domain%nesting%send_comms(i)%process_data_to_send(domain%U, &
-                    domain%nesting%is_priority_domain_not_periodic, time=time)
+                if(dispersive_send) then
+                    call domain%nesting%send_comms(i)%process_data_to_send_better_dispersive_stability(&
+                        domain%U, domain%nesting%is_priority_domain_not_periodic, time=time)
+                else
+                    call domain%nesting%send_comms(i)%process_data_to_send(domain%U, time=time)
+                end if
                 call domain%nesting%send_comms(i)%send_data(p2p, send_to_recv_buffer=send_to_recv_buffer)
             end do
             !!$OMP END DO

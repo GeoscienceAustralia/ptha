@@ -169,14 +169,14 @@ module nested_grid_comms_mod
         contains
 
         procedure, non_overridable :: initialise => initialise_two_way_nesting_comms
-#define DISPERSIVE_EXPERIMENT
 #if defined(OLD_PROCESS_DATA_TO_SEND_B4FEB22)
         procedure, non_overridable :: process_data_to_send => process_data_to_send_ORIGINAL
-#elif defined(DISPERSIVE_EXPERIMENT)
-        procedure, non_overridable :: process_data_to_send => process_data_to_send_2025Sept
 #else
         procedure, non_overridable :: process_data_to_send => process_data_to_send_2022Feb
 #endif
+        procedure, non_overridable :: process_data_to_send_better_dispersive_stability => &
+            process_data_to_send_better_dispersive_stability
+
         procedure, non_overridable :: send_data => send_data
         procedure, non_overridable :: process_received_data => process_received_data
         ! Routines to allow time-stepping of boundary flux integral terms
@@ -695,15 +695,13 @@ module nested_grid_comms_mod
     end subroutine
 
 
-    subroutine process_data_to_send_ORIGINAL(two_way_nesting_comms, U, is_priority_domain_not_periodic, time)
+    subroutine process_data_to_send_ORIGINAL(two_way_nesting_comms, U, time)
         !! Copy data to the send buffer, with different treatments for
         !! 'coarse-to-fine', 'fine-to-coarse', or 'same-size' sends.
         class(two_way_nesting_comms_type), intent(inout) :: two_way_nesting_comms
             !! The two way nesting commuinicator that manages sends on a rectangular patch of the domain
         real(dp), intent(in) :: U(:,:,:)
             !! Array of flow variables, typically domain%U
-        integer(ip), optional, intent(in) :: is_priority_domain_not_periodic(:,:)
-            !! Unused here (but maintaining consistent interface)
         real(dp), optional, intent(in) :: time
             !! Time corresponding to domain%U
 
@@ -1387,7 +1385,7 @@ module nested_grid_comms_mod
         end if
     end subroutine
 
-    subroutine process_data_to_send_2022Feb(two_way_nesting_comms, U, is_priority_domain_not_periodic, time)
+    subroutine process_data_to_send_2022Feb(two_way_nesting_comms, U, time)
         !! Copy data to the send buffer, with different treatments for
         !! 'coarse-to-fine', 'fine-to-coarse', or 'same-size' sends.
         !! This is revised from process_data_to_send_ORIGINAL, with the intention of giving better performance for nesting that
@@ -1396,8 +1394,6 @@ module nested_grid_comms_mod
             !! The two way nesting communicator which manages communication on a rectangular patch of the domain.
         real(dp), intent(in) :: U(:,:,:)
             !! real rank 3 array that we send some subset of
-        integer(ip), optional, intent(in) :: is_priority_domain_not_periodic(:,:)
-            !! Unused here (but maintaining consistent interface)
         real(dp), optional, intent(in) :: time
             !! time corresponding to domain%U
 
@@ -2048,12 +2044,16 @@ module nested_grid_comms_mod
 
     end subroutine
 
-    subroutine process_data_to_send_2025Sept(two_way_nesting_comms, U, is_priority_domain_not_periodic, time)
+    subroutine process_data_to_send_better_dispersive_stability(two_way_nesting_comms, U, is_priority_domain_not_periodic, time)
         !! Copy data to the send buffer, with different treatments for
         !! 'coarse-to-fine', 'fine-to-coarse', or 'same-size' sends.
         !! This is revised from process_data_to_send_2022Feb, with the intention of dealing with some nesting
         !! instabilities in the dispersive case. The idea is to avoid using U(:,:,k) values that are not in the 
         !! priority domain when constructing data to send.
+        !! This routine also works for NLSW models. The validation tests suggest is is reasonable, but that would need to be further 
+        !! explored before changing the defaults (some failures in the validation test suite, albeit small matters).
+        !! For backward compability of our NLSW models, for now it is preferable to only use this routine in dispersive models.
+        !! 
         class(two_way_nesting_comms_type), intent(inout) :: two_way_nesting_comms
             !! The two way nesting communicator which manages communication on a rectangular patch of the domain.
         real(dp), intent(in) :: U(:,:,:)
@@ -3459,7 +3459,6 @@ module nested_grid_comms_mod
         type array_of_arrays_r3_dp_type
             real(dp), allocatable :: U(:,:,:)
             type(two_way_nesting_comms_type), allocatable :: two_way_nesting_comms(:)
-            integer(ip), allocatable :: is_priority_domain_not_periodic(:,:)
         end type
 
         type(array_of_arrays_r3_dp_type) :: Us(2), Us_store(2)
@@ -3489,17 +3488,11 @@ module nested_grid_comms_mod
         ! dx in child domain
         dx2 = dx1/nest_ratio
 
-        allocate(Us(1)%U(nx1(1), nx1(2), nvar), Us(1)%is_priority_domain_not_periodic(nx1(1), nx1(2)))
-        allocate(Us_store(1)%U(nx1(1), nx1(2), nvar), Us_store(1)%is_priority_domain_not_periodic(nx1(1), nx1(2)))
+        allocate(Us(1)%U(nx1(1), nx1(2), nvar))
+        allocate(Us_store(1)%U(nx1(1), nx1(2), nvar))
 
-        allocate(Us(2)%U(nx2(1), nx2(2), nvar), Us(2)%is_priority_domain_not_periodic(nx2(1), nx2(2)))
-        allocate(Us_store(2)%U(nx2(1), nx2(2), nvar), Us_store(2)%is_priority_domain_not_periodic(nx2(1), nx2(2)))
-
-        ! Dummy values for is_priority_domain_not_periodic (which was introduced after the tests were developed)
-        Us(1)%is_priority_domain_not_periodic = 1_ip
-        Us(2)%is_priority_domain_not_periodic = 1_ip
-        Us_store(1)%is_priority_domain_not_periodic = 1_ip
-        Us_store(2)%is_priority_domain_not_periodic = 1_ip
+        allocate(Us(2)%U(nx2(1), nx2(2), nvar))
+        allocate(Us_store(2)%U(nx2(1), nx2(2), nvar))
 
         ! Each 'domain' will probably have multiple nesting communicators. Make
         ! 4 here, although there could be more or less.
@@ -3649,8 +3642,8 @@ module nested_grid_comms_mod
         end if
 
         ! Fill the send buffer
-        call Us(1)%two_way_nesting_comms(parent_comms_index)%process_data_to_send(Us(1)%U, Us(1)%is_priority_domain_not_periodic)
-        call Us(2)%two_way_nesting_comms(child_comms_index)%process_data_to_send(Us(2)%U, Us(2)%is_priority_domain_not_periodic)
+        call Us(1)%two_way_nesting_comms(parent_comms_index)%process_data_to_send(Us(1)%U)
+        call Us(2)%two_way_nesting_comms(child_comms_index)%process_data_to_send(Us(2)%U)
 
         ! Check for errors in send buffer
         err_tol = merge(1.0e-14_dp, 1.0e-05_dp, (dp == force_double))
@@ -3737,10 +3730,8 @@ module nested_grid_comms_mod
         !
         t1out = 2.0_dp
         t2out = 3.0_dp
-        call Us(1)%two_way_nesting_comms(parent_comms_index)%process_data_to_send(Us(1)%U, &
-            Us(1)%is_priority_domain_not_periodic, time=t1out)
-        call Us(2)%two_way_nesting_comms(child_comms_index)%process_data_to_send(Us(2)%U, &
-            Us(2)%is_priority_domain_not_periodic, time=t2out)
+        call Us(1)%two_way_nesting_comms(parent_comms_index)%process_data_to_send(Us(1)%U, time=t1out)
+        call Us(2)%two_way_nesting_comms(child_comms_index)%process_data_to_send(Us(2)%U, time=t2out)
 #if defined(COARRAY_USE_MPI_FOR_INTENSIVE_COMMS)
         call Us(1)%two_way_nesting_comms(parent_comms_index)%send_data(p2p, send_to_recv_buffer=.FALSE.)
         call Us(2)%two_way_nesting_comms(child_comms_index)%send_data(p2p, send_to_recv_buffer=.FALSE.)
