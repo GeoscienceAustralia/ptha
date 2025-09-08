@@ -8,7 +8,7 @@ This folder contains:
 
 * [./nearshore_testing_2020](./nearshore_testing_2020) - Code and links to data for [our paper](https://www.frontiersin.org/articles/10.3389/feart.2020.598235/full) which simulated tsunamis using various finite-fault inversions, and compares with nearshore tsunami data in Australia.
 
-* [./nearshore_testing_ptha_2025](./nearshore_testing_ptha_2025) - Code and links to data for a study which compares tsunamis observed at Australian tide gauges with stochastic tsunamis from the 2018 Australian Probabilistic Tsunami Hazard Assessment.
+* [./nearshore_testing_ptha_2025](./nearshore_testing_ptha_2025) - Code and links to data for [a paper](https://doi.org/10.1029/2025JB031949) which compares tsunamis observed at Australian tide gauges with stochastic tsunamis from the 2018 Australian Probabilistic Tsunami Hazard Assessment.
 
 * [./nsw_2023_2024](./nsw_2023_2024) - Code for the NSW broadscale model.
 

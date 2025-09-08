@@ -45,17 +45,13 @@ The code includes various test suits that [can be run automatically](#compiling-
 on tsunami type problems; see [here for various NTHMP tests](./examples/nthmp) 
 (which are well known in the tsunami community) and [here](./examples) for other problems.
 
-A paper using SWALS to model historic tsunamis in Australia is [available
-here](https://www.frontiersin.org/articles/10.3389/feart.2020.598235/full) -
-this includes discussion of the range of equations that are solved, and the energy
-conservation properties of different solvers. It has been used to 
-model historic tsunamis and inundation hazards [in Tongatapu](https://doi.org/10.1093/gji/ggac140),
-and [in Western Australia](https://icce-ojs-tamu.tdl.org/icce/article/view/12657/11930) and in a [more
-detailed report on the Western Australian work](http://dx.doi.org/10.26186/150015). The
-linear solver in SWALS was also used extensively for the 
-[2018 Australian Probabilistic Tsunami Hazard Assessment](http://dx.doi.org/10.11636/Record.2018.041)
-and two associated papers: [this one in GJI](https://doi.org/10.1093/gji/ggz260) and 
-[this one in PAGEOPH](https://link.springer.com/article/10.1007/s00024-019-02299-w). 
+Publications using SWALS include:
+* [A paper](https://www.frontiersin.org/articles/10.3389/feart.2020.598235/full) using SWALS to model 5 historic tsunamis in Australia.
+It includes discussion of the range of equations that are solved, the energy conservation properties of different solvers, and their degree of agreement with observations. 
+* [A paper](https://doi.org/10.1029/2025JB031949) using SWALS to model 14 historical tsunamis at 32 tide gauges in southeast and west Australia. Observed tsunamis are compared with models using both published source inversions and random PTHA18 scenarios.
+* [A paper](https://doi.org/10.1093/gji/ggac140) using SWALS model inundation hazards in Tongatapu. It includes comparison with observations of 4 historical tsunamis at Nuku'alofa tide gauge (using PTHA18 scenarios as the source models).
+* [A technical report](http://dx.doi.org/10.26186/150015) and [conference paper](https://icce-ojs-tamu.tdl.org/icce/article/view/12657/11930) using SWALS to model tsunamis hazards in Western Australia (Geraldton to Dunsborough). The technical report includes a comparison of models with observations of the 2004 and 2005 tsunamis at many tide gauges. The introduction also includes some model intercomparisons.
+* The linear solver in SWALS was also used extensively for the [2018 Australian Probabilistic Tsunami Hazard Assessment](http://dx.doi.org/10.11636/Record.2018.041) and two associated papers: [this one in GJI](https://doi.org/10.1093/gji/ggz260) and  [this one in PAGEOPH](https://link.springer.com/article/10.1007/s00024-019-02299-w). 
 
 ## Installation prerequisites
 --------------------------
