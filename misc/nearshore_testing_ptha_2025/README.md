@@ -1,8 +1,8 @@
 # Code and data for the paper "Tsunami variability from stochastic earthquake models: Tests against fourteen tsunamis at Australian tide gauges" in Journal of Geophysical Research Solid Earth.
 --------------------------------------------------------------------------------------------------------------------
 
-This folder contains code and links to data used for the accepted manuscript:
-* Davies, 2025, Tsunami variability from stochastic earthquake models: Tests against fourteen tsunamis at Australian tide gauges, Journal of Geophysical Research Solid Earth.
+This folder contains code and links to data used for the paper:
+* [Davies, G, 2025. Tsunami variability from stochastic earthquake models: Tests against fourteen tsunamis at Australian tide gauges, Journal of Geophysical Research Solid Earth, https://doi.org/10.1029/2025JB031949](https://doi.org/10.1029/2025JB031949)
 
 The study tests PTHA18 stochastic earthquake-tsunami models at many tide gauges in Australia.
 
