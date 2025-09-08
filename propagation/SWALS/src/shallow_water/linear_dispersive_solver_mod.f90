@@ -9,6 +9,10 @@
 ! (by default we ignore this term, similar to JAGURS and many other tsunami codes)
 !#define DISPERSIVE_PEREGRINE
 
+! FIXME: The tridiagonal solve method might have efficiency improved by precomputing
+!     lower_uh, diag_uh, upper_uh, lower_vh, diag_vh, upper_vh
+! at the cost of more storage
+
 module linear_dispersive_solver_mod
     !!
     !! Type for solving the linear dispersive equation as per:
