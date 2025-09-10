@@ -214,9 +214,21 @@ program BP05
     md%domains(1)%use_dispersion = .true. !
     md%domains(1)%nc_grid_output%flush_every_n_output_steps = 1_ip !
 
-    ! Taper off dispersion between 15 and 10 cm depth-below-msl
-    !md%domains(1)%ds%td1 = 0.15_dp
-    !md%domains(1)%ds%td2 = 0.10_dp
+    ! Tapering off of dispersive terms
+    ! For cases with larger waves, the wave amplitude is a significant fraction of the depth.
+    ! The linear dispersive model isn't made for this situation and should be tapered off in shallower waters.
+    select case(test_case)
+        case('caseA')
+            ! No tapering off of dispersion
+        case('caseB')
+            ! Taper off dispersion between 8 and 5 cm depth-below-msl
+            md%domains(1)%ds%td1 = 0.08_dp
+            md%domains(1)%ds%td2 = 0.05_dp
+        case('caseC')
+            ! Taper off dispersion between 16.5 and 13 cm depth-below-msl
+            md%domains(1)%ds%td1 = 0.165_dp
+            md%domains(1)%ds%td2 = 0.13_dp
+    end select
 
     call md%setup
 

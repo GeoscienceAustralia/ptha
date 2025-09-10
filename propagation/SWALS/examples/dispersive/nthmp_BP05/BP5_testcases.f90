@@ -231,17 +231,21 @@ program BP05
     md%domains(2)%minimum_nesting_layer_thickness = boundary_buffer_cells
     !md%domains(2)%nc_grid_output%flush_every_n_output_steps = 1_ip !
 
-    !! Experiment with more nested iterations
-    !md%domains(2)%ds%tridiagonal_inner_iter = 4_ip
-
-    !! Taper off dispersion
-    !md%domains(2)%ds%td1 = 0.20_dp
-    !md%domains(2)%ds%td2 = 0.15_dp
-
-    !! Experiment with using the dispersive solver without dispersion (does
-    !! weird things for 'midpoint' this doesn't turn off the predictor-step
-    !! dispersion).
-    !md%dispersive_outer_iterations_count = -1
+    ! Tapering off of dispersive terms
+    ! For cases with larger waves, the wave amplitude is a significant fraction of the depth.
+    ! The linear dispersive model isn't made for this situation and should be tapered off in shallower waters.
+    select case(test_case)
+        case('caseA')
+            ! No tapering off of dispersion
+        case('caseB')
+            ! Taper off dispersion between 8 and 5 cm depth-below-msl
+            md%domains(2)%ds%td1 = 0.08_dp
+            md%domains(2)%ds%td2 = 0.05_dp
+        case('caseC')
+            ! Taper off dispersion between 16.5 and 13 cm depth-below-msl
+            md%domains(2)%ds%td1 = 0.165_dp
+            md%domains(2)%ds%td2 = 0.13_dp
+    end select
 
     call md%setup
 
