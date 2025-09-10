@@ -16,6 +16,16 @@ to the water depth (moreso for cases B and C). Dispersion causes short waves to
 form in the experiments, over regions where non-dispersive nonlinear shallow
 water models predict shock formation.
 
+For case C (and to a lesser extent case B) the dispersive terms should be
+suppressed in shallower waters. The need to suppress dispersive terms in these
+situations is discussed for several dispersive models in the NTHMP (2012)
+workshop report. According to the latter report, the FUNWAVE model switches off
+dispersive terms when the wave height exceeds 0.8 of the depth, while NEOWAVE
+switches off dispersive terms when the Froude Number exceeds 0.5 (and switches
+them back on when it drops below 0.15).  Herein, the model tapers the
+dispersive terms to zero between threshold still-water depths, which are set
+separately for each case.
+
 The [SWALS model](BP5_testcases.f90) is setup to take the numerical method as a commandline
 argument. This is used to test a few nonlinear shallow water solvers (`midpoint` and `rk2` and `leapfrog_nonlinear`).
 
