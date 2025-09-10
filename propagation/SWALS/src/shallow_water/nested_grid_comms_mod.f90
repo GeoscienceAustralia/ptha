@@ -2053,6 +2053,9 @@ module nested_grid_comms_mod
         !! This routine also works for NLSW models. The validation tests suggest is is reasonable, but that would need to be further 
         !! explored before changing the defaults (some failures in the validation test suite, albeit small matters).
         !! For backward compability of our NLSW models, for now it is preferable to only use this routine in dispersive models.
+        !!
+        !! FIXME: This doesn't pass the unit test used for the other send routines, likely because of deliberate crude extrapolation
+        !! near the edges of a send zone (which was important for stability). Be good to develop a more suitable test.
         !! 
         class(two_way_nesting_comms_type), intent(inout) :: two_way_nesting_comms
             !! The two way nesting communicator which manages communication on a rectangular patch of the domain.
