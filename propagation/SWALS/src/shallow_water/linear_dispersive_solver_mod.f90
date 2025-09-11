@@ -11,6 +11,7 @@
 
 ! FIXME: The tridiagonal solve method might have efficiency improved by precomputing
 !     lower_uh, diag_uh, upper_uh, lower_vh, diag_vh, upper_vh
+!     .... and related infor for RHS vh/uh terms....
 ! at the cost of more storage
 
 module linear_dispersive_solver_mod
