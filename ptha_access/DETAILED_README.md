@@ -41,18 +41,17 @@ report](http://dx.doi.org/10.11636/Record.2018.041) to understand what they
 are, how they were made, and how they have been tested. Users are strongly
 encouraged to independently test the results at their site of interest as part
 of any application. In particular note that:
-* The PTHA18 tsunami scenarios are tested against offshore DART buoy data observed 
-  during 18 tsunamis, for the period 2006-2016 (actually tests against a few additional
-  events are provided in the PTHA18 report). The time-series comparison usually only last
+* The PTHA18 tsunami scenarios were initially 
+  [tested against offshore DART buoy data observed during 18 tsunamis, for the period 2006-2016](https://doi.org/10.1093/gji/ggz260) 
+  (actually tests against a few additional events are provided in the 
+  [PTHA18 report](http://dx.doi.org/10.11636/Record.2018.041)). These time-series comparison usually only last
   a few hours per site (corresponding to high-sampling-frequency measurements in the
   DART buoy data we used). Although this is a significant amount of testing relative to typical
   PTHA studies in 2018, it is most relevant to the behaviour of tsunamis in the
-  deep ocean for relatively short times following arrival.  We would like to
-  see further testing of the scenarios when propagated into the nearshore and
-  onshore, and for longer times. This would also increase the number of tsunami
-  observations available to test the model. Such testing might lead to further
-  insights about the tsunami scenario performance, model biases, etc. See
-  further discussion in the [GJI paper](https://doi.org/10.1093/gji/ggz260).
+  deep ocean for relatively short times following arrival. 
+  [In 2025, we published further testing that focusses on tsunami observations at Australian tide gauges for 60 hours post-earthquake, which suggests the VAUS and HS models can perform quite well](https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2025JB031949). 
+  We would like to  see further testing of the scenarios, which might lead to further
+  insights about the tsunami scenario performance, model biases, etc.  
   **If you are working at a site where tsunamis have been observed, you are
   strongly encouraged to test the results using site-specific data.**
 * The earthquake magnitude-vs-exceedance-rate models are constrained by combining
@@ -83,9 +82,8 @@ of any application. In particular note that:
   If these limitations are important for your application (e.g. according to your own
   site-specific testing), you may re-simulate the tsunami from source using a
   more complex hydrodynamic model with appropriate resolution and/or
-  dissipation. We provide tsunami initial conditions to facilitate this. If
-  you're working on hazards in Australia and need some support with this,
-  please contact the maintainer (described above).
+  dissipation. We provide tsunami initial conditions to facilitate this, and 
+  [they can perform well](https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2025JB031949).
 
 ## **Usage**
 
@@ -97,7 +95,7 @@ running the [test_all.R](test_all.R) script.  You need to start R in the
 directory that contains that script and this README file (i.e. the directory
 name will end in `/ptha/ptha_access/`).
 
-```r
+``` r
 # This should print 'PASS' a few times. If not, something is wrong with your
 # install (or perhaps your internet connection is slow -- give it a few tries).
 source('test_all.R')
@@ -157,7 +155,7 @@ your installation before proceeding**. [See here](INSTALL.md).
 If your internet is not working perfectly, or the NCI server is down, you will see an
 message like this:
 
-```r
+``` r
 #    Error in Rsx_nc4_get_vara_double: NetCDF: DAP failure
 #    Var: gaugeID  Ndims: 1   Start: 0 Count: 20185
 #    Error in ncvar_get_inner(ncid2use, varid2use, nc$var[[li]]$missval, addOffset,  : 
@@ -187,7 +185,7 @@ under the heading *Obtaining site-specific hazard information (including source 
 However, suppose you actually want the numerical value. They can be obtained like so (for
 heterogeneous slip with both constant and variable shear modulus):
 
-```r
+``` r
 # Import the functions
 source('get_PTHA_results.R')
 # This example point is near DART 55012
@@ -208,7 +206,7 @@ er_info = get_stage_exceedance_rate_curve_at_hazard_point(
 The object `er_info` is a list with the exceedance-rate information at a range
 of stage values, for a range of percentiles and shear-modulus types.
 
-```r
+``` r
 # Look at the variables in er_info
 names(er_info)
 ```
@@ -265,7 +263,7 @@ The key variables are:
 For example, to get the median exceedance-rate at a stage of 0.4 m, assuming
 heterogeneous-slip scenarios with variable shear modulus, we could do:
 
-```r
+``` r
 # Use linear interpolation of the stage and rate 
 approx(er_info$stage, er_info$variable_mu_stochastic_slip_rate_median, xout=0.4)$y
 ```
@@ -282,7 +280,7 @@ not recommended, you can force it to use the older results by setting
 `percentile_version="DG18"` (the default is "DG19" which gives the newer
 results).:
 
-```r
+``` r
 # Get the exceedance-rate info as in Davies and Grifin (2018)
 # This has all the same data as 'er_info' above, but with slightly different
 # percentile curves. 
@@ -304,7 +302,7 @@ and can greatly speed-up calculations, but slightly changes an interpolation at
 one point in the calculation. See the help page of that function for further
 discussion. Any changes should be unimportant - for example:
 
-```r
+``` r
 # New results (mean)
 approx(er_info$stage, er_info$variable_mu_stochastic_slip_rate, xout=0.4)$y
 ```
@@ -313,7 +311,7 @@ approx(er_info$stage, er_info$variable_mu_stochastic_slip_rate, xout=0.4)$y
 ## [1] 0.007428284
 ```
 
-```r
+``` r
 # Old results (mean)
 approx(er_info_old$stage, er_info_old$variable_mu_stochastic_slip_rate, xout=0.4)$y
 ```
@@ -336,7 +334,7 @@ Island.
 To download metadata from the NCI describing the earthquake scenarios on a
 particular source-zone, start R in the current directory, and do:
 
-```r
+``` r
 # Import the functions
 source('get_PTHA_results.R')
 
@@ -381,7 +379,7 @@ Suppose we are interested in the Puysegur source-zone. From the above list and/o
 interactive map, we could infer that it was named `puysegur2`. We can then get the
 scenario metadata as follows:
 
-```r
+``` r
 # Example: get metadata for the puysegur source_zone
 puysegur = get_source_zone_events_data('puysegur2')
 ```
@@ -391,7 +389,7 @@ summarising the source-zone geometry and the earthquake secnarios, and a charact
 vector giving the associated tide-gauge files (where tsunami time-series are
 stored)
 
-```r
+``` r
 names(puysegur)
 ```
 
@@ -400,7 +398,7 @@ names(puysegur)
 ## [4] "events_file"            "unit_source_file"       "tsunami_events_file"
 ```
 
-```r
+``` r
 lapply(puysegur, class) # Get class of each entry in the list 'puysegur'
 ```
 
@@ -432,7 +430,7 @@ mechanism (`strike`, `dip`, `rake`); and indices `downdip_number`,
 `alongstrike_number`, and `subfault_number` which give information of the
 placement of the unit source on the grid of all unit sources.
 
-```r
+``` r
 # Get the names of all summary statistics
 names(puysegur$unit_source_statistics)
 ```
@@ -446,7 +444,7 @@ names(puysegur$unit_source_statistics)
 ```
 Here we determine the dimensions of the table, and look at a few rows
 
-```r
+``` r
 # Get the table dimensions
 dim(puysegur$unit_source_statistics)
 ```
@@ -455,7 +453,7 @@ dim(puysegur$unit_source_statistics)
 ## [1] 28 15
 ```
 
-```r
+``` r
 # Print rows 1 and 2
 puysegur$unit_source_statistics[1:2,]
 ```
@@ -484,7 +482,7 @@ here will translate the file paths as required for remote access.
 Next we consider the scenario metadata table. `puysegur$events` contains summary
 statistics about the earthquake scenarios. 
 
-```r
+``` r
 # Print the names of all scenario summary statistics
 names(puysegur$events)
 ```
@@ -518,7 +516,7 @@ names(puysegur$events)
 ## [26] "rate_annual_median"
 ```
 
-```r
+``` r
 # Get the table dimensions
 dim(puysegur$events)
 ```
@@ -531,7 +529,7 @@ to just print some rows. In general low row-indices will correspond to low
 magnitudes, and high indices to high magnitudes.
 
 
-```r
+``` r
 # Print some rows (we choose 2050, 2051, 2052)
 puysegur$events[2050:2052, ]
 ```
@@ -646,7 +644,7 @@ the rate of scenarios above magnitude 7.85 on this source-zone, with various
 logic-tree percentiles describing the uncertainty, you could do the following
 calculations:
 
-```r
+``` r
 # Rate of events with Mw > 7.85 -- logic-tree mean
 sum(puysegur$events$rate_annual * (puysegur$events$Mw > 7.85))
 ```
@@ -657,7 +655,7 @@ sum(puysegur$events$rate_annual * (puysegur$events$Mw > 7.85))
 You can do a similar calculation to recover the percentile curves. We store 
 the 2.5% percentile (`_lower`)
 
-```r
+``` r
 # Rate of events with Mw > 7.85 -- logic-tree 2.5 percentile
 sum(puysegur$events$rate_annual_lower_ci * (puysegur$events$Mw > 7.85))
 ```
@@ -667,7 +665,7 @@ sum(puysegur$events$rate_annual_lower_ci * (puysegur$events$Mw > 7.85))
 ```
 ... and the 16th percentile (`_16pc`)
 
-```r
+``` r
 # Rate of events with Mw > 7.85 -- logic-tree 16 percentile
 sum(puysegur$events$rate_annual_16pc * (puysegur$events$Mw > 7.85))
 ```
@@ -677,7 +675,7 @@ sum(puysegur$events$rate_annual_16pc * (puysegur$events$Mw > 7.85))
 ```
 ... and the median (`_median`)
 
-```r
+``` r
 # Rate of events with Mw > 7.85 -- logic-tree median
 sum(puysegur$events$rate_annual_median * (puysegur$events$Mw > 7.85))
 ```
@@ -687,7 +685,7 @@ sum(puysegur$events$rate_annual_median * (puysegur$events$Mw > 7.85))
 ```
 ... and the 84th percentile (`_84pc`)
 
-```r
+``` r
 # Rate of events with Mw > 7.85 -- logic-tree 84 percentile
 sum(puysegur$events$rate_annual_84pc * (puysegur$events$Mw > 7.85))
 ```
@@ -697,7 +695,7 @@ sum(puysegur$events$rate_annual_84pc * (puysegur$events$Mw > 7.85))
 ```
 ... and the 97.5 percentile (`_upper`)
 
-```r
+``` r
 # Rate of events with Mw > 7.85 -- logic-tree 97.5 percentile
 sum(puysegur$events$rate_annual_upper * (puysegur$events$Mw > 7.85))
 ```
@@ -709,7 +707,7 @@ Notice that these are ordered as expected, i.e. 2.5% <= 16% <= median <= 84% <=
 97.5%. Thus we can recover the source-zones magnitude-exceedance rate curve
 from these files. Here we illustrate that (assuming constant shear modulus):
 
-```r
+``` r
 # Sequence of magnitude values 7.15, 7.25, ...
 # This is the "lower bin boundary" of our scenarios with Mw = 7.2, 7.3, ...
 mws = seq(7.15, 9.85, by=1/10)
@@ -793,7 +791,7 @@ nearby DART buoys).
 
 The metadata for scenario 1567 is:
 
-```r
+``` r
 row_index = 1567 # Use this variable to refer to event 1567
 puysegur$events[row_index,]
 ```
@@ -821,7 +819,7 @@ puysegur$events[row_index,]
 To get its initial condition, you pass the earthquake metadata to the function
 `get_initial_condition_for_event`:
 
-```r
+``` r
 # Get the initial condition as a geo-referenced raster
 initial_condition = get_initial_condition_for_event(puysegur, row_index)
 
@@ -846,7 +844,7 @@ the latter is `FALSE`). This is useful if the NCI analysis has been updated, or
 if you suspect your files have been corrupted somehow (although we have not
 seen that).
 
-```r
+``` r
 # Get the initial condition as a geo-referenced raster, forcing download of
 # all files from NCI irrespective of whether they exist on the current
 # machine
@@ -887,7 +885,7 @@ be found by examining the maximum-stage vs exceedance-rate datasets (csv and
 shapefile). 
 
 
-```r
+``` r
 # Get stage, uh, vh time-series at DART gauges 55015 and 55042
 # To find the ID's, look on the interactive hazard-point map.
 model_ts = get_flow_time_series_at_hazard_point(puysegur, 
@@ -902,7 +900,7 @@ names(model_ts)
 ## [1] "time"      "flow"      "locations" "events"
 ```
 
-```r
+``` r
 # The 'flow' list should have one matrix for each gauge. 
 names(model_ts$flow)
 ```
@@ -911,7 +909,7 @@ names(model_ts$flow)
 ## [1] "55015.4" "55042.4"
 ```
 
-```r
+``` r
 # Alternatively the user can keep 'flow' as an array with the first dimension
 # size equal to the number of gauges, by passing the argument 'unpack_to_list=FALSE'
 # The latter option may be more efficient for some computations.
@@ -927,7 +925,7 @@ dim(model_ts$flow[['55015.4']])
 ## [1]    1 4321    3
 ```
 
-```r
+``` r
 # Example plot of stage
 plot(model_ts$time, model_ts$flow[['55015.4']][1,,1], t='l', 
     xlim=c(0,10000), xlab='Seconds after earthquake', ylab='Stage (m)',
@@ -944,7 +942,7 @@ title('Stage time-series for the scenario at 2 gauges')
 To export the tsunami time-series to a csv, you can do something like this for
 the station of interest:
 
-```r
+``` r
 # Name the site
 sitename = '55015.4'
 # Note you can get a vector with all names using the comment:
@@ -968,7 +966,7 @@ For long-time modelling where friction might be important, you may try implement
 delayed-linear-friction model presented [in this paper (see Equation 16)](https://www.frontiersin.org/articles/10.3389/feart.2020.598235/full). Essentially this leads to a slow decay of the tsunami following a delay of 12 hours from the earthquake.
 Below is an example calculation.
 
-```r
+``` r
 # Given flow variable 'var', and the time (in seconds, with 0 = earthquake time), 
 # apply delayed linear friction to var. By default use a delay of 12 hours, and 
 # a linear drag coefficient of 1e-05 following Fine et al. (2013)
@@ -1026,7 +1024,7 @@ always have a low magnitude).
 
 The basic idea is:
 
-```r
+``` r
 # Our point of interest
 point_id = 54401.4
 # Source-zone(s) of interest
@@ -1061,7 +1059,7 @@ names(event_subset)
 ## [7] "tsunami_events_file"
 ```
 
-```r
+``` r
 # As mentioned above the events are sorted by magnitude -- and you should consider
 # this when selecting events.
 ```
@@ -1077,7 +1075,7 @@ To view the source-zones and hazard points on an interactive map in R, start
 R in the same directory that the [hazard_points_plot.R](hazard_points_plot.R)
 file resides in, and do:
 
-```r
+``` r
 source('hazard_points_plot.R')
 ```
 The should open a map in your web browser, containing all unit sources and
