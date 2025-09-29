@@ -282,7 +282,8 @@ module point_gauge_mod
                 point_gauges%time_series_ncdf_iVar_ID(i), &
                 point_gauges%time_series_values(:,i), &
                 start=[1, point_gauges%netcdf_num_output_steps],&
-                count=[point_gauges%n_gauges, 1]), __LINE__)
+                count=[point_gauges%n_gauges, 1]), __LINE__, &
+                stop_on_error=.false.)
         end do
 
         ! FIXME: Flushing the file is a crude way to ensure all data is written. If we can close the file
