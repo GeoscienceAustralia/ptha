@@ -742,6 +742,7 @@ EVOLVE_TIMER_STOP('disp_setup')
                 b_uh(1) = RHS_uh(1,j)
                 b_uh(N) = RHS_uh(N,j)
 
+                !$OMP SIMD
                 do i = 2, size(uh, 1) - 1
                     ! UH dispersive term
 
@@ -841,6 +842,7 @@ EVOLVE_TIMER_STOP('disp_setup')
                 b_vh(1) = RHS_vh(i,1)
                 b_vh(N) = RHS_vh(i,N)
 
+                !$OMP SIMD
                 do j = 2, size(vh, 2) - 1
                     !if(j == 1 .or. j == size(vh,2)) cycle
 
@@ -1007,6 +1009,7 @@ EVOLVE_TIMER_STOP('disp_setup')
                 b_uh(1) = RHS_uh(1,j)
                 b_uh(N) = RHS_uh(N,j)
 
+                !$OMP SIMD
                 do i = 2, size(uh, 1) - 1
                     ! UH dispersive term
 
@@ -1105,6 +1108,7 @@ EVOLVE_TIMER_STOP('disp_setup')
                 b_vh(1) = RHS_vh(i,1)
                 b_vh(N) = RHS_vh(i,N)
 
+                !$OMP SIMD
                 do j = 2, size(vh, 2) - 1
 
                     !if(j == 1 .or. j == size(vh, 2)) cycle
