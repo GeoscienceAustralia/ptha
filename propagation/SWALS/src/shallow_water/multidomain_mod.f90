@@ -162,6 +162,11 @@ module multidomain_mod
     integer(int64), parameter :: large_64_int = 10000000000_int64
         !! Useful to have a very large integer, which is still smaller than huge(1_int64)
 
+    integer(ip), parameter :: null_index = 0, null_image = 0
+        !! Null regions (i.e. non-priority domain areas that do not affect the computed solution
+        !! as they are isolated by halos) have particular values for the recv_metadata index and image
+        !! (non-null regions will use positive integers)
+
 
     type :: multidomain_type
         !! Type to hold nested-grids that communicate with each other.
@@ -345,6 +350,8 @@ module multidomain_mod
         integer(ip) :: i1, i2, i3, j, d1, d2, ecw
         real(dp), parameter :: bignum = HUGE(1.0)/2.0 ! Deliberate single-precision number
 
+TIMER_START('check_multidomain_stability')
+
         if(present(domain_ind)) then
             d1 = domain_ind
             d2 = domain_ind
@@ -355,7 +362,6 @@ module multidomain_mod
 
         throw_error = 0
         !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(md, d1, d2) REDUCTION(+:throw_error)
-        throw_error = 0
         do j = d1, d2
             ecw = md%domains(j)%exterior_cells_width
             !$OMP DO SCHEDULE(STATIC) COLLAPSE(2)
@@ -373,6 +379,8 @@ module multidomain_mod
             !$OMP END DO
         end do
         !$OMP END PARALLEL
+
+TIMER_STOP('check_multidomain_stability')
 
         if(throw_error > 0) then
             ! Write out info on the error
@@ -408,11 +416,6 @@ module multidomain_mod
 
             ! Store whatever we can in the netcdf file (useful for debugging)
             do j = 1, size(md%domains)
-                ! But avoid overflow in output files
-                md%domains(j)%U = min(md%domains(j)%U,  HUGE(1.0_output_precision))
-                md%domains(j)%U = max(md%domains(j)%U, -HUGE(1.0_output_precision))
-                md%domains(j)%max_U = min(md%domains(j)%max_U,  HUGE(1.0_output_precision))
-                md%domains(j)%max_U = max(md%domains(j)%max_U, -HUGE(1.0_output_precision))
                 call md%domains(j)%write_to_output_files()
                 call md%domains(j)%write_max_quantities()
                 call md%domains(j)%write_gauge_time_series()
@@ -748,9 +751,9 @@ module multidomain_mod
             ! Record the domain-index and image of each point in the active
             ! region -- non-active points are set to zero
             nest_ind = merge(priority_domain_index(:,j), &
-                0 * priority_domain_index(:,j), in_active)
+                0 * priority_domain_index(:,j) + null_index, in_active)
             nest_image = merge(priority_domain_image(:,j), &
-                0 * priority_domain_image(:,j), in_active)
+                0 * priority_domain_image(:,j) + null_image, in_active)
             ! Find 'start' and 'end' indices corresponding to x values with a
             ! contiguous priority domain/image, AND never crossing periodic_xs or periodic_ys.
             ! Note that 'rle_ip' is similar
@@ -2499,9 +2502,6 @@ __FILE__
             !! non-zero U(:,:,UH) or U(:,:,VH) along wet-dry boundaries. The linear solver
             !! should always have zero flux terms along such boundaries, but that can be
             !! violated by nesting communication.
-
-        ! Null regions have particular values of the recv_metadata index and image
-        integer(ip), parameter :: null_index = 0, null_image = 0
 
         integer(ip) :: i, j, x1, x2, y1, y2
         logical :: ignore_linear_local
