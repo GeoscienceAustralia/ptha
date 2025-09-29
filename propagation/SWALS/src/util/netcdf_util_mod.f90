@@ -129,20 +129,33 @@ module netcdf_util
     !
     ! Convenience subroutine for netcdf error handling
     !
-    subroutine check(error_status, line)
+    subroutine check(error_status, line, stop_on_error)
         integer, intent(in) :: error_status
+            !! Integer returned by a netcdf function call indicating the error.
         integer, optional, intent(in) :: line
+            !! Line of the file (typically provided using the __LINE__ macro)
+        logical, optional, intent(in) :: stop_on_error
+            !! If .true. (default) then if(error_status != nf90_noerr) the program will halt.
+            !! Useful to set to .false. when writing files, particularly if we store double precision
+            !! variables with single precision, since if the double variables are outside
+            !! the range of single precision then netcdf will provide an error message
+            !! but everything will otherwise work.
+
+        logical :: stop_on_err
+
+        stop_on_err = .true.
+        if(present(stop_on_error)) stop_on_err = stop_on_error
 
     ! Gracefully compile in case we don't link with netcdf
 #ifndef NONETCDF
 
         if(error_status /= nf90_noerr) then
-          print*, 'error_status: ', error_status
-          print *, trim(nf90_strerror(error_status))
+          write(log_output_unit,*) 'netcdf error_status: ', error_status
+          write(log_output_unit,*) trim(nf90_strerror(error_status))
           if(present(line)) then
-              print*, 'line ', line
+              write(log_output_unit,*) 'line ', line
           end if
-          call generic_stop()
+          if(stop_on_err) call generic_stop()
         end if
 
 #endif
@@ -459,7 +472,7 @@ SRC_GIT_VERSION ), &
 
         ! Save the time
         call check(nf90_put_var(iNcid, nc_grid_output%var_time_id, time, &
-            start=[nc_grid_output%num_output_steps]), __LINE__ )
+            start=[nc_grid_output%num_output_steps]), __LINE__, stop_on_error=.false.)
 
 
         ! Save the flow variables
@@ -471,7 +484,7 @@ SRC_GIT_VERSION ), &
                 nc_grid_output%time_var_id(i), &
                 U(spatial_start(1):nxy(1):spatial_stride(1),spatial_start(2):nxy(2):spatial_stride(2), i), &
                 start=[1,1,nc_grid_output%num_output_steps]),&
-                __LINE__)
+                __LINE__, stop_on_error=.false.)
         end do
 
 #ifdef DEBUG_ARRAY
@@ -481,7 +494,7 @@ SRC_GIT_VERSION ), &
                 nc_grid_output%var_debug_array_id, &
                 debug_array(spatial_start(1):nxy(1):spatial_stride(1),spatial_start(2):nxy(2):spatial_stride(2)), &
                 start=[1,1,nc_grid_output%num_output_steps]), &
-                __LINE__)
+                __LINE__, stop_on_error=.false.)
         end if
 #endif
 
@@ -599,7 +612,7 @@ SRC_GIT_VERSION ), &
                     iNcid, &
                     nc_grid_output%static_var_id(j), &
                     values(spatial_start(1):nxy(1):spatial_stride(1), spatial_start(2):nxy(2):spatial_stride(2))), &
-                    __LINE__)
+                    __LINE__, stop_on_error=.false.)
 
                 found_var = .true. ! If this is never set, we know that no variable was saved.
                 exit
