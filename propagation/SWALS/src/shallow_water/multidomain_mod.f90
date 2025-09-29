@@ -1216,6 +1216,10 @@ TIMER_START('before_stepping')
                 call md%domains(j)%ds%qet%append_value_and_time_for_quadratic_extrapolation(&
                     md%domains(j)%time, md%domains(j)%U(:,:,UH:VH))
             end if
+
+#ifdef TRACK_MULTIDOMAIN_STABILITY
+            call check_multidomain_stability(md, 'start', j)
+#endif
         end do
 
         ! Timestepping levels.
@@ -1296,6 +1300,9 @@ TIMER_START('domain_evolve')
 
                     ! Take a shallow water step
                     call md%domains(j)%evolve_one_step(dt_local)
+#ifdef TRACK_MULTIDOMAIN_STABILITY
+                    call check_multidomain_stability(md, 'inner', j)
+#endif
 
                     ! Report max_dt as the peak dt during the first timestep
                     ! In practice max_dt may cycle between time-steps
@@ -1310,9 +1317,15 @@ TIMER_START('domain_evolve')
 
                     ! Evolve a few steps
                     call md%domains(j)%evolve_one_step(dt_local)
+#ifdef TRACK_MULTIDOMAIN_STABILITY
+                    call check_multidomain_stability(md, 'inner', j)
+#endif
                     if(is_first_step) max_dt_store(j) = md%domains(j)%max_dt
                     do i = 2, inner_steps                    
                         call md%domains(j)%evolve_one_step(dt_local)
+#ifdef TRACK_MULTIDOMAIN_STABILITY
+                        call check_multidomain_stability(md, 'innerB', j)
+#endif
                     end do
 
                 end if
@@ -1362,6 +1375,10 @@ __FILE__
                         skip_if_time_before_this_time = md%domains(j)%time - (0.1_dp*dt/disp_nt_max), &
                         skip_if_time_after_this_time  = md%domains(j)%time + (0.1_dp*dt/disp_nt_max), &
                         skip_if_unequal_cell_ratios = dispersive_outer_iterations > 1)
+#ifdef TRACK_MULTIDOMAIN_STABILITY
+                        call check_multidomain_stability(md, 'step-after-disp-comms', j)
+#endif
+
 
 TIMER_START('domain_dispersive_it')
 
@@ -1374,6 +1391,9 @@ TIMER_START('domain_dispersive_it')
                         forward_time = md%domains(j)%time)
 
 TIMER_STOP('domain_dispersive_it')
+#ifdef TRACK_MULTIDOMAIN_STABILITY
+                        call check_multidomain_stability(md, 'step-after-disp-solve', j)
+#endif
                     ! Send the halos only for domain j. Timing code inside
                     call md%send_halos(domain_index=j, send_to_recv_buffer = send_halos_immediately, time=md%domains(j)%time)
 
@@ -1401,6 +1421,9 @@ TIMER_STOP('comms_disp')
                 call md%domains(j)%receive_halos(md%p2p, &
                     skip_if_time_before_this_time = md%domains(j)%time - (0.1_dp*dt/disp_nt_max), &
                     skip_if_time_after_this_time  = md%domains(j)%time + (0.1_dp*dt/disp_nt_max) )
+#ifdef TRACK_MULTIDOMAIN_STABILITY
+                    call check_multidomain_stability(md, 'step-after-comms', j)
+#endif
             end do get_halos
 
         end do substeps_loop
@@ -1414,6 +1437,9 @@ TIMER_START('flux_correction')
             if(send_boundary_flux_data) then
                 call md%domains(j)%nesting_flux_correction_everywhere(md%all_dx_md, &
                     md%all_timestepping_methods_md, fraction_of = 1.0_dp)
+#ifdef TRACK_MULTIDOMAIN_STABILITY
+                call check_multidomain_stability(md, 'step-after-flux-correction', j)
+#endif
             end if
         end do
 TIMER_STOP('flux_correction')
@@ -1427,6 +1453,9 @@ TIMER_START('comms1b')
 TIMER_STOP('comms1b')
         end if
         call md%recv_halos(sync_before=sync_before_recv, sync_after=sync_after_recv)
+#ifdef TRACK_MULTIDOMAIN_STABILITY
+        call check_multidomain_stability(md, 'step-after-final-recv')
+#endif
 
     end subroutine
 
@@ -3498,6 +3527,13 @@ __FILE__
             timer_log_filename = trim(md%domains(i)%output_folder_name) // '/Evolve_timer_details.txt'
             open(newunit=evolve_timer_file_unit, file=timer_log_filename)
             call md%domains(i)%evolve_timer%print(evolve_timer_file_unit)
+            ! Append dispersive solve timing (if any)
+            if(md%domains(i)%ds%evolve_timer%ntimers > 0) then
+                write(evolve_timer_file_unit, '(A)') ""
+                write(evolve_timer_file_unit, '(A)') "Dispersive solver components timing"
+                write(evolve_timer_file_unit, '(A)') ""
+                call md%domains(i)%ds%evolve_timer%print(evolve_timer_file_unit)
+            end if
             close(evolve_timer_file_unit)
         end do
 #endif

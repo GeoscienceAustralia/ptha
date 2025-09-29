@@ -2,7 +2,7 @@
 SWALS_SRC := ../../../src
 
 #SWALS_BUILD_WITH_PARALLEL_DEFAULTS := true
-SWALS_PREPROCESSOR_FLAGS := -DTIMER #-O1 -g -pg -fbounds-check
+SWALS_PREPROCESSOR_FLAGS := -DTIMER -DEVOLVE_TIMER #-O1 -g -pg -fbounds-check
 #SWALS_PREPROCESSOR_FLAGS := -O1 -g -pg -fbounds-check
 include $(SWALS_SRC)/src_standard_compiler_var
 

@@ -1,3 +1,12 @@
+! Compile with -DEVOLVE_TIMER to add detailed timing of the evolve loop
+#ifdef EVOLVE_TIMER
+#   define EVOLVE_TIMER_START(tname) call ds%evolve_timer%timer_start(tname)
+#   define EVOLVE_TIMER_STOP(tname)  call ds%evolve_timer%timer_end(tname)
+#else
+#   define EVOLVE_TIMER_START(tname)
+#   define EVOLVE_TIMER_STOP(tname)
+#endif
+
 ! Use definition below to use jacobi iteration (needs more work to implement, but leaving unfinished code here for now)
 !#define DISPERSIVE_JACOBI
 
@@ -79,11 +88,12 @@ module linear_dispersive_solver_mod
     use logging_mod, only: log_output_unit
     use quadratic_extrapolation_mod, only: quadratic_extrapolation_type
     use stop_mod, only: generic_stop
+    use timer_mod, only: timer_type
 
     implicit none
 
     integer, parameter :: STG=1, UH=2, VH=3, ELV=4
-    real(dp), parameter :: jacobi_overrelax = 0.0_dp, tridiagonal_overrelax = 0.0_dp
+    real(dp), parameter :: jacobi_overrelax = 0.0_dp !, tridiagonal_overrelax = 0.0_dp
 
     type dispersive_solver_type
 
@@ -120,6 +130,8 @@ module linear_dispersive_solver_mod
         type(quadratic_extrapolation_type) :: qet
             !! Allow quadratic extrapolation in time
 
+        type(timer_type) :: evolve_timer
+
         contains
         procedure, non_overridable :: store_last_U => store_last_U
         procedure, non_overridable :: setup => setup_dispersive_solver
@@ -137,11 +149,14 @@ module linear_dispersive_solver_mod
         real(dp), intent(in) :: U(:,:,:)
 
         integer(ip) :: j
+
+EVOLVE_TIMER_START('disp_store_last_U')
         !$OMP PARALLEL DO DEFAULT(PRIVATE) SHARED(ds, U)
         do j = 1, size(U,2)
             ds%last_U(:,j,UH:ELV) = U(:,j,UH:ELV)
         end do
         !$OMP END PARALLEL DO
+EVOLVE_TIMER_STOP('disp_store_last_U')
 
     end subroutine
 
@@ -153,6 +168,7 @@ module linear_dispersive_solver_mod
 
         integer(ip) :: i, j
 
+EVOLVE_TIMER_START('disp_setup')
         ds%is_staggered_grid = is_staggered_grid
 
         if(allocated(ds%RHS)) deallocate(ds%RHS)
@@ -192,6 +208,7 @@ module linear_dispersive_solver_mod
 
         ! Prepare to extrapolate UH/VH in time
         call ds%qet%setup(nx, ny, 2)
+EVOLVE_TIMER_STOP('disp_setup')
 
     end subroutine
 
@@ -703,6 +720,8 @@ module linear_dispersive_solver_mod
             !$OMP DO
             do j = 2, size(uh, 2) - 1
 
+                !if(j == 1 .or. j == size(uh,2)) cycle
+
                 ! See comments at the start of this code for explanation of these formulas, which apply in both spherical and
                 ! cartesian coordinates.
                 R_coslat_dlon   = 0.5_dp * (distance_bottom_edge(j+1) + distance_bottom_edge(j  )) ! x-cell-distance at uh(i,j)
@@ -798,8 +817,8 @@ module linear_dispersive_solver_mod
 #else
                 call dgtsv(N, 1, lowerA_uh(2:N), diagonalA_uh, upperA_uh(1:N-1), b_uh, N, INFO)
 #endif
-                !uh(:,j) = b_uh
-                uh(:,j) = b_uh + (tridiagonal_overrelax) * (b_uh - uh(:,j))
+                uh(:,j) = b_uh
+                !uh(:,j) = b_uh + (tridiagonal_overrelax) * (b_uh - uh(:,j))
 
             end do
             !$OMP END DO
@@ -823,6 +842,7 @@ module linear_dispersive_solver_mod
                 b_vh(N) = RHS_vh(i,N)
 
                 do j = 2, size(vh, 2) - 1
+                    !if(j == 1 .or. j == size(vh,2)) cycle
 
                     ! See comments at the start of this code for explanation of these formulas, which apply in both spherical and
                     ! cartesian coordinates.
@@ -917,8 +937,8 @@ module linear_dispersive_solver_mod
 #else
                 call dgtsv(N, 1, lowerA_vh(2:N), diagonalA_vh, upperA_vh(1:N-1), b_vh, N, INFO)
 #endif
-                !vh(i,:) = b_vh
-                vh(i,:) = b_vh + (tridiagonal_overrelax) * (b_vh - vh(i,:))
+                vh(i,:) = b_vh
+                !vh(i,:) = b_vh + (tridiagonal_overrelax) * (b_vh - vh(i,:))
 
             end do
             !$OMP END DO
@@ -958,6 +978,8 @@ module linear_dispersive_solver_mod
         if(update_UH) then
             !$OMP DO
             do j = 2, size(uh, 2) - 1
+
+                !if(j == 1 .or. j == size(uh, 2)) cycle
 
                 ! See comments at the start of this code for explanation of these formulas, which apply in both spherical and
                 ! cartesian coordinates.
@@ -1059,7 +1081,8 @@ module linear_dispersive_solver_mod
 #else
                 call dgtsv(N, 1, lowerA_uh(2:N), diagonalA_uh, upperA_uh(1:N-1), b_uh, N, INFO)
 #endif
-                uh(:,j) = b_uh + (tridiagonal_overrelax) * (b_uh - uh(:,j))
+                uh(:,j) = b_uh
+                !uh(:,j) = b_uh + (tridiagonal_overrelax) * (b_uh - uh(:,j))
 
             end do
             !$OMP END DO
@@ -1083,6 +1106,8 @@ module linear_dispersive_solver_mod
                 b_vh(N) = RHS_vh(i,N)
 
                 do j = 2, size(vh, 2) - 1
+
+                    !if(j == 1 .or. j == size(vh, 2)) cycle
 
                     ! See comments at the start of this code for explanation of these formulas, which apply in both spherical and
                     ! cartesian coordinates.
@@ -1180,8 +1205,8 @@ module linear_dispersive_solver_mod
 #else
                 call dgtsv(N, 1, lowerA_vh(2:N), diagonalA_vh, upperA_vh(1:N-1), b_vh, N, INFO)
 #endif
-                !vh(i,:) = b_vh
-                vh(i,:) = b_vh + (tridiagonal_overrelax) * (b_vh - vh(i,:))
+                vh(i,:) = b_vh
+                !vh(i,:) = b_vh + (tridiagonal_overrelax) * (b_vh - vh(i,:))
 
             end do
             !$OMP END DO
@@ -1223,6 +1248,7 @@ module linear_dispersive_solver_mod
 
 
         if(.not. rhs_ready) then
+EVOLVE_TIMER_START('disp_rhs')
             ! Get the explicit part of the dispersive terms
             if(is_staggered_grid) then
                 call linear_dispersive_staggered_matmult(&
@@ -1237,7 +1263,6 @@ module linear_dispersive_solver_mod
                     ds%Ax(:,:,UH), ds%Ax(:,:,VH), &
                     update_UH=.true., update_VH=.true.)
             end if
-
             ! Setup the right-hand-side term, combining the shallow-water solution with the explicit part
             ! of the dispersive term
             !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(ds, U)
@@ -1273,12 +1298,15 @@ module linear_dispersive_solver_mod
             !$OMP END DO
 
             !$OMP END PARALLEL
+EVOLVE_TIMER_STOP('disp_rhs')
         end if
 
         if(quadratic_extrap) then 
+EVOLVE_TIMER_START('disp_extrapolate_forward')
             ! Extrapolate forward in time
             call ds%qet%extrapolate_in_time(forward_time, U(:,:,UH:VH), &
                 do_nothing_if_missing_times=.true., did_extrapolate=did_extrapolate)
+EVOLVE_TIMER_STOP('disp_extrapolate_forward')
             if(did_extrapolate) then
                 ! If we could extrapolate forward in time then less iterations should be needed
                 niter = ds%tridiagonal_inner_iter
@@ -1294,6 +1322,38 @@ module linear_dispersive_solver_mod
         ds%last_iter = niter
         iter_loop: do iter = 1, niter
 
+#ifdef EVOLVE_TIMER
+            !
+            !UH and VH update, separated for evolve timing
+            !
+            if(is_staggered_grid) then
+EVOLVE_TIMER_START('disp_sweep_uh')
+                call linear_dispersive_sweep_staggered_TRIDIAG(U(:,:,ELV), U(:,:,UH), U(:,:,VH), &
+                    ds%RHS(:,:,UH), ds%RHS(:,:,VH), &
+                    msl_linear, distance_bottom_edge, distance_left_edge, ds%td1, ds%td2, dlon, dlat, &
+                    update_UH=.true., update_VH=.false.)
+EVOLVE_TIMER_STOP('disp_sweep_uh')
+EVOLVE_TIMER_START('disp_sweep_vh')
+                call linear_dispersive_sweep_staggered_TRIDIAG(U(:,:,ELV), U(:,:,UH), U(:,:,VH), &
+                    ds%RHS(:,:,UH), ds%RHS(:,:,VH), &
+                    msl_linear, distance_bottom_edge, distance_left_edge, ds%td1, ds%td2, dlon, dlat, &
+                    update_UH=.false., update_VH=.true.)
+EVOLVE_TIMER_STOP('disp_sweep_vh')
+            else
+EVOLVE_TIMER_START('disp_sweep_uh')
+                call linear_dispersive_sweep_cellcentred_TRIDIAG(U(:,:,ELV), U(:,:,UH), U(:,:,VH), &
+                    ds%RHS(:,:,UH), ds%RHS(:,:,VH), &
+                    msl_linear, distance_bottom_edge, distance_left_edge, ds%td1, ds%td2, dlon, dlat, &
+                    update_UH=.true., update_VH=.false.)
+EVOLVE_TIMER_STOP('disp_sweep_uh')
+EVOLVE_TIMER_START('disp_sweep_vh')
+                call linear_dispersive_sweep_cellcentred_TRIDIAG(U(:,:,ELV), U(:,:,UH), U(:,:,VH), &
+                    ds%RHS(:,:,UH), ds%RHS(:,:,VH), &
+                    msl_linear, distance_bottom_edge, distance_left_edge, ds%td1, ds%td2, dlon, dlat, &
+                    update_UH=.false., update_VH=.true.)
+EVOLVE_TIMER_STOP('disp_sweep_vh')
+            end if
+#else
             !
             !UH and VH update
             !
@@ -1308,7 +1368,7 @@ module linear_dispersive_solver_mod
                     msl_linear, distance_bottom_edge, distance_left_edge, ds%td1, ds%td2, dlon, dlat, &
                     update_UH=.true., update_VH=.true.)
             end if
-
+#endif
         end do iter_loop
 
     end subroutine
