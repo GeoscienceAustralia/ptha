@@ -348,7 +348,9 @@ module multidomain_mod
 
         integer :: throw_error
         integer(ip) :: i1, i2, i3, j, d1, d2, ecw
-        real(dp), parameter :: bignum = HUGE(1.0)/2.0 ! Deliberate single-precision number
+        real(dp), parameter :: bignum = HUGE(1.0)/2.0 
+            ! Deliberate single-precision number used to detect unrealistic large flow states
+        logical :: bignum_test !, null_region_test
 
 TIMER_START('check_multidomain_stability')
 
@@ -363,16 +365,26 @@ TIMER_START('check_multidomain_stability')
         throw_error = 0
         !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(md, d1, d2) REDUCTION(+:throw_error)
         do j = d1, d2
+            throw_error = 0
             ecw = md%domains(j)%exterior_cells_width
             !$OMP DO SCHEDULE(STATIC) COLLAPSE(2)
             do i1 = STG, ELV
                 do i2 = 1+ecw, md%domains(j)%nx(2)-ecw
                     do i3 = 1+ecw, md%domains(j)%nx(1)-ecw
-                        if((md%domains(j)%U(i3, i2, i1) >  bignum) .or. &
-                           (md%domains(j)%U(i3, i2, i1) < -bignum) .or. &
-                           (md%domains(j)%U(i3, i2, i1) /= md%domains(j)%U(i3, i2, i1))) then
-                           throw_error = throw_error + 1
-                        end if
+                        ! Check for very large values
+                        bignum_test = (&
+                            (md%domains(j)%U(i3, i2, i1) >  bignum) .or. &
+                            (md%domains(j)%U(i3, i2, i1) < -bignum) .or. &
+                            (md%domains(j)%U(i3, i2, i1) /= md%domains(j)%U(i3, i2, i1)))
+                        if(bignum_test) throw_error = throw_error + 1
+
+                        !! Check for flow in null regions that have been made 'dry and high'
+                        !null_region_test = (&
+                        !    (i1 == STG) .and. &
+                        !    (md%domains(j)%U(i3, i2, ELV) == elev_null) .and. &
+                        !    (md%domains(j)%U(i3, i2, STG) /= stage_null))
+                        !if(null_region_test) throw_error = throw_error + 1
+
                     end do
                 end do
             end do
@@ -389,9 +401,16 @@ TIMER_STOP('check_multidomain_stability')
                 do i1 = STG, ELV
                     do i2 = 1+ecw, md%domains(j)%nx(2)-ecw
                         do i3 = 1+ecw, md%domains(j)%nx(1)-ecw
-                            if((md%domains(j)%U(i3, i2, i1) >  bignum) .or. &
-                               (md%domains(j)%U(i3, i2, i1) < -bignum) .or. &
-                               (md%domains(j)%U(i3, i2, i1) /= md%domains(j)%U(i3, i2, i1))) then
+                            bignum_test = (&
+                                (md%domains(j)%U(i3, i2, i1) >  bignum) .or. &
+                                (md%domains(j)%U(i3, i2, i1) < -bignum) .or. &
+                                (md%domains(j)%U(i3, i2, i1) /= md%domains(j)%U(i3, i2, i1)))
+                            !null_region_test = (&
+                            !    (i1 == STG) .and. &
+                            !    (md%domains(j)%U(i3, i2, ELV) == elev_null) .and. &
+                            !    (md%domains(j)%U(i3, i2, STG) /= stage_null))
+                            !if(bignum_test .or. null_region_test) then
+                            if(bignum_test) then
                                write(md%log_output_unit,*) flag, &
                                    " (NB: overflow just after mpi-comms can result from error-stop on other images)"
                                write(md%log_output_unit,*) 'error-count: ', throw_error
@@ -423,6 +442,7 @@ TIMER_STOP('check_multidomain_stability')
             ! Force file write-out without any parallel communication (because
             ! other processes probably won't reach this part of the code).
             call md%finalise_and_print_timers(communicate_max_U = .FALSE.)
+            flush(md%log_output_unit)
             call generic_stop
         end if
 
@@ -749,7 +769,7 @@ TIMER_STOP('check_multidomain_stability')
             end do
 
             ! Record the domain-index and image of each point in the active
-            ! region -- non-active points are set to zero
+            ! region -- non-active points are set to null_index
             nest_ind = merge(priority_domain_index(:,j), &
                 0 * priority_domain_index(:,j) + null_index, in_active)
             nest_image = merge(priority_domain_image(:,j), &
@@ -1431,6 +1451,8 @@ TIMER_STOP('comms_disp')
 
         end do substeps_loop
 
+        !write(log_output_unit, *) 'Before flux correction: ', md%domains(14)%U(465, 128, UH)
+
 TIMER_START('flux_correction')
         ! Fix time and fluxes
         do j = 1, size(md%domains)
@@ -1446,6 +1468,7 @@ TIMER_START('flux_correction')
             end if
         end do
 TIMER_STOP('flux_correction')
+        !write(log_output_unit, *) 'After flux correction: ', md%domains(14)%U(465, 128, UH)
 
         ! Do a final send/recv. This is sometimes important for nesting stability, 
         ! suggesting "domain%nesting_flux_correction_everywhere" is more approximate
@@ -1459,6 +1482,7 @@ TIMER_STOP('comms1b')
 #ifdef TRACK_MULTIDOMAIN_STABILITY
         call check_multidomain_stability(md, 'step-after-final-recv')
 #endif
+        !write(log_output_unit, *) 'Just before end of loop: ', md%domains(14)%U(465, 128, UH)
 
     end subroutine
 
@@ -1974,6 +1998,9 @@ TIMER_STOP('comms1b')
 
         is_in_active = .FALSE.
 
+        ! Search cells within a box of +-halo_width around (i,j) to see if any have priority domain
+        ! matching the current domain. If yes then the cell is in the 'active region',
+        ! since it's either priority domain or received by communication from other domains.
         do jj = max(1, j-halo_width), min(dims(2), j + halo_width)
             do ii = max(1, i-halo_width), min(dims(1), i + halo_width)
 
@@ -2506,11 +2533,8 @@ __FILE__
         integer(ip) :: i, j, x1, x2, y1, y2
         logical :: ignore_linear_local
 
-        if(present(ignore_linear)) then
-            ignore_linear_local = ignore_linear
-        else
-            ignore_linear_local = .false.
-        end if
+        ignore_linear_local = .false. 
+        if(present(ignore_linear)) ignore_linear_local = ignore_linear
 
         do j = 1, size(md%domains, kind=ip)
 
@@ -2535,6 +2559,15 @@ __FILE__
                     x2 = md%domains(j)%nesting%recv_metadata(4,i)
                     y1 = md%domains(j)%nesting%recv_metadata(5,i)
                     y2 = md%domains(j)%nesting%recv_metadata(6,i)
+
+                    ! Check that the elevation is not already == elev_null (as this suggests
+                    ! the real elevation data includes elev_null)
+                    if(any(md%domains(j)%U(x1:x2, y1:y2, ELV) == elev_null)) then
+                        write(log_output_unit, *) &
+                            'Warning: set_null_regions_to_dry is modifying a region with initial elevation == elev_null. ', &
+                            'The "real" elevation data should be clearly distinct from elev_null (', elev_null, &
+                            '), but it is OK if the initial elevation is representing a non-flow region.'
+                    end if
 
                     md%domains(j)%U(x1:x2, y1:y2, STG) = stage_null
                     md%domains(j)%U(x1:x2, y1:y2, UH) = uh_null
@@ -3358,6 +3391,11 @@ __FILE__
             counter = 0
             do i = 1, size(all_recv_metadata, 2, kind=ip)
 
+                ! Quick exit if the receiving region is a null region, since there is
+                ! no point updating null regions (which have no effect on the flow in
+                ! priority domain areas with explicit numerical schemes, and negligable effect
+                ! for implicit schemes if the halo is thick enough to contain all important 
+                ! information [i.e. assuming the user appropriately set domain%minimum_nesting_layer_thickness]).
                 if(all_recv_metadata(8,i,j,ti) < 1) cycle
 
                 ! Neighbour domain index/image

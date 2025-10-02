@@ -132,6 +132,9 @@ module linear_dispersive_solver_mod
 
         type(timer_type) :: evolve_timer
 
+        !logical :: debug_me = .false.
+            !! Hack to help debugging
+
         contains
         procedure, non_overridable :: store_last_U => store_last_U
         procedure, non_overridable :: setup => setup_dispersive_solver
@@ -175,7 +178,7 @@ EVOLVE_TIMER_START('disp_setup')
         if(allocated(ds%last_U)) deallocate(ds%last_U)
         allocate(ds%RHS(nx, ny, UH:VH), ds%last_U(nx, ny, UH:ELV))
         ! OMP first-touch allocation
-        !$OMP PARALLEL DO
+        !$OMP PARALLEL DO DEFAULT(PRIVATE) SHARED(ds)
         do j = 1, ny
             ds%RHS(:,j,UH:VH) = 0.0_dp
             ds%last_U(:,j,UH:ELV) = 0.0_dp
@@ -189,7 +192,7 @@ EVOLVE_TIMER_START('disp_setup')
         if(allocated(ds%offdiagonalAx)) deallocate(ds%offdiagonalAx)
         if(allocated(ds%diagonalA)) deallocate(ds%diagonalA)
         allocate(ds%offdiagonalAx(nx, ny, UH:VH), ds%diagonalA(nx, ny, UH:VH))
-        !$OMP PARALLEL DO
+        !$OMP PARALLEL DO DEFAULT(PRIVATE) SHARED(ds)
         do j = 1, ny
             ds%offdiagonalAx(:,j,UH:VH) = 0.0_dp
             ds%diagonalA(:,j,UH:VH) = 1.0_dp
@@ -199,7 +202,7 @@ EVOLVE_TIMER_START('disp_setup')
         ! Workspace for tridiagonal iteration
         if(allocated(ds%Ax)) deallocate(ds%Ax)
         allocate(ds%Ax(nx,ny,UH:VH))
-        !$OMP PARALLEL DO
+        !$OMP PARALLEL DO DEFAULT(PRIVATE) SHARED(ds)
         do j = 1, ny
             ds%Ax(:,j,UH:VH) = 0.0_dp
         end do
@@ -281,8 +284,9 @@ EVOLVE_TIMER_STOP('disp_setup')
                 coslat_jph = distance_bottom_edge(j+1) * dlat / (dlon * distance_left_edge(1))
                 coslat_jmh = distance_bottom_edge(j+0) * dlat / (dlon * distance_left_edge(1))
 
-                solution_uh(1,j) = uh(1,j)
-                solution_uh(size(uh,1),j) = uh(size(uh,1),j)
+                !solution_uh(1,j) = uh(1,j) ! Instead this is set in the caller routine
+                !solution_uh(size(uh,1),j) = uh(size(uh,1),j)
+                !$OMP SIMD
                 do i = 2, size(uh, 1) - 1
                     ! UH dispersive term
 
@@ -371,8 +375,9 @@ EVOLVE_TIMER_STOP('disp_setup')
                 coslat_jph  = distance_bottom_edge(j+1) * dlat / ( distance_left_edge(1)  * dlon )
                 coslat_jmh  = distance_bottom_edge(j+0) * dlat / ( distance_left_edge(1)  * dlon )
 
-                solution_vh(1,j) = vh(1,j)
-                solution_vh(size(vh,1), j) = vh(size(vh,1), j)
+                !solution_vh(1,j) = vh(1,j) ! Instead this is set in caller routine
+                !solution_vh(size(vh,1), j) = vh(size(vh,1), j)
+                !$OMP SIMD
                 do i = 2, size(vh, 1) - 1
 
                     ! Depth at location of vh(i,j) -- or zero if either neighbour is dry
@@ -505,8 +510,9 @@ EVOLVE_TIMER_STOP('disp_setup')
                 coslat_jm1 = 0.5_dp * (distance_bottom_edge(j+0) + distance_bottom_edge(j-1)) * &
                     dlat / (dlon * distance_left_edge(1))
 
-                solution_uh(1,j) = uh(1,j)
-                solution_uh(size(uh,1),j) = uh(size(uh,1),j)
+                !solution_uh(1,j) = uh(1,j) ! Instead this is set in the caller routine
+                !solution_uh(size(uh,1),j) = uh(size(uh,1),j) ! Instead this is set in the caller routine
+                !$OMP SIMD
                 do i = 2, size(uh, 1) - 1
                     ! UH dispersive term
 
@@ -599,8 +605,9 @@ EVOLVE_TIMER_STOP('disp_setup')
                 coslat_j   = 0.5_dp*(distance_bottom_edge(j+1)+distance_bottom_edge(j+0)) * dlat / (distance_left_edge(1) * dlon)
                 coslat_jm1 = 0.5_dp*(distance_bottom_edge(j+0)+distance_bottom_edge(j-1)) * dlat / (distance_left_edge(1) * dlon)
 
-                solution_vh(1,j) = vh(1,j)
-                solution_vh(size(vh,1), j) = vh(size(vh,1), j)
+                !solution_vh(1,j) = vh(1,j) ! Instead this is set in the caller routine
+                !solution_vh(size(vh,1), j) = vh(size(vh,1), j)
+                !$OMP SIMD
                 do i = 2, size(vh, 1) - 1
 
                     ! Depth at location of vh(i,j) -- or zero if either neighbour is dry
@@ -1305,11 +1312,20 @@ EVOLVE_TIMER_START('disp_rhs')
 EVOLVE_TIMER_STOP('disp_rhs')
         end if
 
+        !if(ds%debug_me) write(log_output_unit, *) 'Initial solution: ', U(465, 128, UH)
+        !if(ds%debug_me) write(log_output_unit, *) '  RHS: ', ds%RHS(465, 128, UH)
+
         if(quadratic_extrap) then 
 EVOLVE_TIMER_START('disp_extrapolate_forward')
-            ! Extrapolate forward in time
+            ! Extrapolate forward in time to guess the solution
             call ds%qet%extrapolate_in_time(forward_time, U(:,:,UH:VH), &
                 do_nothing_if_missing_times=.true., did_extrapolate=did_extrapolate)
+                !Q: Is it possible that extrapolation leads to a sign change of UH or VH,
+                !   that violates wet/dry logic? Such as:
+                !    - nonzero UH if the cell has just gone dry
+                !    - positive UH even if its neighbours are dry in a way that prevents flow
+                ! ??
+            !if(ds%debug_me) write(log_output_unit, *) '  Forward extrap: ', U(465, 128, UH)
 EVOLVE_TIMER_STOP('disp_extrapolate_forward')
             if(did_extrapolate) then
                 ! If we could extrapolate forward in time then less iterations should be needed
@@ -1373,6 +1389,8 @@ EVOLVE_TIMER_STOP('disp_sweep_vh')
                     update_UH=.true., update_VH=.true.)
             end if
 #endif
+
+            !if(ds%debug_me) write(log_output_unit, *) '  Iter',iter, U(465, 128, UH)
         end do iter_loop
 
     end subroutine

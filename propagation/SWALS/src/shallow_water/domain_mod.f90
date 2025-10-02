@@ -28,7 +28,7 @@ module domain_mod
         advection_beta, &
         minimum_allowed_depth, &
         default_nonlinear_timestepping_method, &
-        wall_elevation, &
+        !elev_null, &
         default_output_folder, &
         send_boundary_flux_data
     use timer_mod, only: timer_type
@@ -278,6 +278,14 @@ module domain_mod
             !! Flag to denote boundaries at which nesting occurs: order is N, E, S, W.
         real(dp) :: max_parent_dx_ratio = -1.0_dp
             !! Maximum value of (dx-from-domains-we-receive-from)/my-dx. Useful for nesting.
+        logical :: flux_correct_dry_cells_outside_priority_domain = .true.
+            !! Flux correction of dry areas could cause stage < bed, or non-zero flux despite dryness.
+            !! Experience has suggested that if domain%use_dispersion is .true., flux
+            !! correction of dry areas in non-priority domain regions can cause instabilities
+            !! (actually, the problem is in null regions when using md%set_null_regions_to_dry).
+            !! Those cases can be addressed using (domain%flux_correct_dry_cells_outside_priority_domain = .false.).
+            !! It was never found to be a problem with non-dispersive domains, so is .true. for backward compatibility
+            !! (I haven't tested whether using the value .false. everywhere would lead to important changes).
 
         !
         ! Boundary conditions.
@@ -1290,6 +1298,9 @@ TIMER_STOP("compute_statistics")
                     ' when including dispersion in the timestepping.'
             end if
             call domain%ds%setup(nx, ny, domain%is_staggered_grid)
+
+            ! For stability of dispersive domains
+            domain%flux_correct_dry_cells_outside_priority_domain = .false.
         end if
 
         if(any(domain%nontemporal_grids_to_store == 'elevation_source_file_index')) then
@@ -2725,7 +2736,7 @@ EVOLVE_TIMER_STOP('nesting_boundary_flux_integral_tstep')
             !! Apply some fraction of the flux correction. By default apply completely (i.e. 1.0)
 
         integer(ip) :: i, j, k, n0, n1, m0, m1, dm, dn, dir, ni, mi
-        integer(ip) :: dx_ratio, p0, p1, ii, jj, ic, jc, jL, iL, i1, j1, ind
+        integer(ip) :: dx_ratio, p0, p1, pind, ii, jj, ic, jc, jL, iL, i1, j1, ind
         integer(ip) :: my_index, my_image, nbr_index, nbr_image
         integer(ip) :: out_index, out_image, sg, ic_last, jc_last
         integer(ip) :: var1, varN, dm_outside, dn_outside, inv_cell_ratios_ip(2), nip, nim, njp, njm
@@ -2828,13 +2839,25 @@ TIMER_START('nesting_flux_correction')
                                 end if
 
                                 area_scale = sum(domain%area_cell_y(p0:p1))
-                                do k = var1, varN
-                                    domain%U(ni, p0:p1, k) = domain%U(ni, p0:p1, k) - &
-                                        sg * &
-                                        real(domain%nesting%recv_comms(i)%recv_box_flux_error(dir)%x(ni - n0 + 1, k)/&
-                                            area_scale, dp) * fraction_of_local
-                                end do
+                                do pind = p0, p1
+                                    ! Do not flux correct dispersive domains in 'high and dry' null regions (instability)
+                                    !if(.not. (domain%U(ni, pind, ELV) == elev_null .and. domain%use_dispersion)) then
 
+                                    ! if flux_correct_dry_cells_outside_priority_domain is FALSE, then only flux correct
+                                    ! wet cells or cells in the priority domain.
+                                    if( domain%flux_correct_dry_cells_outside_priority_domain .or. &
+                                        (domain%U(ni, pind, STG) >= domain%U(ni, pind, ELV) + minimum_allowed_depth) .or.  &
+                                        (domain%nesting%is_priority_domain_not_periodic(ni, pind) == 1) &
+                                        ) then
+
+                                        do k = var1, varN
+                                            domain%U(ni, pind, k) = domain%U(ni, pind, k) - &
+                                                sg * &
+                                                real(domain%nesting%recv_comms(i)%recv_box_flux_error(dir)%x(ni - n0 + 1, k)/&
+                                                    area_scale, dp) * fraction_of_local
+                                        end do
+                                    end if
+                                end do
                             end if
                         end if
                     end do
@@ -2904,11 +2927,24 @@ TIMER_START('nesting_flux_correction')
                                 end if
 
                                 area_scale = sum(domain%area_cell_y(p0:p1))
-                                do k = var1, varN
-                                    domain%U(ni, p0:p1, k) = domain%U(ni, p0:p1, k) + &
-                                        sg * &
-                                        real(domain%nesting%recv_comms(i)%recv_box_flux_error(dir)%x(ni - n0 + 1, k)/&
-                                            area_scale, dp) * fraction_of_local
+                                do pind = p0, p1
+                                    ! Do not flux correct dispersive domains in 'high and dry' null regions (instability)
+                                    !if(.not. (domain%U(ni, pind, ELV) == elev_null .and. domain%use_dispersion)) then
+
+                                    ! if flux_correct_dry_cells_outside_priority_domain is FALSE, then only flux correct
+                                    ! wet cells or cells in the priority domain.
+                                    if( domain%flux_correct_dry_cells_outside_priority_domain .or. &
+                                        (domain%U(ni, pind, STG) >= domain%U(ni, pind, ELV) + minimum_allowed_depth) .or.  &
+                                        (domain%nesting%is_priority_domain_not_periodic(ni, pind) == 1) &
+                                        ) then
+
+                                        do k = var1, varN
+                                            domain%U(ni, pind, k) = domain%U(ni, pind, k) + &
+                                                sg * &
+                                                real(domain%nesting%recv_comms(i)%recv_box_flux_error(dir)%x(ni - n0 + 1, k)/&
+                                                    area_scale, dp) * fraction_of_local
+                                        end do
+                                    end if
                                 end do
                             end if
                         end if
@@ -2991,11 +3027,24 @@ TIMER_START('nesting_flux_correction')
                                 end if
 
                                 area_scale = (domain%area_cell_y(mi)*dx_ratio)
-                                do k = var1, varN
-                                    domain%U(p0:p1, mi, k) = domain%U(p0:p1, mi, k) - &
-                                        sg * &
-                                        real(domain%nesting%recv_comms(i)%recv_box_flux_error(dir)%x(mi - m0 + 1, k)/&
-                                             area_scale, dp) * fraction_of_local
+                                do pind = p0, p1
+                                    ! Do not flux correct dispersive domains in 'high and dry' null regions (instability)
+                                    !if(.not. (domain%U(pind, mi, ELV) == elev_null .and. domain%use_dispersion)) then
+
+                                    ! if flux_correct_dry_cells_outside_priority_domain is FALSE, then only flux correct
+                                    ! wet cells or cells in the priority domain.
+                                    if( domain%flux_correct_dry_cells_outside_priority_domain .or. &
+                                        (domain%U(pind, mi, STG) >= domain%U(pind, mi, ELV) + minimum_allowed_depth) .or.  &
+                                        (domain%nesting%is_priority_domain_not_periodic(pind, mi) == 1) &
+                                        ) then
+
+                                        do k = var1, varN
+                                            domain%U(pind, mi, k) = domain%U(pind, mi, k) - &
+                                                sg * &
+                                                real(domain%nesting%recv_comms(i)%recv_box_flux_error(dir)%x(mi - m0 + 1, k)/&
+                                                     area_scale, dp) * fraction_of_local
+                                        end do
+                                    end if
                                 end do
                             end if
                         end if
@@ -3063,11 +3112,24 @@ TIMER_START('nesting_flux_correction')
                                 end if
 
                                 area_scale = (domain%area_cell_y(mi)*dx_ratio)
-                                do k = var1, varN
-                                    domain%U(p0:p1, mi, k) = domain%U(p0:p1, mi, k) + &
-                                        sg * &
-                                        real(domain%nesting%recv_comms(i)%recv_box_flux_error(dir)%x(mi - m0 + 1, k)/&
-                                            area_scale, dp) * fraction_of_local
+                                do pind = p0, p1
+                                    ! Do not flux correct dispersive_domains in 'high and dry' null regions (instability)
+                                    !if(.not. (domain%U(pind, mi, ELV) == elev_null .and. domain%use_dispersion)) then
+
+                                    ! if flux_correct_dry_cells_outside_priority_domain is FALSE, then only flux correct
+                                    ! wet cells or cells in the priority domain.
+                                    if( domain%flux_correct_dry_cells_outside_priority_domain .or. &
+                                        (domain%U(pind, mi, STG) >= domain%U(pind, mi, ELV) + minimum_allowed_depth) .or.  &
+                                        (domain%nesting%is_priority_domain_not_periodic(pind, mi) == 1) &
+                                        ) then
+
+                                        do k = var1, varN
+                                            domain%U(pind, mi, k) = domain%U(pind, mi, k) + &
+                                                sg * &
+                                                real(domain%nesting%recv_comms(i)%recv_box_flux_error(dir)%x(mi - m0 + 1, k)/&
+                                                    area_scale, dp) * fraction_of_local
+                                        end do
+                                    end if
                                 end do
                             end if
                         end if
@@ -3712,6 +3774,24 @@ TIMER_START('receive_halos')
                         if( (jp1 == jj + 1) .and. &
                             (domain%U(ii,jp1,STG) - domain%U(ii,jp1,ELV) <= minimum_allowed_depth) .and. &
                             (domain%U(ii,jj,VH) < 0.0_dp ) ) domain%U(ii,jj,VH) = 0.0_dp
+
+                        !
+                        ! Additional wet/dry constraints
+                        !
+
+                        ! Only allow outflow from wet cell into neighbouring dry cell 
+                        ! if the stage in the wet cell exceeds the elevation in the
+                        ! dry cell. The leapfrog_nonlinear solver has similar constraints in the
+                        ! definition of h_iph_wet and h_jph_wet
+                        if( (ip1 == ii+1) .and. &
+                            (domain%U(ii,jj,UH) > 0.0_dp) .and. &
+                            (domain%U(ip1, jj, STG) - domain%U(ip1, jj, ELV) <= minimum_allowed_depth) .and. &
+                            (domain%U(ii, jj, STG) <= domain%U(ip1, jj, ELV) + minimum_allowed_depth)) domain%U(ii,jj,UH) = 0.0_dp
+
+                        if( (jp1 == jj+1) .and. &
+                            (domain%U(ii, jj, VH) > 0.0_dp) .and. &
+                            (domain%U(ii, jp1, STG) - domain%U(ii, jp1, ELV) <= minimum_allowed_depth) .and. &
+                            (domain%U(ii,jj, STG) <= domain%U(ii, jp1, ELV) + minimum_allowed_depth) ) domain%U(ii,jj,VH) = 0.0_dp
 
                     end do
                 end do
