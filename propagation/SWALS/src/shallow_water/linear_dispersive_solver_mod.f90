@@ -1312,8 +1312,6 @@ EVOLVE_TIMER_START('disp_rhs')
 EVOLVE_TIMER_STOP('disp_rhs')
         end if
 
-        !if(ds%debug_me) write(log_output_unit, *) 'Initial solution: ', U(465, 128, UH)
-        !if(ds%debug_me) write(log_output_unit, *) '  RHS: ', ds%RHS(465, 128, UH)
 
         if(quadratic_extrap) then 
 EVOLVE_TIMER_START('disp_extrapolate_forward')
@@ -1325,7 +1323,6 @@ EVOLVE_TIMER_START('disp_extrapolate_forward')
                 !    - nonzero UH if the cell has just gone dry
                 !    - positive UH even if its neighbours are dry in a way that prevents flow
                 ! ??
-            !if(ds%debug_me) write(log_output_unit, *) '  Forward extrap: ', U(465, 128, UH)
 EVOLVE_TIMER_STOP('disp_extrapolate_forward')
             if(did_extrapolate) then
                 ! If we could extrapolate forward in time then less iterations should be needed
@@ -1390,7 +1387,6 @@ EVOLVE_TIMER_STOP('disp_sweep_vh')
             end if
 #endif
 
-            !if(ds%debug_me) write(log_output_unit, *) '  Iter',iter, U(465, 128, UH)
         end do iter_loop
 
     end subroutine

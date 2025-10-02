@@ -28,7 +28,6 @@ module domain_mod
         advection_beta, &
         minimum_allowed_depth, &
         default_nonlinear_timestepping_method, &
-        !elev_null, &
         default_output_folder, &
         send_boundary_flux_data
     use timer_mod, only: timer_type
@@ -280,12 +279,30 @@ module domain_mod
             !! Maximum value of (dx-from-domains-we-receive-from)/my-dx. Useful for nesting.
         logical :: flux_correct_dry_cells_outside_priority_domain = .true.
             !! Flux correction of dry areas could cause stage < bed, or non-zero flux despite dryness.
-            !! Experience has suggested that if domain%use_dispersion is .true., flux
-            !! correction of dry areas in non-priority domain regions can cause instabilities
-            !! (actually, the problem is in null regions when using md%set_null_regions_to_dry).
-            !! Those cases can be addressed using (domain%flux_correct_dry_cells_outside_priority_domain = .false.).
-            !! It was never found to be a problem with non-dispersive domains, so is .true. for backward compatibility
-            !! (I haven't tested whether using the value .false. everywhere would lead to important changes).
+            !! I had an experimental model (Java 2006 Steep Point) where if
+            !! domain%use_dispersion is .true., flux correction of dry areas in non-priority
+            !! domain regions caused instabilities.
+            !! (The instability was only triggered in 'high and dry' null regions using
+            !!  md%set_null_regions_to_dry).
+            !! That instability is resolved using 
+            !!      domain%flux_correct_dry_cells_outside_priority_domain = .false.
+            !! for dispersive domains. 
+            !!    - The change is restricted to (is_priority_domain_not_periodic==0) to retain
+            !!      more similarity with the original approach in priority domain areas.
+            !!    - This issue was never noticed as a problem with non-dispersive domains, so
+            !!      the default value .true. keeps backward compatibility.
+            !! If revisiting this, note some other implementation choices sound reasonable:
+            !!    - (More extensive restriction of flux correction) It may be reasonable to
+            !!      use .false. for both dispersive and non-dispersive. That would be a more
+            !!      extensive change, and warrant solid testing to check the effects on older
+            !!      models. One could also consider these restrictions within the priority domain.
+            !!    - (More limited restriction of flux correction) The issue I saw could be
+            !!      fixed by only restricting in 'high and dry' null regions. I didn't do this
+            !!      to avoid more coding/storage to reliably detect null regions. One could assume
+            !!      they are areas with elevation==elev_null, which is easy, but that won't work if
+            !!      the null regions are near a time-varying earthquake source (changing elevation)
+            !!      or if the user has set the elevation to elev_null in other areas for other
+            !!      reasons.
 
         !
         ! Boundary conditions.
@@ -2840,9 +2857,6 @@ TIMER_START('nesting_flux_correction')
 
                                 area_scale = sum(domain%area_cell_y(p0:p1))
                                 do pind = p0, p1
-                                    ! Do not flux correct dispersive domains in 'high and dry' null regions (instability)
-                                    !if(.not. (domain%U(ni, pind, ELV) == elev_null .and. domain%use_dispersion)) then
-
                                     ! if flux_correct_dry_cells_outside_priority_domain is FALSE, then only flux correct
                                     ! wet cells or cells in the priority domain.
                                     if( domain%flux_correct_dry_cells_outside_priority_domain .or. &
@@ -2928,8 +2942,6 @@ TIMER_START('nesting_flux_correction')
 
                                 area_scale = sum(domain%area_cell_y(p0:p1))
                                 do pind = p0, p1
-                                    ! Do not flux correct dispersive domains in 'high and dry' null regions (instability)
-                                    !if(.not. (domain%U(ni, pind, ELV) == elev_null .and. domain%use_dispersion)) then
 
                                     ! if flux_correct_dry_cells_outside_priority_domain is FALSE, then only flux correct
                                     ! wet cells or cells in the priority domain.
@@ -3028,8 +3040,6 @@ TIMER_START('nesting_flux_correction')
 
                                 area_scale = (domain%area_cell_y(mi)*dx_ratio)
                                 do pind = p0, p1
-                                    ! Do not flux correct dispersive domains in 'high and dry' null regions (instability)
-                                    !if(.not. (domain%U(pind, mi, ELV) == elev_null .and. domain%use_dispersion)) then
 
                                     ! if flux_correct_dry_cells_outside_priority_domain is FALSE, then only flux correct
                                     ! wet cells or cells in the priority domain.
@@ -3113,8 +3123,6 @@ TIMER_START('nesting_flux_correction')
 
                                 area_scale = (domain%area_cell_y(mi)*dx_ratio)
                                 do pind = p0, p1
-                                    ! Do not flux correct dispersive_domains in 'high and dry' null regions (instability)
-                                    !if(.not. (domain%U(pind, mi, ELV) == elev_null .and. domain%use_dispersion)) then
 
                                     ! if flux_correct_dry_cells_outside_priority_domain is FALSE, then only flux correct
                                     ! wet cells or cells in the priority domain.

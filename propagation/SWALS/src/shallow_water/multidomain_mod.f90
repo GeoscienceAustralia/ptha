@@ -1451,7 +1451,6 @@ TIMER_STOP('comms_disp')
 
         end do substeps_loop
 
-        !write(log_output_unit, *) 'Before flux correction: ', md%domains(14)%U(465, 128, UH)
 
 TIMER_START('flux_correction')
         ! Fix time and fluxes
@@ -1468,7 +1467,6 @@ TIMER_START('flux_correction')
             end if
         end do
 TIMER_STOP('flux_correction')
-        !write(log_output_unit, *) 'After flux correction: ', md%domains(14)%U(465, 128, UH)
 
         ! Do a final send/recv. This is sometimes important for nesting stability, 
         ! suggesting "domain%nesting_flux_correction_everywhere" is more approximate
@@ -1482,7 +1480,6 @@ TIMER_STOP('comms1b')
 #ifdef TRACK_MULTIDOMAIN_STABILITY
         call check_multidomain_stability(md, 'step-after-final-recv')
 #endif
-        !write(log_output_unit, *) 'Just before end of loop: ', md%domains(14)%U(465, 128, UH)
 
     end subroutine
 
