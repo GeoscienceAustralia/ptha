@@ -1,6 +1,6 @@
-!
-! Tridiagonal solve routines extracted from LAPACK.
-!
+*
+* Tridiagonal solve routines extracted from LAPACK.
+*
 
 
 *> \brief <b> SGTSV computes the solution to system of linear equations A * X = B for GT matrices </b>
