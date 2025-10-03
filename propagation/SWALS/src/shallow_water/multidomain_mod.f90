@@ -2557,15 +2557,6 @@ __FILE__
                     y1 = md%domains(j)%nesting%recv_metadata(5,i)
                     y2 = md%domains(j)%nesting%recv_metadata(6,i)
 
-                    ! Check that the elevation is not already == elev_null (as this suggests
-                    ! the real elevation data includes elev_null)
-                    if(any(md%domains(j)%U(x1:x2, y1:y2, ELV) == elev_null)) then
-                        write(log_output_unit, *) &
-                            'Warning: set_null_regions_to_dry is modifying a region with initial elevation == elev_null. ', &
-                            'The "real" elevation data should be clearly distinct from elev_null (', elev_null, &
-                            '), but it is OK if the initial elevation is representing a non-flow region.'
-                    end if
-
                     md%domains(j)%U(x1:x2, y1:y2, STG) = stage_null
                     md%domains(j)%U(x1:x2, y1:y2, UH) = uh_null
                     md%domains(j)%U(x1:x2, y1:y2, VH) = vh_null
