@@ -127,7 +127,7 @@ program undular_bore
     call md%make_initial_conditions_consistent() ! Get the initial volume right
 
     ! Fixed timestep  
-    timestep = md%stationary_timestep_max() * 0.5_dp 
+    timestep = md%stationary_timestep_max() * 0.9_dp 
     !print*, trim(timestepping_method), ', dx = ', dx, ', timestep = ', timestep
 
     ! Evolve the code

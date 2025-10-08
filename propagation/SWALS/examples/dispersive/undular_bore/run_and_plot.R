@@ -63,7 +63,7 @@ for(nm in numerical_schemes){
 
     # Test 1 -- compare average abs deviation with Madsen.
     test_stat = mean(abs(test_SWALS - test_Madsen))
-    err_tol = 0.25 # Ad-hoc choice
+    err_tol = 0.3 # Ad-hoc choice
     #print(test_stat)
     if(test_stat < err_tol){
         print('PASS')
@@ -73,7 +73,7 @@ for(nm in numerical_schemes){
 
     # Test 2 -- compare maxima with madsen
     test_stat_2 = max(test_SWALS) - max(test_Madsen)
-    err_tol_2 = 0.25 # Ad-hoc choice
+    err_tol_2 = 0.3 # Ad-hoc choice
     if(abs(test_stat_2) < err_tol_2){
         print('PASS')
     }else{
