@@ -45,6 +45,6 @@ of dissipation near discontinuities (i.e. limiters).
 # Cliffs
 
 This seems slower to converge at high resolution, likely reflecting limitations of
-how dispersion is integrated into the CLIFFS timestepping.
+how SWALS includes dispersive terms to CLIFFS.
 
 ![Figure 4: Cliffs solver](FIXME)
