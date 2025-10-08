@@ -33,8 +33,18 @@ corrector step).
 
 # Leapfrog nonlinear
 
+This solver includes first-order-accurate momentum advection, and since
+momentum advection matters for this problem, at high resolution it is expected
+to be less accurate than the finite volume schemes. Interestingly at low
+resolution this solver does a better job of reflecting the presence of bores,
+likely because the leapfrog nonlinear solver does not include fancy treatments
+of dissipation near discontinuities (i.e. limiters).
+
 ![Figure 3: Leapfrog Nonlinear solver](FIXME)
 
 # Cliffs
+
+This seems slower to converge at high resolution, likely reflecting limitations of
+how dispersion is integrated into the CLIFFS timestepping.
 
 ![Figure 4: Cliffs solver](FIXME)
