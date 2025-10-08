@@ -5,10 +5,6 @@ module local_routines
 
     use global_mod, only: dp, ip, charlen, pi
     use domain_mod, only: domain_type, STG, UH, VH, ELV
-    use read_raster_mod, only: read_gdal_raster
-    use which_mod, only: which
-    use file_io_mod, only: count_file_lines
-    use linear_interpolator_mod, only: linear_interpolator_type
     implicit none
 
     real(dp), parameter :: mean_elevation = -20.0_dp, length = 30000.0_dp
@@ -62,20 +58,6 @@ module local_routines
         ! Stage >= bed 
         domain%U(:,:,STG) = max(domain%U(:,:,STG), domain%U(:,:,ELV))
         
-        !! Define locations of gauge outputs
-        !gauge_xy(2,:) = 0.0_dp ! Always y == 0
-        !gauge_xy(1, 1:4) = 0.0_dp + 1.0e-06_dp ! Nudge x-coordinate inside the domain
-        !gauge_xy(1,5) = tank_x(2)
-        !gauge_xy(1,6) = 0.5_dp * (tank_x(3) + tank_x(2))
-        !gauge_xy(1,7) = tank_x(3)
-        !gauge_xy(1,8) = 0.5_dp * (tank_x(3) + tank_x(4))
-        !gauge_xy(1,9) = tank_x(4)
-        !gauge_xy(1,10) = 0.5_dp * (tank_x(4) + tank_x(5))
-        !! Include just before the wall
-        !gauge_xy(1,11) = domain%x(domain%nx(1) - 2)
-
-        !call domain%setup_point_gauges(gauge_xy)
-
     end subroutine
 
 end module 
@@ -86,11 +68,9 @@ program undular_bore
     !!
     !! Undular bore development from an initial sinusoidal wave
     !!
-    use global_mod, only: ip, dp, minimum_allowed_depth
+    use global_mod, only: ip, dp
     use multidomain_mod, only: multidomain_type
-    use boundary_mod, only: boundary_stage_transmissive_momentum, flather_boundary, &
-        transmissive_boundary, boundary_stage_transmissive_normal_momentum
-    use linear_interpolator_mod, only: linear_interpolator_type
+    use boundary_mod, only: boundary_stage_transmissive_normal_momentum
     use local_routines
     implicit none
 
@@ -98,7 +78,7 @@ program undular_bore
 
     ! Approx timestep between outputs
     real(dp), parameter :: approximate_writeout_frequency = 10.0_dp
-    real(dp), parameter :: final_time = 2000.0_dp
+    real(dp), parameter :: final_time = 1550.0_dp
 
     ! Domain info
     character(charlen) :: timestepping_method, buf
