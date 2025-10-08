@@ -1,5 +1,5 @@
 # Source code location
-SWALS_SRC := ../../src
+SWALS_SRC := ../../../src
 
 include $(SWALS_SRC)/src_standard_compiler_var
 
