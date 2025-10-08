@@ -35,7 +35,7 @@ corrector step).
 
 This solver includes first-order-accurate momentum advection, and since
 momentum advection matters for this problem, at high resolution it is expected
-to be less accurate than the finite volume schemes. Interestingly at low
+to be less accurate than the midpoint finite-volume scheme. Interestingly at low
 resolution this solver does a better job of reflecting the presence of bores,
 likely because the leapfrog nonlinear solver does not include fancy treatments
 of dissipation near discontinuities (i.e. limiters).
