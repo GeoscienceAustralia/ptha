@@ -117,16 +117,19 @@ program shoaling_variable_seabed
     allocate(md%domains(1))
 
     if(long_dimension == 'y') then
-        md%domains(1)%lw = [5*dx, xr + 2*dx]
-        md%domains(1)%lower_left =  [-2.5_dp * dx, -2.5*dx] ! Real flow over x==0, y >= -(dx/2) (with space for reflective boundaries)
+        ! Uneven grid size == (dx along y), (3*dx along x)
+        md%domains(1)%lw = [5*dx*3, xr + 2*dx]
+        md%domains(1)%lower_left =  [-2.5_dp * dx*3, -2.5*dx] ! Real flow over x==0, y >= -(dx/2) (with space for reflective boundaries)
+        md%domains(1)%nx = nint(md%domains(1)%lw/[3*dx, dx])
     else if(long_dimension == 'x') then
-        md%domains(1)%lw = [xr + 2*dx, 5*dx]
-        md%domains(1)%lower_left =  [-2.5_dp * dx, -2.5*dx] ! Real flow over y==0, x >= -(dx/2) (with space for reflective boundaries)
+        ! Uneven grid size == (dx along x), (3*dx along y)
+        md%domains(1)%lw = [xr + 2*dx, 5*dx*3]
+        md%domains(1)%lower_left =  [-2.5_dp * dx, -2.5*dx*3] ! Real flow over y==0, x >= -(dx/2) (with space for reflective boundaries)
+        md%domains(1)%nx = nint(md%domains(1)%lw/[dx, 3*dx])
     else
         stop "unknown long_dimension"
     end if
 
-    md%domains(1)%nx = nint(md%domains(1)%lw/dx)
     md%domains(1)%timestepping_method = timestepping_method
     md%domains(1)%use_dispersion = .true. !
     !md%domains(1)%nc_grid_output%flush_every_n_output_steps = 1_ip !
