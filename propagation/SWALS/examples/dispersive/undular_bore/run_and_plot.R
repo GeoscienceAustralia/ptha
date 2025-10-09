@@ -71,7 +71,7 @@ for(nm in numerical_schemes){
         print(paste0('FAIL', nm, test_stat))
     }
 
-    # Test 2 -- compare maxima with madsen
+    # Test 2 -- compare maxima with Madsen
     test_stat_2 = max(test_SWALS) - max(test_Madsen)
     err_tol_2 = 0.3 # Ad-hoc choice
     if(abs(test_stat_2) < err_tol_2){
@@ -79,5 +79,5 @@ for(nm in numerical_schemes){
     }else{
         print(paste0('FAIL', nm, test_stat, test_stat_2))
     }
-        
+
 }
