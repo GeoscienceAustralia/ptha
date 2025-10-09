@@ -1,4 +1,4 @@
-# Shoaling over a variable seabed
+# Shoaling of a dispersive nonlinear wave over a variable seabed
 
 This problem was proposed by [Kennedy et al. (2000)](https://www1.udel.edu/kirby/papers/kennedy-etal-icce00.pdf) and is also
 used in [Coulaud et al. (2025)](http://dx.doi.org/10.1016/j.coastaleng.2024.104645) (their Case 2). 
