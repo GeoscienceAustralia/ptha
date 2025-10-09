@@ -56,18 +56,22 @@ for(nm in numerical_schemes){
             x_k = y[k]
             max_stg_k = max_stage[3,k]
             min_stg_k = min_stage[3,k]
+            elev_k = elev[3,k]  
+            initial_stage_k = stg[3,k,1]
         }else if(grepl('long_dimension_x', matching_dirs[i])){
             k = which(elev[,3] < max(elev)-1e-03) # Used to avoid walls (1.0 m)
             x_k = x[k]
             max_stg_k = max_stage[k,3]
             min_stg_k = min_stage[k,3]
+            elev_k = elev[k,3]
+            initial_stage_k = stg[k,3,1]
         }else{
             stop('unknown long_dimension')
         }
 
         if(i == 1){
             plot(x_k, max_stg_k, t='l', ylim=c(-0.25, 0.15), col=i, 
-                main='Water surface envelope', xlab='x', ylab='Stage (m)')
+                main=paste0('Water surface envelope: ', nm), xlab='x', ylab='Stage (m)')
             grid()
         }else{
             points(x_k, max_stg_k, t='l', col=i)
@@ -139,6 +143,16 @@ for(nm in numerical_schemes){
         }else{
             print(paste0('FAIL (err_stat_lower)', err_stat_lower, ' ', nm, ' ', res))
         }
+
+    }
+
+    # Plot the initial condition
+    if(nm == numerical_schemes[1]){
+        png('Initial_condition.png', width=8, height=6, units='in', res=200)
+        plot(x_k, elev_k, t='l', ylim=c(-1, 0.2), col='brown', xlab='x (m)', ylab='Stage (m)', main='Initial condition', cex.main=2)
+        points(x_k, initial_stage_k, t='l', col='blue')
+        legend('bottomright', c('Bed', 'Initial stage'), lty=c(1,1), col=c('brown', 'blue'), pch=NA, bty='n', cex=2)
+        dev.off()
     }
 
     ## Add in a PASS/FAIL test by comparison with Madsen

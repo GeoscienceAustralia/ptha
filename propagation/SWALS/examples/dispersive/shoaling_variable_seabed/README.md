@@ -8,6 +8,8 @@ sloping seabed. The solution is evolved for a set time period. The initial wave 
 only 2-3x greater than the depth, so they are very dispersive, while the wave
 heights are large enough that nonlinearity also matters.
 
+![Initial condition](Initial_condition.png)
+
 We compare the numerical water surface maxima/minima with the Whispers3D
 reference solution of Coulaud et al. (2025), digitized from their paper. The
 SWALS models are run at a range of resolutions to check the rate of
@@ -22,6 +24,7 @@ The models are also run in transposed domains (i.e. the 1D test
 separately exercises the UH and VH momentum equations) to check that they 
 give near identical results. The plots include both directions, but only
 one will be visible since they plot almost exactly atop each other.
+
 
 
 ## Midpoint
