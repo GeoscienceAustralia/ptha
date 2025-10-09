@@ -10,13 +10,17 @@ heights are large enough that nonlinearity also matters.
 We compare the numerical water surface maxima/minima with the Whispers3D
 reference solution of Coulaud et al. (2025), digitized from their paper. The
 SWALS models are run at a range of resolutions to check the rate of
-convergence. They are also run in transposed domains (i.e. the 1D test
-separately exercises the UH and VH momentum equations) to
-check that they give near identical results.
+convergence. 
 
 All solvers give quite similar solutions at the finest resolution. The midpoint solver 
 converges more quickly than the other solvers, which is not surprising since it is the only
 one which retains second order accuracy for both dispersive and nonlinear terms.
+
+The models are also run in transposed domains (i.e. the 1D test
+separately exercises the UH and VH momentum equations) and we check that they 
+give near identical results. The plots include both directions, but only
+one will be visible since they plot almost exactly atop each other.
+
 
 ## Midpoint
 
