@@ -8,9 +8,7 @@ The test problem is from the NTHMP benchmark suite. The test data and a problem 
 
 The [SWALS model](BP06.f90) uses a nested grid around the island. It has a options to use different solvers, grid resolutions, and forcings, reflecting our experiments with this problem. 
 
-* For example, the solitary wave forcing can be created in three different ways: an analytical initial condition; an approximate wavemaker forcing; or a forcing based on observed waves at gauge 2 (between the wavemaker and the island). A setup using the `cliffs` solver was also implemented to mimic the results of [Tolkova, 2014](https://doi.org/10.1007/s00024-014-0825-8). 
-
-In the example below the wave forcing was derived from an analytical initial condition. 
+In the example below the wave forcing was derived from an analytical initial condition for a solitary wave. 
 
 In the [SWALS model](BP06.f90) the first command line argument takes the value 1, 2 or 3, corresponding to cases A, B and C. The second command line argument takes the value `default` for all results below (to use the default nonlinear solver `rk2`). 
 
