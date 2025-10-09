@@ -67,8 +67,12 @@ for(i in 1:length(test_cases)){
     for(ii in 2:ncol(analytical)){
         plot(analytical[,1], analytical[,ii],t='l', ylim=plot_ylim, 
             xlab='Time (s)', ylab='Stage (m)', lwd=4, cex.axis=1.7, cex.lab=2, col='white')
-        if(show_obs & ii < ncol(analytical)) points(obs[,1], obs[,ii], t='l', col='green') 
-        points(x$gauges$time, x$gauges$time_var$stage[ii+2,],t='l', col='red', lwd=1)
+        include_obs = (show_obs & ii < ncol(analytical))
+        if(include_obs) points(obs[,1], obs[,ii], t='l', col='green') 
+
+        model_time = x$gauges$time
+        model_stage = x$gauges$time_var$stage[ii+2,]
+        points(model_time, model_stage,t='l', col='red', lwd=1)
         if(ii == 2){
             if(show_obs){
                 legend('topright', 
@@ -82,17 +86,22 @@ for(i in 1:length(test_cases)){
         }
         title(gauge_names[ii-1], cex.main=3)
 
-        ## FIXME: Need tests for dispersive version
-        #if(timestepping_method == 'linear'){
-        #    # Quick test that analytical errors are small
-        #    model_at_analytical = approx(x$gauges$time, x$gauges$time_var$stage[ii+2,], xout=analytical[,1])
-        #    err_stat = mean(abs(model_at_analytical$y - analytical[,ii]))/diff(range(analytical[,ii]))
-        #    if(err_stat < ERR_TOL){
-        #        print('PASS')
-        #    }else{
-        #        print('FAIL')
-        #    }
-        #}
+        # Include some PASS/FAIL tests (not a substitute for looking at the results!)
+        if(include_obs){
+            # Quick model-vs-data stat
+            ts = seq(270, 290, by=0.01)
+            model_ts = approx(model_time, model_stage, xout=ts)$y
+            obs_ts = approx(obs[,1], obs[,ii], xout=ts)$y
+            err_stat = mean(abs(model_ts - obs_ts))
+
+            # Ad-hoc error tolerance for cases A, B, C
+            err_thresh = c(0.0015, 0.005,  0.01)[i]
+            if(err_stat < err_thresh){
+                print('PASS')
+            }else{
+                print(c('FAIL', timestepping_method, test_cases_caps[i], ii, err_stat, err_thresh))
+            }
+        }
     }
     dev.off()
 }
