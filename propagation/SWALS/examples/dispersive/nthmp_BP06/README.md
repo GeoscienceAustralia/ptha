@@ -1,6 +1,6 @@
 # NTHMP test problem 6 (dispersive solvers): Solitary wave runup on a conical island.
 
-We model the runup of three different solitary waves around a conical island, including dispersion in the solver. The three cases (A, B, and C) are forced with increasingly large solitary wave initial conditions, slightly less than 5%, 10% and 20% of the offshore depth. They were studied experimentally by [Briggs et al., 1995](https://doi.org/10.1007/bf00874384) and have been modelled in many publications.
+We model the runup of three different solitary waves around a conical island, including dispersion in the solver (non-dispersive version [here](../../nthmp/BP06)). The three cases (A, B, and C) are forced with increasingly large solitary wave initial conditions, slightly less than 5%, 10% and 20% of the offshore depth. They were studied experimentally by [Briggs et al., 1995](https://doi.org/10.1007/bf00874384) and have been modelled in many publications.
 
 The test problem is from the NTHMP benchmark suite. The test data and a problem description is available in [Randy LeVeque's repository](https://github.com/rjleveque/nthmp-benchmark-problems/tree/master/BP06-FrankG-Solitary_wave_on_a_conical_island). This includes gauge time-series between the wavemaker and the island (gauges 1,2,3,4), gauge time-series around the island (gauges 6, 9, 16, 22), and records of the runup maxima around the island. Note the locations of gauges 1-4 differ for cases A, B, and C.
 
