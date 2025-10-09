@@ -4,6 +4,7 @@ source('potential_solution.R')
 
 plot_tag = commandArgs(trailingOnly=TRUE)[1] # Include in the plot filenames
 
+# Get the simulations
 md_dir = rev(sort(Sys.glob('OUTPUTS/RUN*')))[1]
 x = get_multidomain(md_dir, read_grids=FALSE, read_gauges=FALSE)
 ti = length(x[[1]]$time)
@@ -37,26 +38,48 @@ if(using_staggered_schemes){
     solend_lag = solend
 }
 
+#
 # Plot transects of the numerical and analytical solution at the final time
+#
+
 png(paste0('numerical_vs_potential_solution_EW_', plot_tag, '.png'), width=7, height=6, units='in', res=200)
 lon_to_arcdeg = cos(central_lat/180*pi) # Convert longitude degrees to be equivalent to latitude
-plot(xs_lon*lon_to_arcdeg, solend[,floor(length(ys)/2)], t='l', xlab='Arc Degrees', ylab='Stage (m)',
+potential_x = xs_lon*lon_to_arcdeg
+potential_stage = solend[,floor(length(ys)/2)]
+plot(potential_x, potential_stage, t='l', xlab='Arc Degrees', ylab='Stage (m)',
     ylim=c(-1.4, 1.0), lwd=5, lty='solid', main=paste0('Solution at final time = ', round(x[[1]]$time[ti],3) ))
 if(using_staggered_schemes) points(xs_lon*lon_to_arcdeg, solend_lag[,floor(length(ys)/2)], t='l', col='green', lwd=2)
+
+points_and_pass_fail_check<-function(model_x, model_stage, col){
+    # Convenience function to add a line to the plot, and also do a PASS/FAIL check on the results
+    #browser()
+    points(model_x, model_stage, t='l', col=col)
+
+    # PASS/FAIL check
+    reference_result = approx(potential_x, potential_stage, xout=model_x)$y
+    k = which(!(is.na(reference_result) | is.na(model_stage)))
+    err_stat = mean(abs(reference_result - model_stage)[k])
+    err_tol = 0.01
+    if(err_stat < err_tol){
+        print('PASS')
+    }else{
+        print(c('FAIL', err_stat))
+    }
+
+}
+
 # Numerical solution along y==0
-points(STAGE$xs*lon_to_arcdeg, STAGE$stage[,floor(length(STAGE$ys)/2)], t='l', col='red')
+points_and_pass_fail_check(STAGE$xs*lon_to_arcdeg, STAGE$stage[,floor(length(STAGE$ys)/2)], col='red')
 if(has_two_domains){
-    k = which.min(abs(STAGE2$ys))
-    #print(c('inner grid y value: ', STAGE2$ys[k]))
-    points(STAGE2$xs*lon_to_arcdeg, STAGE2$stage[,k], t='l', col='red')
+    k = which.min(abs(STAGE2$ys - central_lat))
+    points_and_pass_fail_check(STAGE2$xs*lon_to_arcdeg, STAGE2$stage[,k], col='red')
 }
 ## Numerical solution along x==0 -- note we have an uneven grid size
-## We scale the y-coordinat
-points((STAGE$ys-central_lat), STAGE$stage[floor(length(STAGE$xs)/2), ], t='l', col='orange')
+## We scale the y-coordinate
+points_and_pass_fail_check((STAGE$ys-central_lat), STAGE$stage[floor(length(STAGE$xs)/2), ], col='orange')
 if(has_two_domains){
     k = which.min(abs(STAGE2$xs)) 
-    #print(c('inner grid x value: ', STAGE2$xs[k]))
-    points((STAGE2$ys-central_lat), STAGE2$stage[k, ], t='l', col='orange')
+    points_and_pass_fail_check((STAGE2$ys-central_lat), STAGE2$stage[k, ], col='orange')
 }
 dx = mean(diff(STAGE$xs))
 dy = mean(diff(STAGE$ys))
