@@ -4,9 +4,11 @@ This problem was proposed by [Kennedy et al. (2000)](https://www1.udel.edu/kirby
 used in [Coulaud et al. (2025)](http://dx.doi.org/10.1016/j.coastaleng.2024.104645) (their Case 2). 
 
 A wave train is initialised with non-uniform stage, and zero velocities, over a
-sloping seabed. The solution is evolved for a set time period. The initial wavelengths are
-only 2-3x greater than the depth, so dispersion is very significant, while nonlinearity
-is also significant because the wave amplitudes are around 10% of the depth.
+sloping seabed. The solution is evolved for a set time period. The initial
+wavelengths are only 2-3x greater than the depth, so dispersion is very
+significant (a stretch for the simple dispersive model in SWALS), while
+nonlinearity is also significant because the wave amplitudes are around 10% of
+the depth.
 
 ![Initial condition](Initial_condition.png)
 
