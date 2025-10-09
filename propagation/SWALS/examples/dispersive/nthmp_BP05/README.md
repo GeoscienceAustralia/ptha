@@ -1,4 +1,4 @@
-# NTHMP test problems 5, dispersive version: Solitary wave on a composite beach
+# NTHMP test problems 5 (dispersive version): Solitary wave on a composite beach
 
 This problem covers benchmark 5 from the NTHMP test suite, using dispersive solvers. The test data
 and a problem description is available in 
