@@ -1,3 +1,6 @@
+export SWALS_SRC='../../../src'
+source ${SWALS_SRC}/test_run_commands
+
 rm ./radial_potential_nested
 rm -r ./OUTPUTS
 make -B -f make_radial_potential
