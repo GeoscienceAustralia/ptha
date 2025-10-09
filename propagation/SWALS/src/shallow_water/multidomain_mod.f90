@@ -364,8 +364,8 @@ TIMER_START('check_multidomain_stability')
 
         throw_error = 0
         !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(md, d1, d2) REDUCTION(+:throw_error)
+        !throw_error = 0
         do j = d1, d2
-            throw_error = 0
             ecw = md%domains(j)%exterior_cells_width
             !$OMP DO SCHEDULE(STATIC) COLLAPSE(2)
             do i1 = STG, ELV
