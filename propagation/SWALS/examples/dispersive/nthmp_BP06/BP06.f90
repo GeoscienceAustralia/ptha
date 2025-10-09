@@ -453,9 +453,6 @@ program BP06
         ts_method = 'midpoint' !default_nonlinear_timestepping_method
         mesh_refine = 1.0_dp
         nest_ratio = 3_ip ! With dispersion, the odd nest ratio avoids some 'corner' nesting instabilities
-        !ts_refinement = nest_ratio
-        !global_dt = 0.024_dp / mesh_refine
-        !forcing_type = 'boundary'
         ts_refinement = 3_ip !1_ip !nest_ratio
         global_dt = 0.024_dp / mesh_refine ! 0.008_dp / mesh_refine !0.024_dp / mesh_refine
         forcing_type = 'initial_condition' ! Must be initial condition for dispersive model
@@ -475,9 +472,9 @@ program BP06
         nd = 2
         ts_method = 'leapfrog_nonlinear'
         mesh_refine = 1.0_dp !1.0_dp/3.0_dp
-        nest_ratio = 3_ip !7_ip ! Shows some instability using a value of 10.
+        nest_ratio = 3_ip 
         ts_refinement = 1_ip
-        global_dt = merge(0.012_dp/mesh_refine, 0.006_dp/mesh_refine, (forcing_case <= 2)) !0.01_dp 
+        global_dt = merge(0.012_dp/mesh_refine, 0.006_dp/mesh_refine, (forcing_case <= 2)) 
         forcing_type = 'initial_condition'
     else
         write(log_output_unit, *) 'unrecognized value of "model_setup":', trim(model_setup)
@@ -549,7 +546,6 @@ program BP06
     call setup_boundary_information(forcing_case)
     md%domains(1)%boundary_subroutine => flather_boundary 
         ! FIXME: Boundary condition really should prevent mass flowing out, experiment has walls!
-        ! But modellers in the NTHMP mention use of radiation boundaries, so that is done here too.
     if(forcing_type /= 'initial_condition') then
         md%domains(1)%forcing_subroutine => forcing_subroutine
         call md%domains(1)%store_forcing()
