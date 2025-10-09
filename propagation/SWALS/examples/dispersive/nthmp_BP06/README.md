@@ -4,7 +4,7 @@ We model the runup of three different solitary waves around a conical island, in
 
 The test problem is from the NTHMP benchmark suite. The test data and a problem description is available in [Randy LeVeque's repository](https://github.com/rjleveque/nthmp-benchmark-problems/tree/master/BP06-FrankG-Solitary_wave_on_a_conical_island). This includes gauge time-series between the wavemaker and the island (gauges 1,2,3,4), gauge time-series around the island (gauges 6, 9, 16, 22), and records of the runup maxima around the island. Note the locations of gauges 1-4 differ for cases A, B, and C.
 
-![Conical Island flume geometry and gauge locations. The wavemaker is near the left edge of the domain. Gauge locations 1-4 vary slightly between cases A, B and C](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/nthmp/BP06/Flume_plot_A_default.png)
+![Conical Island flume geometry and gauge locations. The wavemaker is near the left edge of the domain. Gauge locations 1-4 vary slightly between cases A, B and C](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/dispersive/nthmp_BP06/Flume_plot_A_default.png)
 
 The [SWALS model](BP06.f90) uses a nested grid around the island. It has a options to use different solvers, grid resolutions, and forcings, reflecting our experiments with this problem. 
 
@@ -36,30 +36,30 @@ This serves as a high-order reference solution to the nondispersive shallow wate
 
 Figure 1 compares the SWALS model with the gauge time-series. For early times the model agrees well with the offshore gauges (1-4) and the gauges around the island (6,9,16,22). At later times the waves are affected by interaction with the flume boundary, which is designed to reduce reflections, and not perfectly represented in the model (which here uses reflective north/south boundaries and a Flather east/west boundary). 
 
-![Figure 1: Modelled and observed time-series at offshore gauges, Case A](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/nthmp/BP06/Gauges_plot_A_default.png)
+![Figure 1: Modelled and observed time-series at offshore gauges, Case A](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/dispersive/nthmp_BP06/Gauges_plot_A_default.png)
 
 Figure 2 compares the modelled and observed runups around the island. Note the large difference between the two runup datasets. With dispersion, the SWALS runups are slightly smaller than the reference FUNWAVE shallow water simulation and the "alternative" runup data. Both modelled runups are significantly larger than the NTHMP runup data.
 
 * If dispersion is included in the FUNWAVE simulation then the modelled runup reduces also slightly (in between the two datasets).
 
-![Figure 2: Modelled and observed runup maxima around the island, Case A](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/nthmp/BP06/Runup_plot_A_default.png)
+![Figure 2: Modelled and observed runup maxima around the island, Case A](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/dispersive/nthmp_BP06/Runup_plot_A_default.png)
 
 # Results for Case B
 
 Figure 3 compares the SWALS model with the gauge time-series. 
 
-![Figure 3: Modelled and observed time-series at offshore gauges, Case B](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/nthmp/BP06/Gauges_plot_B_default.png)
+![Figure 3: Modelled and observed time-series at offshore gauges, Case B](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/dispersive/nthmp_BP06/Gauges_plot_B_default.png)
 
 Figure 4 compares the modelled and observed runups around the island. 
 
-![Figure 4: Modelled and observed runup maxima around the island, Case B](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/nthmp/BP06/Runup_plot_B_default.png)
+![Figure 4: Modelled and observed runup maxima around the island, Case B](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/dispersive/nthmp_BP06/Runup_plot_B_default.png)
 
 # Results for Case C
 
 Figure 5 compares the SWALS model with the gauge time-series.  
 
-![Figure 5: Modelled and observed time-series at offshore gauges, Case C](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/nthmp/BP06/Gauges_plot_C_default.png)
+![Figure 5: Modelled and observed time-series at offshore gauges, Case C](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/dispersive/nthmp_BP06/Gauges_plot_C_default.png)
 
 Figure 6 compares the modelled and observed runups around the island.
 
-![Figure 6: Modelled and observed runup maxima around the island, Case C](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/nthmp/BP06/Runup_plot_C_default.png)
+![Figure 6: Modelled and observed runup maxima around the island, Case C](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/dispersive/nthmp_BP06/Runup_plot_C_default.png)
