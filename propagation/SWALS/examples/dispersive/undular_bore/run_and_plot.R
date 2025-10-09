@@ -4,11 +4,13 @@
 numerical_schemes = c('midpoint', 'leapfrog_nonlinear', 'rk2', 'cliffs')
 resolutions = c(20, 10, 5, 2)
 
+omp_run_command = Sys.getenv('OMP_RUN_COMMAND')
+
 for(nm in numerical_schemes){
     
     # Run each resolution
     for(res in resolutions){
-        run_command = paste0('OMP_NUM_THREADS=6 OMP_PROC_BIND=true ./undular_bore ', nm, ' ', res)
+        run_command = paste0(omp_run_command, ' ./undular_bore ', nm, ' ', res)
         system(run_command)
     }
 
