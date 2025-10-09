@@ -33,29 +33,29 @@ argument. This is used to test a few nonlinear shallow water solvers (`midpoint`
 
 Here we test the `midpoint` finite volume scheme including dispersion.
 
-![Figure 5: Comparison of experimental and SWALS nonlinear solutions for case A](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/dispersive/nthmp_BP05/solutionA_midpoint.png)
+![Figure 5: Comparison of experimental and SWALS dispersive solutions for case A](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/dispersive/nthmp_BP05/solutionA_midpoint.png)
 
-![Figure 6: Comparison of experimental and SWALS nonlinear solutions for case B](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/dispersive/nthmp_BP05/solutionB_midpoint.png)
+![Figure 6: Comparison of experimental and SWALS dispersive solutions for case B](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/dispersive/nthmp_BP05/solutionB_midpoint.png)
 
-![Figure 7: Comparison of experimental and SWALS nonlinear solutions for case C](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/dispersive/nthmp_BP05/solutionC_midpoint.png)
+![Figure 7: Comparison of experimental and SWALS dispersive solutions for case C](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/dispersive/nthmp_BP05/solutionC_midpoint.png)
 
 ## Nonlinear solutions - `rk2`
 
 Here we test the `rk2` finite volume scheme including dispersion. Note that when using dispersion, this may less accurate than `midpoint` because it includes the dispersive terms in a first-order accurate manner.
 
-![Figure 5: Comparison of experimental and SWALS nonlinear solutions for case A](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/dispersive/nthmp_BP05/solutionA_rk2.png)
+![Figure 5: Comparison of experimental and SWALS dispersive solutions for case A](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/dispersive/nthmp_BP05/solutionA_rk2.png)
 
-![Figure 6: Comparison of experimental, and SWALS nonlinear solutions for case B](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/dispersive/nthmp_BP05/solutionB_rk2.png)
+![Figure 6: Comparison of experimental, and SWALS dispersive solutions for case B](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/dispersive/nthmp_BP05/solutionB_rk2.png)
 
-![Figure 7: Comparison of experimental, and SWALS nonlinear solutions for case C](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/dispersive/nthmp_BP05/solutionC_rk2.png)
+![Figure 7: Comparison of experimental, and SWALS dispersive solutions for case C](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/dispersive/nthmp_BP05/solutionC_rk2.png)
 
 
 ## Nonlinear solutions - `leapfrog_nonlinear`
 
 Here we test the `leapfrog_nonlinear` finite difference scheme including dispersion. 
 
-![Figure 8: Comparison of experimental, and SWALS nonlinear solutions for case A](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/dispersive/nthmp_BP05/solutionA_leapfrog_nonlinear.png)
+![Figure 8: Comparison of experimental, and SWALS dispersive solutions for case A](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/dispersive/nthmp_BP05/solutionA_leapfrog_nonlinear.png)
 
-![Figure 9: Comparison of experimental, and SWALS nonlinear solutions for case B](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/dispersive/nthmp_BP05/solutionB_leapfrog_nonlinear.png)
+![Figure 9: Comparison of experimental, and SWALS dispersive solutions for case B](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/dispersive/nthmp_BP05/solutionB_leapfrog_nonlinear.png)
 
-![Figure 10: Comparison of experimental, and SWALS nonlinear solutions for case C](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/dispersive/nthmp_BP05/solutionC_leapfrog_nonlinear.png)
+![Figure 10: Comparison of experimental, and SWALS dispersive solutions for case C](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/dispersive/nthmp_BP05/solutionC_leapfrog_nonlinear.png)
