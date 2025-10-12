@@ -15,6 +15,7 @@
 !     lower_uh, diag_uh, upper_uh, lower_vh, diag_vh, upper_vh
 !     .... and related infor for RHS vh/uh terms....
 ! at the cost of more storage
+!     Or instead of dgtsv we might use a mixture of dgttrf (factorize once, store the factors and pivots) and dgttrs (solve)
 
 module linear_dispersive_solver_mod
     !!

@@ -14,8 +14,7 @@ the depth.
 
 We compare the numerical water surface maxima/minima with the Whispers3D
 reference solution of Coulaud et al. (2025), digitized from their paper. The
-SWALS models are run at a range of resolutions to check the rate of
-convergence. 
+SWALS models are run at a range of resolutions to check they are converging.
 
 All solvers give quite similar solutions at the finest resolution. The midpoint
 solver converges more quickly than the other solvers, which is not surprising
