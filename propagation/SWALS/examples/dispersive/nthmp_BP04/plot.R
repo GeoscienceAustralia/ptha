@@ -13,7 +13,7 @@ data_caseA = list(
     plot_ylim = c(-0.03, 0.07),
     plot_xlim = c(-5, 20),
     DEPTH_EPS = 1.0e-03,
-    snapshot_files = Sys.glob('../test_repository/BP04-JosephZ-Single_wave_on_simple_beach/profs/Case0_0185*'),
+    snapshot_files = Sys.glob('../../nthmp/test_repository/BP04-JosephZ-Single_wave_on_simple_beach/profs/Case0_0185*'),
     png_filename = 'Model-vs-data_0.0185.png',
     target_max_runup_dimensionless = 0.076,
     # Percentage error in max runup
@@ -30,7 +30,7 @@ data_caseB = list(
     plot_xlim = c(-10, 20),
     DEPTH_EPS = 1.0e-03,
     target_max_runup_dimensionless = 0.55,
-    snapshot_files = Sys.glob('../test_repository/BP04-JosephZ-Single_wave_on_simple_beach/profs/Case0_3*'),
+    snapshot_files = Sys.glob('../../nthmp/test_repository/BP04-JosephZ-Single_wave_on_simple_beach/profs/Case0_3*'),
     png_filename = 'Model-vs-data_0.3.png',
     # Percentage error in max runup
     allowed_runup_error = 0.10
@@ -230,7 +230,7 @@ for(NJOB in 1:ncase){
 #
 # Scaling plot
 #
-lab_data = read.table('../test_repository/BP04-JosephZ-Single_wave_on_simple_beach/Lab_runup.txt')
+lab_data = read.table('../../nthmp/test_repository/BP04-JosephZ-Single_wave_on_simple_beach/Lab_runup.txt')
 png('Runup_scaling_plot.png', width=8, height=6, units='in', res=300)
 plot(lab_data[,1:2], xlab='h/d', ylab='R/d', main='NTHMP Benchmark problem 4: Runup scaling', 
      cex.main=1.7, cex.lab=1.5, cex.axis=1.5)
