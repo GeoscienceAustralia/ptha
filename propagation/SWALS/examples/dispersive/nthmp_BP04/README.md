@@ -12,12 +12,12 @@ The figure below compares modelled (black) and observed (red) free surface profi
 
 ## The case with a large amplitude wave, $h/d = 0.3$ 
 
-The figure below compares modelled (black) and observed (red) free surface profiles for a relatively large amplitude wave. The dispersive model captures the shape of the wave better than the non-dispersive model [../../nthmp/BP04](../../nthmp/BP04), reflecting that dispersion matters for this relatively large solitary wave.
+The figure below compares modelled (black) and observed (red) free surface profiles for a relatively large amplitude wave. The dispersive model captures the shape of the wave prior to runup better than the non-dispersive model [../../nthmp/BP04](../../nthmp/BP04), because dispersion matters for this relatively large solitary wave.
 
 ![Figure 2: Comparison of modelled (midpoint) and experimental free surface at various times, high amplitude wave](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/dispersive/nthmp_BP04/Model-vs-data_0.3.png)
 
 ## Dimensionless runup vs dimensionless wave amplitude
 
-For this case a we focus on the relationship between the runup and the initial wave amplitude, both normalised by the depth (which varies substantially among the experiments). With our chosen Manning coefficient of 0.008, the `midpoint` solver shows good agreement with the general trend of the experimental data.
+For this case a we focus on the relationship between the runup and the initial wave amplitude, both normalised by the depth (which varies substantially among the experiments). With our chosen Manning coefficient of 0.008, the `midpoint` solver shows good agreement with the general trend of the experimental data. The Manning coefficient was tuned to give reasonably good results, and is different to the value (0.005) that gave good results for the non-dispersive model (albeit both are characteristic of low-friction surfaces).
 
 ![Figure 3: Dimensionless runup as a function of dimensionless wave amplitude in experiments and model (midpoint).](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/dispersive/nthmp_BP04/Runup_scaling_plot.png)
