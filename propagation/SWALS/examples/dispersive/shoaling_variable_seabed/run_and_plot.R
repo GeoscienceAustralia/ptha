@@ -6,6 +6,7 @@ resolutions = c(0.04, 0.01) #c(0.04, 0.02, 0.01) #c(0.1, 0.05)
 
 data_store = list()
 for(nm in numerical_schemes){
+    plot_started = FALSE # After we start plotting this will be TRUE (and then we add to the existing plot)
 
     for(long_dimension in c('y', 'x')){
     
@@ -58,6 +59,7 @@ for(nm in numerical_schemes){
             min_stg_k = min_stage[3,k]
             elev_k = elev[3,k]  
             initial_stage_k = stg[3,k,1]
+            plotme = FALSE
         }else if(grepl('long_dimension_x', matching_dirs[i])){
             k = which(elev[,3] < max(elev)-1e-03) # Used to avoid walls (1.0 m)
             x_k = x[k]
@@ -65,38 +67,69 @@ for(nm in numerical_schemes){
             min_stg_k = min_stage[k,3]
             elev_k = elev[k,3]
             initial_stage_k = stg[k,3,1]
+            plotme = TRUE
         }else{
             stop('unknown long_dimension')
         }
 
-        if(i == 1){
-            plot(x_k, max_stg_k, t='l', ylim=c(-0.25, 0.15), col=i, 
-                main=paste0('Water surface envelope: ', nm), xlab='x', ylab='Stage (m)')
-            grid()
-        }else{
-            points(x_k, max_stg_k, t='l', col=i)
+        if(plotme){
+            if(!plot_started){
+                plot_started = TRUE
+                plot(x_k, max_stg_k, t='l', ylim=c(-0.25, 0.15), col=i, 
+                    main=paste0('Water surface envelope: ', nm), xlab='x', ylab='Stage (m)')
+                grid()
+            }else{
+                points(x_k, max_stg_k, t='l', col=i)
+            }
+            points(x_k, min_stg_k, t='l', col=i)
         }
-        points(x_k, min_stg_k, t='l', col=i)
 
         data_store[[nm]][[matching_dir_labels[i]]] = data.frame(x_k = x_k, max_stg_k = max_stg_k, min_stg_k = min_stg_k)
 
     }
 
-    # Data digitized from 2 figures, so 2 parts
+    # Whispers 3D solution digitized from 2 figures, so 2 parts
     d1 = read.csv('solutions_up_to_30m_A2.csv')
     d2 = read.csv('solutions_beyond_30m.csv')
     d1 = rbind(d1, d2)
-    points(d1[,1], d1[,2], t='l', lty='dotted')
-    points(d1[,1], d1[,3], t='l', lty='dotted')
+    w3d_col = 14
+    w3d_lty = 'dotted'
+    points(d1[,1], d1[,2], t='l', lty=w3d_lty, col=w3d_col)
+    points(d1[,1], d1[,3], t='l', lty=w3d_lty, col=w3d_col)
 
-    legend('bottomright', 
-        c(paste0(matching_dir_labels, 'm'), 'Whispers3D'), 
-        col=c(1:length(matching_dirs), 1), 
-        lty=c(rep('solid', length(matching_dirs)), 'dotted'), 
-        pch=NA,
-        bty='n')
+    # Only plot 'x' solutions (since the tests will check that they are the same as 'y' solutions)
+    kld = which(grepl('long_dimension_x', matching_dir_labels))
+
+    include_ms_solution = FALSE
+    if(include_ms_solution){
+        # Also plot the MS solution from Coulaud et al (2025). The non-default SWALS dispersion that includes BOTH
+        # "Peregrine" type terms in flux form gives similar results to MS, which is also based on that
+        # flux form of the equations (but with extra terms). Filippini et al (2015) suggest that 
+        # formulation in flux or velocity form may be the most important difference between schemes in the nonlinear regime,
+        # which might explain the similarity
+        m1 = read.csv('solutions_up_to_30m_MS.csv')
+        m2 = read.csv('solutions_beyond_30m_MS.csv')
+        ms = rbind(m1, m2)
+        ms_col = 2
+        ms_lty = 'dashed'
+        points(ms[,1], ms[,2], t='l', lty=ms_lty, col=ms_col)
+        points(ms[,1], ms[,3], t='l', lty=ms_lty, col=ms_col)
+        legend('bottomright', 
+            c(paste0(matching_dir_labels[kld], 'm'), 'Whispers3D (Coulaud et al 2025)', 'MS (Coulaud et al 2025)'), 
+            col=c((1:length(matching_dir_labels))[kld], w3d_col, ms_col), 
+            lty=c(rep('solid', length(kld)), w3d_lty, ms_lty), 
+            pch=NA,
+            bty='n', cex=1.0)
+    }else{
+        legend('bottomright', 
+            c(paste0(matching_dir_labels[kld], 'm'), 'Whispers3D (Coulaud et al 2025)'), 
+            col=c((1:length(matching_dir_labels))[kld], w3d_col), 
+            lty=c(rep('solid', length(kld)), w3d_lty), 
+            pch=NA,
+            bty='n', cex=1.0)
+    }
+
     dev.off()
-
     #
     # Check that the numerical solutions computed along x/y are consistent with each other
     #
@@ -155,27 +188,4 @@ for(nm in numerical_schemes){
         dev.off()
     }
 
-    ## Add in a PASS/FAIL test by comparison with Madsen
-    #test_xrange = seq(21250, 21600, by=10) # Leading part of bore
-    #test_SWALS = approx(x, stage, xout=test_xrange)$y # Due to plot ordering, this should be the highest-res solution
-    #test_Madsen = approx(madsen_2008_bore[,1], madsen_2008_bore[,2], xout=test_xrange)$y
-
-    ## Test 1 -- compare average abs deviation with Madsen.
-    #test_stat = mean(abs(test_SWALS - test_Madsen))
-    #err_tol = 0.3 # Ad-hoc choice
-    ##print(test_stat)
-    #if(test_stat < err_tol){
-    #    print('PASS')
-    #}else{
-    #    print(paste0('FAIL', nm, test_stat))
-    #}
-
-    ## Test 2 -- compare maxima with madsen
-    #test_stat_2 = max(test_SWALS) - max(test_Madsen)
-    #err_tol_2 = 0.3 # Ad-hoc choice
-    #if(abs(test_stat_2) < err_tol_2){
-    #    print('PASS')
-    #}else{
-    #    print(paste0('FAIL', nm, test_stat, test_stat_2))
-    #}
 }
