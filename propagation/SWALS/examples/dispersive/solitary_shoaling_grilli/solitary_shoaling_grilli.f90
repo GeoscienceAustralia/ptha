@@ -67,8 +67,8 @@ program solitary_shoaling_grilli
     type(multidomain_type) :: md
 
     ! Approx timestep between outputs
-    real(dp), parameter :: approximate_writeout_frequency = 0.05_dp
-    real(dp), parameter :: final_time = 50.0_dp
+    real(dp), parameter :: approximate_writeout_frequency = 0.01_dp
+    real(dp), parameter :: final_time = 20.0_dp
 
     ! Domain info
     character(charlen) :: timestepping_method, tempchar
