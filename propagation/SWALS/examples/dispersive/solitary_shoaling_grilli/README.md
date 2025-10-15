@@ -5,7 +5,7 @@ This problem was also used in [Filippini et al. (2015)](http://dx.doi.org/10.101
 
 ![Figure 1: Initial condition](FIXME)
 
-The model is compared with observations at gauge 0 (which is used to temporally align the model and data) and gauges 1, 3, 5, 7, 9. The model reasonably reproduces the observations. 
+The model is compared with observations at gauge 0 (which is used to temporally align the model and data) and gauges 1, 3, 5, 7, 9. The model reasonably reproduces the observations, with a slightly early arrival at gauges on the slope, similarly to results in Filippini et al. (2015) using Boussinesq models in flux form. 
 
 ![Figure 2: Model vs observations](FIXME)
 
