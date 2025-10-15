@@ -91,7 +91,7 @@ dev.off()
 
 # Plot the initial condition
 png('Initial_condition.png', width=9, height=5, units='in', res=200)
-plot(x, elev, t='l', ylim=c(-0.5, 0.5), xlab='x/h0 ', ylab='Stage/h0 ', cex.axis=1.4, cex.lab=1.4,
+plot(x, elev, t='l', ylim=c(-0.5, 0.5), xlab='x (m) ', ylab='Stage (m) ', cex.axis=1.4, cex.lab=1.4,
     main='Initial condition', cex.main=1.7)
 points(x, stage[,1], t='l', col='red')
 grid(col='orange')
