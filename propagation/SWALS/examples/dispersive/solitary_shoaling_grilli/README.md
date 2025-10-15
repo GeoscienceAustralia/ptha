@@ -18,7 +18,7 @@ That said, we note the initial condition used here is not a perfect solitary wav
 ![Figure 3: Model vs observations, rk2 solver](FIXME)
 
 ## leapfrog nonlinear
-![Figure 3: Model vs observations, leapfrog nonlinear solver](FIXME)
+![Figure 4: Model vs observations, leapfrog nonlinear solver](FIXME)
 
 ## Cliffs
-![Figure 3: Model vs observations, cliffs solver](FIXME)
+![Figure 5: Model vs observations, cliffs solver](FIXME)
