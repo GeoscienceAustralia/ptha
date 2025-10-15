@@ -112,7 +112,7 @@ program solitary_shoaling_grilli
     gamma0 = sqrt(3.0_dp * H / (4.0_dp * initial_depth))
     
     ! Resolution
-    dx = 0.02_dp
+    dx = 0.01_dp
 
     ! Tank geometry 
     X1 = -20.0_dp * initial_depth ! Initial condition wave peak

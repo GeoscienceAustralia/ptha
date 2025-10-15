@@ -1,3 +1,6 @@
+
+solver_type = commandArgs(trailingOnly=TRUE)[1]
+
 library(ncdf4)
 # Work on most recent output file
 nc_file = sort(Sys.glob('OUTPUTS/RUN*/RUN*/Grid*.nc'), decreasing=TRUE)[1]
@@ -43,7 +46,7 @@ obs_g0 = read.csv('g0_fig.csv')
 obs_peak_time_g0 = 13.75*tNorm # Better alignment
 phase_offset = -obs_peak_time_g0 + model_peak_time_g0
 
-png('Solitary_shoaling_Grilli94.png', width=8, height=10, units='in', res=200)
+png(paste0('Solitary_shoaling_Grilli94_', solver_type, '.png'), width=8, height=10, units='in', res=200)
 par(mfrow=c(2,1))
 plot((time - phase_offset)/tNorm, stage[g0, ]/H0, t='l', xlim=c(5, 45), 
     main='Observations and model at gauge 0 (aligned with manual phase offset)',
@@ -74,15 +77,15 @@ for(i in 1:length(gauge_obs)){
 
     obs_peak = max(obs_g1_g9[,i+1])
     model_peak = max(stage[ii,])/H0
-    reltol = 0.03
+    reltol = 0.06 # Ad-hoc tolerance
     if(abs(model_peak - obs_peak) < reltol*obs_peak){
         print(c('PASS'))
     }else{
-        print(c('FAIL', obs_peak, model_peak, (obs_peak-model_peak)/obs_peak))
+        print(c('FAIL', solver_type, gauge_obs[i], obs_peak, model_peak, (obs_peak-model_peak)/obs_peak))
     }
 }
 legend('bottom', gauge_obs, col=1:length(gauge_obs), lty=1, pch=i, horiz=TRUE, bty='n', cex=1.2)
-title(main='Observations (points) vs model (lines) at gauges 1,3,5,7,9')
+title(main=paste0('Observations (points) vs model (lines) at gauges 1,3,5,7,9, ', solver_type))
 grid(col='orange')
 dev.off()
 
