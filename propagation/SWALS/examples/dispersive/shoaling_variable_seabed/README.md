@@ -13,8 +13,13 @@ the depth.
 ![Initial condition](Initial_condition.png)
 
 We compare the numerical water surface maxima/minima with the Whispers3D
-reference solution of Coulaud et al. (2025), digitized from their paper. The
+reference solution of [Coulaud et al. (2025)](http://dx.doi.org/10.1016/j.coastaleng.2024.104645), digitized from their paper. The
 SWALS models are run at a range of resolutions to check they are converging.
+
+While the results are reasonable, the short wavelength to depth ratios in this problem
+mean we should not expect high accuracy from the simple dispersive solver in SWALS. There
+is some tendency to understimate the top of the wave envelope, although within the range of
+other solvers studied by [Coulaud et al. (2025)](http://dx.doi.org/10.1016/j.coastaleng.2024.104645).
 
 All solvers give quite similar solutions at the finest resolution. The midpoint
 solver converges more quickly than the other solvers, which is not surprising
@@ -25,7 +30,6 @@ The models are also run in transposed domains (i.e. the 1D test
 separately exercises the UH and VH momentum equations) to check that they 
 give near identical results. The plots include both directions, but only
 one will be visible since they plot almost exactly atop each other.
-
 
 
 ## Midpoint
