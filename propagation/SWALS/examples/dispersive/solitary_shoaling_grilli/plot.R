@@ -51,7 +51,8 @@ par(mfrow=c(2,1))
 plot((time - phase_offset)/tNorm, stage[g0, ]/H0, t='l', xlim=c(5, 45), 
     main='Observations and model at gauge 0 (aligned with manual phase offset)',
     xlab='Time/sqrt(h0/g)', ylab='Stage/h0', cex.axis=1.4, cex.lab=1.4)
-points(obs_g0[,1], obs_g0[,2], col='red')
+points(obs_g0[,1], obs_g0[,2], col='black')
+legend('topright', c('Observed', 'Model'), pch=c(1, NA), lty=c(NA, 'solid'), col=c('black', 'black'), cex=1.4)
 grid(col='orange')
 
 # Get digitized observations at other gauges
