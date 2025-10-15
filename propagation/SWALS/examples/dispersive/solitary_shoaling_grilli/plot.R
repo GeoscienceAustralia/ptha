@@ -85,3 +85,15 @@ legend('bottom', gauge_obs, col=1:length(gauge_obs), lty=1, pch=i, horiz=TRUE, b
 title(main='Observations (points) vs model (lines) at gauges 1,3,5,7,9')
 grid(col='orange')
 dev.off()
+
+# Plot the initial condition
+png('Initial_condition.png', width=9, height=5, units='in', res=200)
+plot(x, elev, t='l', ylim=c(-0.5, 0.5), xlab='x/h0 ', ylab='Stage/h0 ', cex.axis=1.4, cex.lab=1.4,
+    main='Initial condition', cex.main=1.7)
+points(x, stage[,1], t='l', col='red')
+grid(col='orange')
+ii = c(1,2,10)
+text(gauge_x[ii], 0.4, gauge_name[ii], cex=1.3)
+abline(v=gauge_x, lty='dotted')
+legend('bottomright', c('Elevation', 'Stage', 'Gauges'), lty=c('solid','solid', 'dotted'), col=c('black', 'red', 'black'))
+dev.off()
