@@ -8,7 +8,7 @@ module local_routines
 
     contains 
 
-    subroutine set_initial_conditions_BP1(domain, d, beach_slope, flat_length, sloping_length, X0, X1, H, gamma0)
+    subroutine set_initial_conditions_grilli94(domain, d, beach_slope, flat_length, sloping_length, X0, X1, H, gamma0)
         type(domain_type), intent(inout):: domain
         real(dp), intent(in) :: d, beach_slope, flat_length, sloping_length, X0, X1, H, gamma0 
 
@@ -32,7 +32,6 @@ module local_routines
                 domain%U(i,j,VH) = 0.0_dp
             end do
         end do
-        !print*, 'Stage initial range: ', maxval(domain%U(:,:,1)), minval(domain%U(:,:,1))
 
         ! Add reflective walls, with zero velocity, and stage>=elev
         domain%U(:,1:2,ELV) = side_elev
@@ -46,22 +45,8 @@ module local_routines
         domain%U(domain%nx(1)-1:domain%nx(1),:,UH) = 0.0_dp
 
         if(allocated(domain%manning_squared)) then
-            ! The runup in this problem can be sensitive to friction
-            ! This value is 'tuned' to work ok on both problems, but we could
-            ! change runup for the large-amplitude case quite a bit by adjusting this.
-            !domain%manning_squared = 0.005_dp*0.005_dp
             domain%manning_squared = 0.008_dp**2
         end if
-
-        !! Get gauge points -- every cm
-        !ngauge = nint((maxval(domain%x) - minval(domain%x))/d * 10 )
-        !allocate(gauge_xy(2, ngauge))
-        !do i = 1, ngauge
-        !    gauge_xy(1,i) = minval(domain%x) + d/20.0_dp + (i-1)*d/10.0_dp
-        !    gauge_xy(2,i) = 0.0_dp
-        !end do
-
-        !call domain%setup_point_gauges(gauge_xy)
 
     end subroutine
 
@@ -122,7 +107,7 @@ program solitary_shoaling_grilli
     tank_length = flat_length + sloping_length
  
 
-    ! Model parameters. Note we apply the boundary on the right. x = 0 is the shoreline
+    ! Model parameters.
     global_lw = [tank_length, tank_width]
     global_ll = [-flat_length, -tank_width/2.5_dp]
     global_nx = nint(global_lw/dx)
@@ -141,7 +126,7 @@ program solitary_shoaling_grilli
     call md%setup
     
     ! Call local routine to set initial conditions
-    call set_initial_conditions_BP1(md%domains(1), initial_depth, beach_slope, &
+    call set_initial_conditions_grilli94(md%domains(1), initial_depth, beach_slope, &
         flat_length, sloping_length, X0, X1, H, gamma0)
 
     ! Fixed timestep
