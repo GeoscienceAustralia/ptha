@@ -12,22 +12,38 @@
     !    real(dp), intent(in):: dt !! Timestep to advance
 
         real(dp):: inv_cell_area_dt, depth, implicit_factor, dt_gravity, fs
-        integer(ip):: j, i, kk
+        integer(ip):: j, i, kk, jb(2), ib(2)
 
         domain%dt_last_update = dt
 
+        !! Loop bounds, case specific for exact backward compatability (although possibly
+        !! either option would work OK in both cases).
+        !if(domain%use_dispersion) then
+        !    ! Do not update the edge cells. The edge cell change can be erratic
+        !    ! (as we cannot evaluate some flux/pressure terms) and with dispersion it seems plausible
+        !    ! this could negatively affect the implicit solution in the priority domain, particularly
+        !    ! for the predictor step of finite-volume methods (the only time we don't communicate halos
+        !    ! or update boundary conditions just before dispersive calculations) 
+        !    jb(1:2) = [2, domain%nx(2)-1]
+        !    ib(1:2) = [2, domain%nx(1)-1]
+        !else
+            ! For exact backward compatability -- the approach above seems fine too but I have
+            ! seen it change the last few digits.
+            jb(1:2) = [1, domain%nx(2)]
+            ib(1:2) = [1, domain%nx(1)]
+        !end if
 
-        !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain, dt)
+        !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain, dt, jb, ib)
         dt_gravity = dt * gravity
         !$OMP DO SCHEDULE(STATIC)
-        do j = 2, domain%nx(2)-1
+        do j = jb(1), jb(2)
         !do j = 1, domain%nx(2)
             ! For spherical coordiantes, cell area changes with y.
             ! For cartesian coordinates this could be moved out of the loop
             inv_cell_area_dt = dt / domain%area_cell_y(j)
 
             !$OMP SIMD PRIVATE(kk)
-            do i = 2, domain%nx(1)-1
+            do i = ib(1), ib(2)
             !do i = 1, domain%nx(1)
                 ! Fluxes
                 do kk = 1, 3
@@ -38,7 +54,7 @@
             end do
 
             !$OMP SIMD PRIVATE(depth, fs, implicit_factor)
-            do i = 2, domain%nx(1)-1
+            do i = ib(1), ib(2)
             !do i = 1, domain%nx(1)
 
                 ! Velocity clipping
