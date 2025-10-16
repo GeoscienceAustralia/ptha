@@ -21,12 +21,14 @@
         dt_gravity = dt * gravity
         !$OMP DO SCHEDULE(STATIC)
         do j = 2, domain%nx(2)-1
+        !do j = 1, domain%nx(2)
             ! For spherical coordiantes, cell area changes with y.
             ! For cartesian coordinates this could be moved out of the loop
             inv_cell_area_dt = dt / domain%area_cell_y(j)
 
             !$OMP SIMD PRIVATE(kk)
             do i = 2, domain%nx(1)-1
+            !do i = 1, domain%nx(1)
                 ! Fluxes
                 do kk = 1, 3
                     domain%U(i,j,kk) = domain%U(i,j,kk) - inv_cell_area_dt * ( &
@@ -37,6 +39,7 @@
 
             !$OMP SIMD PRIVATE(depth, fs, implicit_factor)
             do i = 2, domain%nx(1)-1
+            !do i = 1, domain%nx(1)
 
                 ! Velocity clipping
                 depth = domain%depth(i,j)
