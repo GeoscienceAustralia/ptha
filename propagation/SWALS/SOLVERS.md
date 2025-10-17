@@ -57,9 +57,9 @@ By default the dispersive term $\mathbf{\Upsilon}$ is zero. However if the user 
 $$ x $$
 while in spherical coordinates they are (again using $\theta_r, \phi_r$ to denote longitude and latitude in radians):
 
-$$-\frac{h_0^2}{3 R\cos(\phi_r)} \frac{d}{d\theta_r} [ \frac{1}{R\cos(\phi_r)} ( \frac{\partial^2 (uh)}{\partial t \partial \theta_r} + \frac{\partial^2 (vh \cos(\phi_r))}{\partial t \partial \phi_r}) ]$$
+$$-\frac{h_0^2}{3 R\cos(\phi_r)} \frac{\partial}{\partial\theta_r} [ \frac{1}{R\cos(\phi_r)} ( \frac{\partial^2 (uh)}{\partial t \partial \theta_r} + \frac{\partial^2 (vh \cos(\phi_r))}{\partial t \partial \phi_r}) ]$$
 
-$$-\frac{h_0^2}{3 R} \frac{d}{d\phi_r} [ \frac{1}{R\cos(\phi_r)} ( \frac{\partial^2 (uh)}{\partial t \partial \theta_r} + \frac{\partial^2 (vh \cos(\phi_r))}{\partial t \partial \phi_r}) ]$$
+$$-\frac{h_0^2}{3 R} \frac{\partial}{\partial\phi_r} [ \frac{1}{R\cos(\phi_r)} ( \frac{\partial^2 (uh)}{\partial t \partial \theta_r} + \frac{\partial^2 (vh \cos(\phi_r))}{\partial t \partial \phi_r}) ]$$
 
 for the easterly and northerly directions respectively. 
 
