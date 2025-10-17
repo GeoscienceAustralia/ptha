@@ -1,7 +1,7 @@
 # SWALS solvers
 ----------------
 
-SWALS contains a range of solvers for variants of the 2D shallow water equations. For models that involve multiple domains (using a `multidomain` object), one can use different solvers on different domains, and they may take different time-steps. Both Cartesian and Spherical coordinates are supported for all solver types and the choice is made when compiling the code, so all domains must use the same coordinate system. [See here for a study that uses a range of SWALS solvers](https://www.frontiersin.org/articles/10.3389/feart.2020.598235/full).
+SWALS contains a range of solvers for variants of the 2D shallow water equations (optionally with dispersion). For models that involve multiple domains (using a `multidomain` object), one can use different solvers on different domains, and they may take different time-steps. Both Cartesian and Spherical coordinates are supported for all solver types and the choice is made when compiling the code, so all domains must use the same coordinate system. [See here for a study that uses a range of SWALS solvers](https://www.frontiersin.org/articles/10.3389/feart.2020.598235/full).
 
 In general the different solvers have different strengths and limitations, which are discussed below. For instance, some solvers work well for global-scale tsunami propagation (at least for long-waves that satisfy the shallow water equations) but are inappropriate for nearshore inundation simulation. The converse holds for some other solvers.
 
@@ -37,9 +37,9 @@ SWALS has a number of classical shock-capturing finite-volume schemes with accur
 
 $$ \frac{\partial \eta}{\partial t} + \nabla \cdot \mathbf{q} = 0 $$
 
-$$ \frac{\partial \mathbf{q}}{\partial t} + \nabla \cdot (\mathbf{u}\otimes\mathbf{q}) + g h \nabla \eta + g h \mathbf{S_f} + \mathbf{\Psi} + \mathbf{\Omega_s} + \mathbf{M_s} = 0 $$
+$$ \frac{\partial \mathbf{q}}{\partial t} + \nabla \cdot (\mathbf{u}\otimes\mathbf{q}) + g h \nabla \eta + g h \mathbf{S_f} + \mathbf{\Psi} + \mathbf{\Omega_s} + \mathbf{M_s} + \mathbf{\Rho} = 0 $$
 
-Here $\eta = h + z$ is the free surface elevation (m), $t$ is time (s), $h$ is the depth (m), $z$ is the bed elevation (m), $\mathbf{q}=h\mathbf{u}$ is the 2D flux vector $(m^2/s)$, $\mathbf{u} = (u,v)$ is the 2D velocity vector (m/s), $\otimes$ is the [outer product](https://en.wikipedia.org/wiki/Outer_product), $g$ is gravity $(m/s^2)$, $\mathbf{S_f}$ is the friction slope vector, $\mathbf{\Psi}$ is a turbulent diffusion term, $\mathbf{\Omega_s}$ is the Coriolis force for spherical coordinates, and $\mathbf{M_s}$ gives some additional spherical coordinate terms related to the momentum flux divergence. 
+Here $\eta = h + z$ is the free surface elevation (m), $t$ is time (s), $h$ is the depth (m), $z$ is the bed elevation (m), $\mathbf{q}=h\mathbf{u}$ is the 2D flux vector $(m^2/s)$, $\mathbf{u} = (u,v)$ is the 2D velocity vector (m/s), $\otimes$ is the [outer product](https://en.wikipedia.org/wiki/Outer_product), $g$ is gravity $(m/s^2)$, $\mathbf{S_f}$ is the friction slope vector, $\mathbf{\Psi}$ is a turbulent diffusion term, $\mathbf{\Omega_s}$ is the Coriolis force for spherical coordinates, $\mathbf{M_s}$ gives some additional spherical coordinate terms related to the momentum flux divergence, and $\mathbf{\Rho}$ is a dispersive term. 
 
 In Cartesian coordinates $(x,y)$ are in meters. The "grad" operator $\nabla f$ applied to a scalar function $f$ gives $( \frac{\partial f}{\partial x}, \frac{\partial f}{\partial y})$. The divergence operator $\nabla \cdot \mathbf{u}$ applied to a vector $\mathbf{u} = (u,v)$ gives $( \frac{\partial u}{\partial x} + \frac{\partial v}{\partial y})$, and applied to a matrix it gives the vector resulting from application to each column separately. 
 
@@ -52,6 +52,11 @@ The turbulent diffusion term $\mathbf{\Psi}$ is by default set to zero. But an e
 In Cartesian coordinates there is no Coriolis term $(\mathbf{\Omega_s} = 0)$. In Spherical coordinates the Coriolis force is $\mathbf{\Omega_s} = 2 \sin(\phi_r) \gamma_r (-vh, uh)$, where $\gamma_r = 7.292115 \times 10^{-5}$ gives the earth angular frequency in radians per second.
 
 In Cartesian coordinates there are no additional spherical coordinate terms associated with the divergence of the momentum flux $(\mathbf{M_s} = 0)$. In Spherical coordinates the momentum flux divergence leads to $\mathbf{M_s} = \frac{\tan(\phi_r)}{R} u (-vh, uh)$. This term is associated with the non-zero Christoffel symbols of Spherical coordinates; using tensor calculus notation we may write the flux divergence term $\nabla_i(u^i q^j)$ where $\nabla_i$ is the covariant derivative, which includes a sum of partial derivatives and other terms due to the non-zero Christoffel symbols, where the latter are represented by $\mathbf{M_s}$ here. The leads to a very small correction away from the poles and is often ignored in the tsunami literature. For examples of papers which discuss it, see [Williamson et al. 1992](https://doi.org/10.1016/S0021-9991(05)80016-6), [Titov et al. 2016](http://dx.doi.org/10.1061/(ASCE)WW.1943-5460.0000357), and [Popinet 2011](https://doi.org/10.1007/s10236-011-0438-z). 
+
+By default the dispersive term $\mathbf{\Rho}$ is zero. However if the user sets `domain%use_dispersion = .true.` then dispersive terms are included. In Cartesian coordinates these have the form
+$$ x $$
+while in spherical coordinates they are:
+$$-\frac{h_0^2}{3 R\cos(\phi_r)} * \frac{d}{d\theta_r} [ \frac{1}{R\cos(\phi_r)} ( \frac{\partial^2 (uh)}{\partial t \partial \theta_r} + \frac{\partial^2 (vh \cos(\phi_r))}{\partial t \partial \phi_r}) ]$$
 
 The SWALS finite-volume solvers approximate the above equations in flux conservative form. They are shock capturing, and well suited to flows with moderate or high Froude-numbers and wetting/drying, but may be too numerically dissipative to efficiently model flow at very low Froude-numbers. For example they can work well for nearshore and inundation simulation, but are not as well suited to global-scale tsunami propagation as the leapfrog schemes (discussed below). In practice we often develop global-to-local nested grid models by using a leapfrog solver on the coarsest global grid, and finite-volume solvers on the nested grids (such as in [this paper](https://www.frontiersin.org/articles/10.3389/feart.2020.598235/full)). 
 
