@@ -25,10 +25,11 @@
             jb(1:2) = [2, domain%nx(2)-1]
             ib(1:2) = [2, domain%nx(1)-1]
         else
-          ! For exact backward compatability. The approach above is likely fine too for 
-          ! non-dispersive models, but I have seen it change the last few digits.
-          jb(1:2) = [1, domain%nx(2)]
-          ib(1:2) = [1, domain%nx(1)]
+            ! Different to dispersive models for exact backward compatability. The 
+            ! dispersive approach is likely fine for non-dispersive models too, 
+            ! but I have seen it change the last few digits.
+            jb(1:2) = [1, domain%nx(2)]
+            ib(1:2) = [1, domain%nx(1)]
         end if
 
         !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain, dt, jb, ib)
