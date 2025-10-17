@@ -20,7 +20,8 @@
         if(domain%use_dispersion) then
             ! Do not update the edge cells. The edge cell change can be erratic
             ! (as we cannot evaluate some flux/pressure terms) and with dispersion 
-            ! this can negatively affect the implicit solution in the priority domain
+            ! this can negatively affect the implicit solution in the priority domain.
+            ! (e.g. the nested "potential_solution" develops NaN without this)
             jb(1:2) = [2, domain%nx(2)-1]
             ib(1:2) = [2, domain%nx(1)-1]
         else
