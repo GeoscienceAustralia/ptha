@@ -25,7 +25,7 @@
             jb(1:2) = [2, domain%nx(2)-1]
             ib(1:2) = [2, domain%nx(1)-1]
         else
-            ! Different to dispersive models for exact backward compatability. The 
+            ! Different to dispersive models so as to keep exact backward compatability. The 
             ! dispersive approach is likely fine for non-dispersive models too, 
             ! but I have seen it change the last few digits (long term NSW model)
             jb(1:2) = [1, domain%nx(2)]
