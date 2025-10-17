@@ -61,7 +61,7 @@ $$-\frac{h_0^2}{3 R\cos(\phi_r)} \frac{\partial}{\partial\theta_r} [ \frac{1}{R\
 
 $$-\frac{h_0^2}{3 R} \frac{\partial}{\partial\phi_r} [ \frac{1}{R\cos(\phi_r)} ( \frac{\partial^2 (uh)}{\partial t \partial \theta_r} + \frac{\partial^2 (vh \cos(\phi_r))}{\partial t \partial \phi_r}) ]$$
 
-$$ -\frac{h_0^2}{3 R} \nabla (\frac{\partial}{\partial t} (\nabla \cdot \mathbf{q}) ) $$
+$$ -\frac{h_0^2}{3 R} \nabla (\nabla \cdot \frac{\partial \mathbf{q}}{\partial t}) $$
 
 for the easterly and northerly directions respectively. 
 
