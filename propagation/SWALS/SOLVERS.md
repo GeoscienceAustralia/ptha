@@ -37,9 +37,9 @@ SWALS has a number of classical shock-capturing finite-volume schemes with accur
 
 $$ \frac{\partial \eta}{\partial t} + \nabla \cdot \mathbf{q} = 0 $$
 
-$$ \frac{\partial \mathbf{q}}{\partial t} + \nabla \cdot (\mathbf{u}\otimes\mathbf{q}) + g h \nabla \eta + g h \mathbf{S_f} + \mathbf{\Psi} + \mathbf{\Omega_s} + \mathbf{M_s} + \mathbf{\Rho} = 0 $$
+$$ \frac{\partial \mathbf{q}}{\partial t} + \nabla \cdot (\mathbf{u}\otimes\mathbf{q}) + g h \nabla \eta + g h \mathbf{S_f} + \mathbf{\Psi} + \mathbf{\Omega_s} + \mathbf{M_s} + \mathbf{\Upsilon} = 0 $$
 
-Here $\eta = h + z$ is the free surface elevation (m), $t$ is time (s), $h$ is the depth (m), $z$ is the bed elevation (m), $\mathbf{q}=h\mathbf{u}$ is the 2D flux vector $(m^2/s)$, $\mathbf{u} = (u,v)$ is the 2D velocity vector (m/s), $\otimes$ is the [outer product](https://en.wikipedia.org/wiki/Outer_product), $g$ is gravity $(m/s^2)$, $\mathbf{S_f}$ is the friction slope vector, $\mathbf{\Psi}$ is a turbulent diffusion term, $\mathbf{\Omega_s}$ is the Coriolis force for spherical coordinates, $\mathbf{M_s}$ gives some additional spherical coordinate terms related to the momentum flux divergence, and $\mathbf{\Rho}$ is a dispersive term. 
+Here $\eta = h + z$ is the free surface elevation (m), $t$ is time (s), $h$ is the depth (m), $z$ is the bed elevation (m), $\mathbf{q}=h\mathbf{u}$ is the 2D flux vector $(m^2/s)$, $\mathbf{u} = (u,v)$ is the 2D velocity vector (m/s), $\otimes$ is the [outer product](https://en.wikipedia.org/wiki/Outer_product), $g$ is gravity $(m/s^2)$, $\mathbf{S_f}$ is the friction slope vector, $\mathbf{\Psi}$ is a turbulent diffusion term, $\mathbf{\Omega_s}$ is the Coriolis force for spherical coordinates, $\mathbf{M_s}$ gives some additional spherical coordinate terms related to the momentum flux divergence, and $\mathbf{\Upsilon}$ is a dispersive term. 
 
 In Cartesian coordinates $(x,y)$ are in meters. The "grad" operator $\nabla f$ applied to a scalar function $f$ gives $( \frac{\partial f}{\partial x}, \frac{\partial f}{\partial y})$. The divergence operator $\nabla \cdot \mathbf{u}$ applied to a vector $\mathbf{u} = (u,v)$ gives $( \frac{\partial u}{\partial x} + \frac{\partial v}{\partial y})$, and applied to a matrix it gives the vector resulting from application to each column separately. 
 
@@ -53,7 +53,7 @@ In Cartesian coordinates there is no Coriolis term $(\mathbf{\Omega_s} = 0)$. In
 
 In Cartesian coordinates there are no additional spherical coordinate terms associated with the divergence of the momentum flux $(\mathbf{M_s} = 0)$. In Spherical coordinates the momentum flux divergence leads to $\mathbf{M_s} = \frac{\tan(\phi_r)}{R} u (-vh, uh)$. This term is associated with the non-zero Christoffel symbols of Spherical coordinates; using tensor calculus notation we may write the flux divergence term $\nabla_i(u^i q^j)$ where $\nabla_i$ is the covariant derivative, which includes a sum of partial derivatives and other terms due to the non-zero Christoffel symbols, where the latter are represented by $\mathbf{M_s}$ here. The leads to a very small correction away from the poles and is often ignored in the tsunami literature. For examples of papers which discuss it, see [Williamson et al. 1992](https://doi.org/10.1016/S0021-9991(05)80016-6), [Titov et al. 2016](http://dx.doi.org/10.1061/(ASCE)WW.1943-5460.0000357), and [Popinet 2011](https://doi.org/10.1007/s10236-011-0438-z). 
 
-By default the dispersive term $\mathbf{\Rho}$ is zero. However if the user sets `domain%use_dispersion = .true.` then dispersive terms are included. In Cartesian coordinates these have the form
+By default the dispersive term $\mathbf{\Upsilon}$ is zero. However if the user sets `domain%use_dispersion = .true.` then dispersive terms are included. In Cartesian coordinates these have the form
 $$ x $$
 while in spherical coordinates they are:
 $$-\frac{h_0^2}{3 R\cos(\phi_r)} * \frac{d}{d\theta_r} [ \frac{1}{R\cos(\phi_r)} ( \frac{\partial^2 (uh)}{\partial t \partial \theta_r} + \frac{\partial^2 (vh \cos(\phi_r))}{\partial t \partial \phi_r}) ]$$
