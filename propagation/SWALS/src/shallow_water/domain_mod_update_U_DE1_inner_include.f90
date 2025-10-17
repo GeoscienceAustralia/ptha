@@ -16,8 +16,7 @@
 
         domain%dt_last_update = dt
 
-        ! Loop bounds, case specific for exact backward compatability (although dispersive
-        ! option should work OK in both cases).
+        ! Loop bounds
         if(domain%use_dispersion) then
             ! Do not update the edge cells. The edge cell change can be erratic
             ! (as we cannot evaluate some flux/pressure terms) and with dispersion 
@@ -27,7 +26,7 @@
         else
             ! Different to dispersive models for exact backward compatability. The 
             ! dispersive approach is likely fine for non-dispersive models too, 
-            ! but I have seen it change the last few digits.
+            ! but I have seen it change the last few digits (long term NSW model)
             jb(1:2) = [1, domain%nx(2)]
             ib(1:2) = [1, domain%nx(1)]
         end if
