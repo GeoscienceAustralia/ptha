@@ -53,13 +53,15 @@ In Cartesian coordinates there is no Coriolis term $(\mathbf{\Omega_s} = 0)$. In
 
 In Cartesian coordinates there are no additional spherical coordinate terms associated with the divergence of the momentum flux $(\mathbf{M_s} = 0)$. In Spherical coordinates the momentum flux divergence leads to $\mathbf{M_s} = \frac{\tan(\phi_r)}{R} u (-vh, uh)$. This term is associated with the non-zero Christoffel symbols of Spherical coordinates; using tensor calculus notation we may write the flux divergence term $\nabla_i(u^i q^j)$ where $\nabla_i$ is the covariant derivative, which includes a sum of partial derivatives and other terms due to the non-zero Christoffel symbols, where the latter are represented by $\mathbf{M_s}$ here. The leads to a very small correction away from the poles and is often ignored in the tsunami literature. For examples of papers which discuss it, see [Williamson et al. 1992](https://doi.org/10.1016/S0021-9991(05)80016-6), [Titov et al. 2016](http://dx.doi.org/10.1061/(ASCE)WW.1943-5460.0000357), and [Popinet 2011](https://doi.org/10.1007/s10236-011-0438-z). 
 
-By default the dispersive term $\mathbf{\Upsilon}$ is zero. However if the user sets `md%domains(j)%use_dispersion = .true.` then dispersive terms are included on domain `j`. In Cartesian coordinates the dispersive terms have the form
+By default the dispersive term $\mathbf{\Upsilon}$ is zero. However if the user sets `md%domains(j)%use_dispersion = .true.` then dispersive terms are included on domain `j`. This causes SWALS to use a different subroutine to advance the solution, which includes dispersion while needing substantially more communication and computation, and suffering greater restrictions on timestepping and nesting stability. In Cartesian coordinates the dispersive terms have the form
 $$ x $$
 while in spherical coordinates they are (again using $\theta_r, \phi_r$ to denote longitude and latitude in radians):
 
 $$-\frac{h_0^2}{3 R\cos(\phi_r)} \frac{\partial}{\partial\theta_r} [ \frac{1}{R\cos(\phi_r)} ( \frac{\partial^2 (uh)}{\partial t \partial \theta_r} + \frac{\partial^2 (vh \cos(\phi_r))}{\partial t \partial \phi_r}) ]$$
 
 $$-\frac{h_0^2}{3 R} \frac{\partial}{\partial\phi_r} [ \frac{1}{R\cos(\phi_r)} ( \frac{\partial^2 (uh)}{\partial t \partial \theta_r} + \frac{\partial^2 (vh \cos(\phi_r))}{\partial t \partial \phi_r}) ]$$
+
+$$ -\frac{h_0^2}{3 R} \nabla (\frac{\partial}{\partial t} (\nabla \cdot \mathbf{q}) ) $$
 
 for the easterly and northerly directions respectively. 
 
