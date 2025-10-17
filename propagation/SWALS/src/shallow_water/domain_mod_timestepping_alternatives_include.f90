@@ -284,7 +284,8 @@ EVOLVE_TIMER_STOP('rk2n_final_update')
         end if
 
         if(domain%use_dispersion) then
-            ! Include dispersion in the midpoint predictor step. No iteration as its just for gradient prediction
+
+            ! Include dispersion in the midpoint predictor step. No iteration as its just for flux prediction
             call domain%solve_dispersive_terms(&
                 ! The RHS is updated on the first iteration and fixed thereafter
                 rhs_is_up_to_date = .false., &

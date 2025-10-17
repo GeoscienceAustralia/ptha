@@ -2857,13 +2857,19 @@ TIMER_START('nesting_flux_correction')
 
                                 area_scale = sum(domain%area_cell_y(p0:p1))
                                 do pind = p0, p1
+
                                     ! if flux_correct_dry_cells_outside_priority_domain is FALSE, then only flux correct
                                     ! wet cells or cells in the priority domain.
                                     if( domain%flux_correct_dry_cells_outside_priority_domain .or. &
                                         (domain%U(ni, pind, STG) >= domain%U(ni, pind, ELV) + minimum_allowed_depth) .or.  &
                                         (domain%nesting%is_priority_domain_not_periodic(ni, pind) == 1) &
                                         ) then
-
+                                        ! NOTE: Before introducing the above 'if' condition, the code behaved as though it were always
+                                        !       true, and the calculation was implemented without looping on pind, like:
+                                        !           domain%U(ni, p0:p1, k) = domain%U(ni, p0:p1, k) - ...
+                                        !       This presumably allowed stronger compiler optimization, because
+                                        !       with gfortran I got tiny (floating point level) changes in BP09, even though 
+                                        !       the calculation logic is identical. A large NSW model showed no changes with ifort.
                                         do k = var1, varN
                                             domain%U(ni, pind, k) = domain%U(ni, pind, k) - &
                                                 sg * &

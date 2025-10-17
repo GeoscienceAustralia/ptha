@@ -16,22 +16,20 @@
 
         domain%dt_last_update = dt
 
-        !! Loop bounds, case specific for exact backward compatability (although possibly
-        !! either option would work OK in both cases).
-        !if(domain%use_dispersion) then
-        !    ! Do not update the edge cells. The edge cell change can be erratic
-        !    ! (as we cannot evaluate some flux/pressure terms) and with dispersion it seems plausible
-        !    ! this could negatively affect the implicit solution in the priority domain, particularly
-        !    ! for the predictor step of finite-volume methods (the only time we don't communicate halos
-        !    ! or update boundary conditions just before dispersive calculations) 
-        !    jb(1:2) = [2, domain%nx(2)-1]
-        !    ib(1:2) = [2, domain%nx(1)-1]
-        !else
-            ! For exact backward compatability -- the approach above seems fine too but I have
-            ! seen it change the last few digits.
-            jb(1:2) = [1, domain%nx(2)]
-            ib(1:2) = [1, domain%nx(1)]
-        !end if
+        ! Loop bounds, case specific for exact backward compatability (although dispersive
+        ! option should work OK in both cases).
+        if(domain%use_dispersion) then
+            ! Do not update the edge cells. The edge cell change can be erratic
+            ! (as we cannot evaluate some flux/pressure terms) and with dispersion 
+            ! this can negatively affect the implicit solution in the priority domain
+            jb(1:2) = [2, domain%nx(2)-1]
+            ib(1:2) = [2, domain%nx(1)-1]
+        else
+          ! For exact backward compatability. The approach above is likely fine too, but I have
+          ! seen it change the last few digits.
+          jb(1:2) = [1, domain%nx(2)]
+          ib(1:2) = [1, domain%nx(1)]
+        end if
 
         !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain, dt, jb, ib)
         dt_gravity = dt * gravity
