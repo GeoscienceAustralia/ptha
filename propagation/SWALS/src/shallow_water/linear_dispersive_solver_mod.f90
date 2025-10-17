@@ -9,7 +9,7 @@
 
 ! Use definition below to use Peregrine dispersion which includes an additional topographic term
 ! (by default we ignore this term, similar to JAGURS and many other tsunami codes)
-!#define DISPERSIVE_PEREGRINE
+!#define DISPERSIVE_PEREGRINE_IN_FLUX_FORM
 
 ! FIXME: The tridiagonal solve method might have efficiency improved by precomputing
 !     lower_uh, diag_uh, upper_uh, lower_vh, diag_vh, upper_vh
@@ -256,7 +256,7 @@ EVOLVE_TIMER_STOP('disp_setup')
                     ! Depth at location of uh(i,j) -- or zero if either neighbour is dry at MSL
                     d_iph_j = merge(0.5_dp * (msl_linear - elev(i,j) + msl_linear - elev(i+1,j)), 0.0_dp, &
                         elev(i,j) < msl_linear .and. elev(i+1, j) < msl_linear)
-#ifdef DISPERSIVE_PEREGRINE
+#ifdef DISPERSIVE_PEREGRINE_IN_FLUX_FORM
                     !
                     ! Peregrine dispersion
                     !
@@ -346,7 +346,7 @@ EVOLVE_TIMER_STOP('disp_setup')
                     ! Depth at location of vh(i,j) -- or zero if either neighbour is dry (at MSL)
                     d_i_jph = merge(0.5_dp * (msl_linear - elev(i,j) + msl_linear - elev(i,j+1)), 0.0_dp, &
                         elev(i,j) < msl_linear .and. elev(i, j+1) < msl_linear)
-#ifdef DISPERSIVE_PEREGRINE
+#ifdef DISPERSIVE_PEREGRINE_IN_FLUX_FORM
                     !
                     ! Peregrine dispersion
                     !
@@ -483,7 +483,7 @@ EVOLVE_TIMER_STOP('disp_setup')
                     !d_i_j = merge(msl_linear - elev(i, j), 0.0_dp, elev(i,j) < msl_linear)
                     d_i_j = merge(msl_linear - elev(i, j), 0.0_dp, all(elev(i-1:i+1,j) < msl_linear))
 
-#ifdef DISPERSIVE_PEREGRINE
+#ifdef DISPERSIVE_PEREGRINE_IN_FLUX_FORM
                     !
                     ! Peregrine dispersion
                     !
@@ -580,7 +580,7 @@ EVOLVE_TIMER_STOP('disp_setup')
                     !d_i_j = merge(msl_linear - elev(i,j), 0.0_dp, elev(i,j) < msl_linear)
                     d_i_j = merge(msl_linear - elev(i,j), 0.0_dp, all(elev(i,j-1:j+1) < msl_linear))
 
-#ifdef DISPERSIVE_PEREGRINE
+#ifdef DISPERSIVE_PEREGRINE_IN_FLUX_FORM
                     !
                     ! Peregrine dispersion
                     !
@@ -721,7 +721,7 @@ EVOLVE_TIMER_STOP('disp_setup')
                     ! Depth at location of uh(i,j) -- or zero if either neighbour is dry (at MSL)
                     d_iph_j = merge(0.5_dp * (msl_linear - elev(i,j) + msl_linear - elev(i+1,j)), 0.0_dp, &
                         elev(i,j) < msl_linear .and. elev(i+1, j) < msl_linear)
-#ifdef DISPERSIVE_PEREGRINE
+#ifdef DISPERSIVE_PEREGRINE_IN_FLUX_FORM
                     !
                     ! Peregrine dispersion
                     !
@@ -832,7 +832,7 @@ EVOLVE_TIMER_STOP('disp_setup')
                     ! Depth at location of vh(i,j) -- or zero if either neighbour is dry (at MSL)
                     d_i_jph = merge(0.5_dp * (msl_linear - elev(i,j) + msl_linear - elev(i,j+1)), 0.0_dp, &
                         elev(i,j) < msl_linear .and. elev(i, j+1) < msl_linear)
-#ifdef DISPERSIVE_PEREGRINE
+#ifdef DISPERSIVE_PEREGRINE_IN_FLUX_FORM
                     !
                     ! Peregrine dispersion
                     !
@@ -987,7 +987,7 @@ EVOLVE_TIMER_STOP('disp_setup')
                     !d_i_j = merge((msl_linear - elev(i,j)), 0.0_dp, elev(i,j) < msl_linear)
                     d_i_j = merge((msl_linear - elev(i,j)), 0.0_dp, all(elev(i-1:i+1,j) < msl_linear))
 
-#ifdef DISPERSIVE_PEREGRINE
+#ifdef DISPERSIVE_PEREGRINE_IN_FLUX_FORM
                     !
                     ! Peregrine dispersion
                     !
@@ -1102,7 +1102,7 @@ EVOLVE_TIMER_STOP('disp_setup')
                     !d_i_j = merge((msl_linear - elev(i,j)), 0.0_dp, elev(i,j) < msl_linear)
                     d_i_j = merge((msl_linear - elev(i,j)), 0.0_dp, all(elev(i,j-1:j+1) < msl_linear))
 
-#ifdef DISPERSIVE_PEREGRINE
+#ifdef DISPERSIVE_PEREGRINE_IN_FLUX_FORM
                     !
                     ! Peregrine dispersion
                     !

@@ -1,6 +1,6 @@
 # Source code location
 SWALS_SRC := ../../../src
-SWALS_PREPROCESSOR_FLAGS := -DTIMER #-DDISPERSIVE_PEREGRINE
+SWALS_PREPROCESSOR_FLAGS := -DTIMER #-DDISPERSIVE_PEREGRINE_IN_FLUX_FORM
 
 include $(SWALS_SRC)/src_standard_compiler_var
 
