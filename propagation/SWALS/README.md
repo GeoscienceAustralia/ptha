@@ -17,7 +17,7 @@ which was [developed by Elena Tolkova](https://github.com/Delta-function/cliffs-
 The figure below shows an example SWALS model, used to simulate tsunamis at tide gauges in southeast and west Australia (see [here](https://doi.org/10.1029/2025JB031949)). 
 ![SWALS model used to simulate tsunamis at tide gauges in southeast and west Australia.](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/Davies2025_Australia_wide_model_structure.png)
 
-A more complex SWALS model nesting structure is shown [here](https://www.researchgate.net/publication/396141903_NSW-wide_probabilistic_tsunami_inundation_hazards_from_subduction_earthquakes) and was used to simulate tsunami inundation throughout NSW in Australia.
+A SWALS model with more complex nesting structure is shown below. This was used to simulate tsunami inundation throughout NSW in Australia ([see here](https://www.researchgate.net/publication/396141903_NSW-wide_probabilistic_tsunami_inundation_hazards_from_subduction_earthquakes)).
 ![SWALS model used to simulate tsunami inundation throughout NSW in Australia.](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/Structure-of-the-NSW-wide-inundation-model-A-The-global-extent-with-large-boxes_W640.jpg)
 
 Two-way nesting allows for the use of higher-resolution domains in specified
