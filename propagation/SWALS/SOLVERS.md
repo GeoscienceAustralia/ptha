@@ -158,7 +158,7 @@ For all solvers (including `"linear"`), one can set the linear friction coeffici
 
 ## The CLIFFS solver
 
-This solver was developed by Elena Tolkova and is provided [this git repository](https://github.com/Delta-function/cliffs-src). It is similar the well-known MOST solver but uses a different wetting and drying technique. CLIFFS solves the nonlinear shallow water equations, but without any eddy-viscosity or Coriolis terms.
+This solver was developed by Elena Tolkova and is provided [this git repository](https://github.com/Delta-function/cliffs-src). It is similar the well-known MOST solver but uses a different wetting and drying technique. CLIFFS solves the nonlinear shallow water equations, but without any eddy-viscosity or Coriolis terms. SWALS adds support for dispersion using the same methods as the finite-volume schemes.
 
 $$ \frac{\partial \eta}{\partial t} + \nabla \cdot \mathbf{q} = 0 $$
 
