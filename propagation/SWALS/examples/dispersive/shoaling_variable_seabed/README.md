@@ -5,7 +5,7 @@ used in [Coulaud et al. (2025)](http://dx.doi.org/10.1016/j.coastaleng.2024.1046
 
 A wave train is initialised with non-uniform stage, and zero velocities, over a
 sloping seabed. The solution is evolved for a set time period. The initial
-wavelengths are only 2-3x greater than the depth, so dispersion is very
+wavelengths are only 5x greater than the depth, so dispersion is very
 significant (in principle beyond the limits of the simple dispersive model in
 SWALS), while nonlinearity is also significant because the wave amplitudes are
 around 10% of the depth.
