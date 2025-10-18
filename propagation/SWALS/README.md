@@ -4,7 +4,7 @@
 Shallow WAter Like Solvers (SWALS) computes solutions to several [variants of
 the 2D shallow-water equations](./SOLVERS.md) (linear/nonlinear/dispersive) in Cartesian
 and Spherical coordinates, on "multidomains" represented as a set of connected and/or
-nested rectangular grid domains.
+nested rectangular grid domains. Figures below show examples from [here](https://doi.org/10.1029/2025JB031949) and [here](https://www.researchgate.net/publication/396141903_NSW-wide_probabilistic_tsunami_inundation_hazards_from_subduction_earthquakes).
 
 A number of [different numerical methods](./SOLVERS.md) are implemented,
 suitable for a range of flow regimes, with particular emphasis on tsunami-like
@@ -14,7 +14,7 @@ problems. This includes:
 * The [CLIFFS scheme](https://github.com/GeoscienceAustralia/ptha/blob/master/propagation/SWALS/SOLVERS.md#the-cliffs-solver)
 which was [developed by Elena Tolkova](https://github.com/Delta-function/cliffs-src). CLIFFS is similar to the well-known MOST tsunami solver, but uses a different wetting and drying scheme. 
 
-The figures below show nested SWALS models from studies [here](https://doi.org/10.1029/2025JB031949) and [here](https://www.researchgate.net/publication/396141903_NSW-wide_probabilistic_tsunami_inundation_hazards_from_subduction_earthquakes).
+
 ![SWALS model used to simulate tsunamis at tide gauges in southeast and west Australia](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/Davies2025_Australia_wide_model_structure.png)
 ![SWALS model used to simulate tsunami inundation throughout NSW in Australia](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/Structure-of-the-NSW-wide-inundation-model-A-The-global-extent-with-large-boxes_W640.jpg)
 
