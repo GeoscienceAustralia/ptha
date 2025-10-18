@@ -11,7 +11,7 @@ Generally speaking the SWALS code development has focussed most on:
 
 * A range of leapfrog schemes. These solve the linear shallow water equations; variants on the latter with some additional nonlinear terms (e.g. nonlinear pressure gradient terms; Manning friction); and there is a variant with all nonlinear terms. Dispersion is also supported. Our applications of the leapfrog schemes have focussed on low Froude-number flows (especially global-scale tsunami propagation simulation). The fully nonlinear leapfrog scheme can perform well in some more strongly nonlinear problems (e.g. inundation), but it is only first order accurate in the nonlinear advection term, and so for flows with higher Froude numbers we generally prefer second order finite-volume schemes such as `rk2` (or `midpoint` if also using dispersion).
 
-We also include the CLIFFS solver developed by Elena Tolkova.
+We also include the CLIFFS solver developed by Elena Tolkova (with the option of a dispersive term).
 
 
 # Setting the solver type.
