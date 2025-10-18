@@ -2,7 +2,7 @@
 SWALS_SRC := ../../../src
 
 SWALS_PREPROCESSOR_FLAGS := -DTIMER #-DDISPERSIVE_PEREGRINE_IN_FLUX_FORM
-#SWALS_PREPROCESSOR_FLAGS := -DTIMER
+
 include $(SWALS_SRC)/src_standard_compiler_var
 
 #

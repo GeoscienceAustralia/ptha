@@ -20,6 +20,6 @@ The figure below compares modelled (black) and observed (red) free surface profi
 
 For this case a we focus on the relationship between the runup and the initial wave amplitude, both normalised by the depth (which varies substantially among the experiments). With our chosen Manning coefficient of 0.008, the `midpoint` solver shows good agreement with the general trend of the experimental data. The Manning coefficient was tuned to give reasonably good results. 
 
-Note the Manning coefficient (0.008) is different to the value that gave good results for the non-dispersive model (0.005). Both are characteristic of low-friction surfaces.
+Note the Manning coefficient (0.008) calibrated to give good runup results here is different to the value that gave good results for the non-dispersive model (0.005). 
 
 ![Figure 3: Dimensionless runup as a function of dimensionless wave amplitude in experiments and model (midpoint).](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/dispersive/nthmp_BP04/Runup_scaling_plot.png)

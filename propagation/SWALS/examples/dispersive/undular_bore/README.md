@@ -2,7 +2,7 @@
 
 This problem is from an example in [Madsen et al. (2008, their Figure 10)](https://doi.org/10.1029/2008JC004932).
 
-A long channel of constant depth (-20 m) is forced with a sinusoidal wave on the left hand side (amplitude 2 m, period 13 minutes).
+A long channel of constant depth (20 m) is forced with a sinusoidal wave on the left hand side (amplitude 2 m, period 13 minutes).
 As the wave propagates into the channel, nonlinearity causes it to steepen, and in models with dispersion this triggers the formation 
 of an undular bore. 
 

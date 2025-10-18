@@ -11,7 +11,7 @@ composite beach and compared with experiments.
 
 Physically, nonlinearity is significant because the wave amplitudes are not
 negligible compared to the depth (especially for cases B and C). Dispersion
-also matters physically because the wave length is not very long short compared
+also matters physically because the wave length is not very long compared
 to the water depth (moreso for cases B and C). Dispersion causes short waves to
 form in the experiments, over regions where non-dispersive nonlinear shallow
 water models predict shock formation.

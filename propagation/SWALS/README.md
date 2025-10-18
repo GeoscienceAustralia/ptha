@@ -18,7 +18,7 @@ The figure below shows an example SWALS model, used to simulate tsunamis at tide
 
 ![SWALS model used to simulate tsunamis at tide gauges in southeast and west Australia.](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/Davies2025_Australia_wide_model_structure.png)
 
-A SWALS model with more complex nesting structure is shown below. This was used to simulate tsunami inundation throughout NSW in Australia ([see here](https://www.researchgate.net/publication/396141903_NSW-wide_probabilistic_tsunami_inundation_hazards_from_subduction_earthquakes)).
+A SWALS model with a more complex nesting structure is shown below. This was used to simulate tsunami inundation throughout NSW in Australia ([see here](https://www.researchgate.net/publication/396141903_NSW-wide_probabilistic_tsunami_inundation_hazards_from_subduction_earthquakes)).
 
 ![SWALS model used to simulate tsunami inundation throughout NSW in Australia.](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/Structure-of-the-NSW-wide-inundation-model-A-The-global-extent-with-large-boxes_W640.jpg)
 

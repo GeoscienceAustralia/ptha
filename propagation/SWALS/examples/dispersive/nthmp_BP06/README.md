@@ -6,7 +6,7 @@ The test problem is from the NTHMP benchmark suite. The test data and a problem 
 
 ![Conical Island flume geometry and gauge locations. The wavemaker is near the left edge of the domain. Gauge locations 1-4 vary slightly between cases A, B and C](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/dispersive/nthmp_BP06/Flume_plot_A_default.png)
 
-The [SWALS model](BP06.f90) uses a nested grid around the island. The wave forcing was derived from an analytical initial condition for a solitary wave. Dispersion is used in deeper waters, and linearly tapered to zero at depths (below MSL) between 0.1 - 0.05 m.
+The [SWALS model](BP06.f90) uses a nested grid around the island. The wave forcing was derived from an analytical initial condition for a solitary wave. Dispersion is used in deeper waters and linearly tapered to zero at depths (below MSL) between 0.1 - 0.05 m.
 
 ## Differing runup observations are reported for this problem
 
