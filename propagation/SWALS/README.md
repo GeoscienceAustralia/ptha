@@ -14,7 +14,7 @@ problems. This includes:
 * The [CLIFFS scheme](https://github.com/GeoscienceAustralia/ptha/blob/master/propagation/SWALS/SOLVERS.md#the-cliffs-solver)
 which was [developed by Elena Tolkova](https://github.com/Delta-function/cliffs-src). CLIFFS is similar to the well-known MOST tsunami solver, but uses a different wetting and drying scheme. 
 
-The figure below shows an example SWALS model, used to simulate tsunamis at tide gauges in southeast and west Australia (see [here](https://doi.org/10.1029/2025JB031949)). 
+The figure below shows an example SWALS model, which uses several levels of  nested grids to simulate tsunamis at tide gauges in southeast and west Australia (see [here](https://doi.org/10.1029/2025JB031949)). 
 
 ![SWALS model used to simulate tsunamis at tide gauges in southeast and west Australia.](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/Davies2025_Australia_wide_model_structure.png)
 
