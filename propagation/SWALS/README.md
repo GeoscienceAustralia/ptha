@@ -15,23 +15,12 @@ problems. This includes:
 which was [developed by Elena Tolkova](https://github.com/Delta-function/cliffs-src). CLIFFS is similar to the well-known MOST tsunami solver, but uses a different wetting and drying scheme. 
 
 Two-way nesting allows for the use of higher-resolution domains in specified
-areas. Nested domains may use different numerical solvers, take different
-timesteps, and have grid sizes that are any integer divisor of the coarser
-domain(s) they communicate with. There are no hard limits on the number of
-domains or the depth of refinement. In models with multiple domains, the
-finest-resolution domain at any particular point is the "priority domain" and
-is interpreted as containing the SWALS numerical solution. Information on the
-priority domain solution is communicated between domains as required to enable
-seamless evolution of the flow. 
-
-Flux correction is used to enforce the conservation of mass and advected
-momentum through nested domain interfaces, for schemes that would conserve
-these quantities on a single grid. In practice we obtain excellent
-mass conservation in complex multidomains when using a combination of leapfrog
-and finite-volume schemes. This can be checked using the SWALS mass
-conservation tracking routine, which reports any unexplained mass change (i.e.
-differences between the time-integrated boundary fluxes and the volume change
-in the multidomain). 
+areas, without hard limits on the number of domains or depth of refinement. 
+* The finest-resolution domain at any particular point is the "priority domain" and contains the SWALS numerical solution.
+  * This solution is communicated from the priority domain to its neighbours in halo regions to enable seamless evolution of the flow. 
+* Flux correction is used to enforce the conservation of mass and advected momentum through nested domain interfaces, for schemes that would conserve these quantities on a single grid.
+  * In practice we obtain excellent mass conservation in complex multidomains when using a combination of leapfrog and finite-volume schemes. 
+* Nested domains may use different numerical solvers, take different timesteps, and have grid sizes that are any integer divisor of the coarser domain(s) they communicate with. 
 
 Parallel computation (shared and distributed memory CPU) is supported with a
 mixture of MPI (or Fortran coarrays) and openmp. Domains can be automatically split
