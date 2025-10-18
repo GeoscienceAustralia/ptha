@@ -14,7 +14,7 @@ problems. This includes:
 * The [CLIFFS scheme](https://github.com/GeoscienceAustralia/ptha/blob/master/propagation/SWALS/SOLVERS.md#the-cliffs-solver)
 which was [developed by Elena Tolkova](https://github.com/Delta-function/cliffs-src). CLIFFS is similar to the well-known MOST tsunami solver, but uses a different wetting and drying scheme. 
 
-![SWALS model from Davies (2025), used to simulate tsunamis at tide gauges in parts of southeast and west Australia](https://agupubs.onlinelibrary.wiley.com/cms/asset/000ba6cc-9508-4251-95f2-eac62a547920/jgrb57483-fig-0001-m.jpg)
+![SWALS model from Davies (2025), used to simulate tsunamis at tide gauges in parts of southeast and west Australia](https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2025JB031949?af=R)
 
 Two-way nesting allows for the use of higher-resolution domains in specified
 areas, without hard limits on the number of domains or depth of refinement.
