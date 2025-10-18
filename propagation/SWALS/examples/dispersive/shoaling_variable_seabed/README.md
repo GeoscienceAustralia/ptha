@@ -28,8 +28,7 @@ dispersive and nonlinear terms.
 
 The models are also run in transposed domains (i.e. the 1D test
 separately exercises the UH and VH momentum equations) to check that they 
-give near identical results. The plots include both directions, but only
-one will be visible since they plot almost exactly atop each other.
+give near identical results.
 
 
 ## Midpoint
