@@ -125,7 +125,7 @@ If dispersion is used on any domain (`any(md%domains(:)%use_dispersion)`) then S
             * Communicate halo data, but do not immediately update the solution.
             * Implicit solve
                 * First *outer iteration*
-                    * Dispersive domains receive halos from domains that have advanced to the same time. (The constraints on the timesteps mean that this will include all domains with the same timestep, and on some substeps it will also include domains that take a larger timestep).
+                    * Dispersive domains receive halos from domains that have advanced to the same time. (The constraints on the timesteps mean that this will include data from all domains with the same timestep. On some substeps it will also include data from domains that take a larger timestep).
                     * Dispersive domains compute the right-hand-side required for the implicit solve.
                     * Dispersive domains guess the solution the end of the substep using quadratic-in-time extrapolation from the solution each global timestep. 
                     * Dispersive domains iteratively update the solution with implicit solves applied sequentially in the x-and-y directions (tridiagonal solves). These *inner iterations* are repeated once by default (corresponding to `md%domains(j)%tridiagonal_inner_iter=2`).
