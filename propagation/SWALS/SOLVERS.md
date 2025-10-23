@@ -133,6 +133,7 @@ If dispersion is used on any domain (`any(md%domains(:)%use_dispersion)`) then S
                 * Repeat the *outer iteration* once by default (`md%dispersive_outer_iterations_count = 2`), except after the first time these *outer iterations* only receive halos from domains that have advanced to the same time AND have the same grid size. Unequal grid sizes would always disagree, due to interpolation, leading to worse numerical behaviour if they are included beyond the first iteration. 
                 * The default number of inner and outer iterations are adequate for problems tried so far, but can be adjusted if needed.
             * Communicate halo data between domains (both dispersive and non-dispersive) that have advanced to the same time.
+        * Advance to the next substep
     * After the final substep, apply flux-correction and communicate once more. At this point all domains will have advanced one global timestep $dt = N_{t}\delta t$.
 * Models using dispersion thus require much more communication and computation (about 3x compute for `midpoint`). In nested grid models, the implicit method may need halos to be thicker than SWALS provides by default, particularly on domains that only take 1 timestep for every global timestep (which are less likely to have thick halos by default). To address this one can increase the halo thickness by setting the integer `md%domains(j)%minimum_nesting_layer_thickness` (e.g. a value of 30 is used on the coarsest grids for some test problems).
 
