@@ -4251,21 +4251,15 @@ TIMER_STOP('dispersive_store')
     subroutine solve_dispersive_terms(domain, rhs_is_up_to_date, estimate_solution_forward_in_time, forward_time)
         !! Solve the dispersive terms.
         !!
-        !! In practice we evolve models with dispersive terms by:
-        !!    1. Store domain%U in domain%ds%last_U (via domain%copy_U_to_dispersive_last_timestep). Say this time is tLast
-        !!    2. Evolve one or more shallow water steps (finishing at time tNew)
-        !!    3. Solve the dispersive terms with domain%solve_dispersive_terms (which this routine does). 
-        !!       This updates the solution with dispersive terms, with the time discretization centred from 
-        !!       tLast to tNew (assuming U at tLast is stored in domain%ds%last_U).
-        !!
         class(domain_type), intent(inout) :: domain
         logical, intent(in) :: rhs_is_up_to_date
             !! Are the RHS terms in the dispersive solve already up to date? This is useful in the multidomain
             !! context when using iteration, if the RHS does not change between iterations.
         logical, intent(in) :: estimate_solution_forward_in_time
-            !! Should we use extrapolation in time to guess the solution before iteration
+            !! Should we use extrapolation in time to guess the solution before iteration (.true.). If .false. then
+            !! use the existing value of domain%U as the guess.
         real(dp), intent(in) :: forward_time
-            !! Time for the guessed solution (only used if estimate_solution_forward_in_time is TRUE)
+            !! Time for the guessed solution (only used if estimate_solution_forward_in_time=.true.)
 
         if(domain%use_dispersion .and. (domain%time >= domain%static_before_time)) then
 TIMER_START('dispersive_solve')
