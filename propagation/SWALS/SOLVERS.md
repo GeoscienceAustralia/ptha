@@ -70,6 +70,8 @@ By default the dispersive term $\mathbf{\Upsilon}=0$. However if `md%domains(j)%
     * After the final substep, apply flux-correction and communicate once more. At this point all domains will have advanced one global timestep $dt = N_{t}\delta t$.
 * Models using dispersion thus require much more communication and computation (about 3x compute for `midpoint`). In nested grid models, the implicit method may need halos to be thicker than SWALS provides by default, particularly on domains that only take 1 timestep for every global timestep (which are less likely to have thick halos by default). To address this one can increase the halo thickness by setting the integer `md%domains(j)%minimum_nesting_layer_thickness` (e.g. a value of 30 is used on the coarsest grids for some test problems).
 
+Elevation smoothing is sometimes useful to manage numerical instabilities (especially for the CLIFFS scheme, or for models with complex nesting). It can be applied a specific location with the subroutine `md%domains(j)%smooth_elevation_near_point`, or along all coarse-to-fine nesting boundaries with `md%domains(j)%smooth_elevation_near_nesting_fine2coarse_boundaries`.
+
 # Setting the solver type.
 
 A SWALS `multidomain` object (denoted `md`) contains one or more structured grids (`domains`) on which we solve the shallow water equations. These domains are stored in an allocatable array (`md%domains(:)`) of type `domain_type`. This is allocated at the beginning of an application code (e.g. `allocate(md%domains(10))` will allow 10 domains). 
@@ -90,7 +92,7 @@ With these defaults, other schemes are less heavily exercised by the validation 
 ## The Finite-Volume solvers
 
 SWALS has a number of classical shock-capturing finite-volume schemes with accuracy up to second order in space and time. The SWALS finite-volume solvers approximate the shallow water equations in flux conservative form (but use finite differences to treat the dispersive terms). They are shock capturing, and well suited to flows with moderate or high Froude-numbers and wetting/drying, but may be too numerically dissipative to efficiently model flow at very low Froude-numbers. For example they can work well for nearshore and inundation simulation, but are not as well suited to global-scale tsunami propagation as the leapfrog schemes (discussed below). In practice we often develop global-to-local nested grid models by using a leapfrog solver on the coarsest global grid, and finite-volume solvers on the nested grids (such as in [this paper](https://www.frontiersin.org/articles/10.3389/feart.2020.598235/full)). 
-In general the finite-volume schemes in SWALS have good stability when used in conjunction with nesting. Occasionally these solvers can be subject to artifical vortices at coarse-to-fine nesting regions, especially where the elevation has rapid variation. This is not particularly common though, and can usually be solved by moving the domain boundary to an area with weaker elevation variation, or by slightly smoothing the elevation data in the neighbourhood of the spurious flow. Smoothing can be applied a specific location with the subroutine `md%domains(j)%smooth_elevation_near_point`, or along all coarse-to-fine nesting boundaries with `md%domains(j)%smooth_elevation_near_nesting_fine2coarse_boundaries`.
+In general the finite-volume schemes in SWALS have good stability when used in conjunction with nesting. Occasionally these solvers can be subject to artifical vortices at coarse-to-fine nesting regions, especially where the elevation has rapid variation. This is not particularly common though, and can usually be solved by moving the domain boundary to an area with weaker elevation variation, or by slightly smoothing the elevation data in the neighbourhood of the spurious flow. 
 
 The finite-volume schemes in SWALS use a range of different timestepping schemes, flux functions, and spatial extrapolations to derive the flow state at edges. They are essentially variants of the scheme described [here](https://www.researchgate.net/publication/289882157_Open_source_flood_simulation_with_a_2D_discontinuous-elevation_hydrodynamic_model), but on a structured grid rather than an unstructured mesh. Each scheme has a default limiter coefficient, flux function, and friction model, but these can be changed by the user prior to calling `md%setup`:
 
@@ -131,13 +133,7 @@ Broadly speaking the solvers with `_low_fr_diffusion` might perform better in lo
 
 ## The Leapfrog schemes
 
-The SWALS leapfrog schemes solve the nonlinear shallow water equations, with a particular focus on linear or quasi-linear variants that are efficient for low-Froude-number flow. The most complete scheme is `leapfrog_nonlinear`, which solves the nonlinear shallow water equations without any eddy-viscosity term:
-
-$$ \frac{\partial \eta}{\partial t} + \nabla \cdot \mathbf{q} = 0 $$
-
-$$ \frac{\partial \mathbf{q}}{\partial t} + \nabla \cdot (\mathbf{u}\otimes\mathbf{q}) + g h \nabla \eta + g h \mathbf{S_f} + \mathbf{\Omega_s} + \mathbf{M_s} + \mathbf{\Upsilon} = 0 $$
-
-For definitions of these variables see the previous section on finite-volume schemes. 
+The SWALS leapfrog schemes solve the nonlinear shallow water equations, with a particular focus on linear or quasi-linear variants that are efficient for low-Froude-number flow. The most complete scheme is `leapfrog_nonlinear`, which solves the nonlinear shallow water equations (although without any eddy-viscosity term).
 
 Leapfrog schemes are classically used for deep-ocean tsunami propagation, and are also popular for inundation modelling (although this has not been a focus for leapfrog schemes in SWALS). They have good energy conservation properties for the nonlinear shallow water equations, which makes them much better suited to long-distance deep ocean tsunami propagation, as compared with the finite-volume schemes discussed above. All the SWALS leapfrog schemes also support dispersion (similar caveats as discussed above). Some references that describe classical leapfrog schemes for the linear and nonlinear shallow water equations are:
 
@@ -154,32 +150,21 @@ The leapfrog solver variants provided by SWALS are:
 
 * `"leapfrog_nonlinear"`. This solves the nonlinear shallow water equations with a leapfrog scheme, including wetting and drying.
 
-
-For all leapfrog solvers except `"linear"`, the friction model can be controlled by setting the variable `md%domains(j)%friction_type`. Values are:
-
-* `"manning"`. This is Manning friction, so the array `md%domains(j)%manning_squared(:,:)` is interpreted as the (Manning friction)**2
-
-* `"chezy"`. This is Chezy friction. In this case the array `md%domains(j)%manning_squared(:,:)` is interpreted as (1/Chezy friction)**2
-
-For all solvers (including `"linear"`), one can set the linear friction coefficient `md%domains(j)%linear_drag_coef` which is 0.0 by default. If this is set to a non-zero value then it implements the linear friction model of *Fine, I. V.; Kulikov, E. A. & Cherniawsky, J. Y. Japans 2011 Tsunami: Characteristics of Wave Propagation from Observations and Numerical Modelling Pure and Applied Geophysics, Springer Science and Business Media LLC, 2012, 170, 1295-1307*. 
+One should not try to specify nonlinear friction terms with the linear solvers. However, the non-starndard linear friction model can still be used. 
 
 
 ## The CLIFFS solver
 
-This solver was developed by Elena Tolkova and is provided [this git repository](https://github.com/Delta-function/cliffs-src). It is similar the well-known MOST solver but uses a different wetting and drying technique. CLIFFS solves the nonlinear shallow water equations, but without any eddy-viscosity or Coriolis terms. SWALS adds support for dispersion using the same methods as the finite-volume schemes.
+This solver was developed by Elena Tolkova and is provided [this git repository](https://github.com/Delta-function/cliffs-src). It is similar the well-known MOST solver but uses a different wetting and drying technique. CLIFFS solves the nonlinear shallow water equations, but without any eddy-viscosity or Coriolis terms. SWALS adds support for dispersion using the same finite difference methods as used for the finite-volume schemes (although when using dispersion, the `midpoint` finite volume method appears to be typically more accurate than CLIFFS).
 
-$$ \frac{\partial \eta}{\partial t} + \nabla \cdot \mathbf{q} = 0 $$
+Elena Tolkova has reported considerable benchmarking of CLIFFS; see links in the README of the aforementioned repository, and also *Tolkova, E. Land--Water Boundary Treatment for a Tsunami Model With Dimensional Splitting Pure and Applied Geophysics, 2014, 171, 2289-2314*.
 
-$$ \frac{\partial \mathbf{q}}{\partial t} + \nabla \cdot (\mathbf{u}\otimes\mathbf{q}) + g h \nabla \eta + g h \mathbf{S_f} + \mathbf{M_s} + \mathbf{\Upsilon} = 0 $$
-
-For definitions of these variables see the above section on Finite Volume Schemes. Tolkova has reported considerable benchmarking of CLIFFS; see links in the README of the aforementioned repository, and also *Tolkova, E. Land--Water Boundary Treatment for a Tsunami Model With Dimensional Splitting Pure and Applied Geophysics, 2014, 171, 2289-2314*.
-
-The CLIFFS solver was added to SWALS by extracting the inner computational routine, with only minor modifications to get it to compile in our framework. Dispersion is supported as for the finite volume schemes, although the `midpoint` finite volume solver is usually more accurate for this purpose. CLIFFS solves the shallow water equations using characteristic variables; in SWALS we transfer to/from these variables every time-step because our nesting/parallel framework requires the solver to work with the stage, UH, VH and bed elevation. For this reason the implementation in SWALS might be slower than a pure CLIFFS implementation. On the other hand CLIFFS is quite efficient anyway, and one can employ mixed openmp/mpi in SWALS which may permit larger parallel runs.
+The CLIFFS solver was added to SWALS by extracting the inner computational routine, with only minor modifications to get it to compile in our framework. CLIFFS solves the shallow water equations using characteristic variables; in SWALS we transfer to/from these variables every time-step because our nesting/parallel framework requires the solver to work with the stage, UH, VH and bed elevation. For this reason the implementation in SWALS might be slower than a pure CLIFFS implementation. On the other hand CLIFFS is quite efficient anyway, and one can employ mixed openmp/mpi in SWALS which may permit larger parallel runs.
 
 In general CLIFFS needs a wetting and drying threshold to be tuned to the problem at hand. This can be done by setting the variable `md%domains(j)%cliffs_minimum_allowed_depth`; typical values might be 0.001 (1 mm) for lab experiments, around 0.05 - 0.1 for high-resolution field cases, and 1 m or more for global-propagation problems. Tuning may be required for stability on any particular problem.
 
 The CLIFFS solver requires sufficiently smooth bathymetry for stability; see the analysis by Tolkova in the CLIFFS user manual. A bathymetry-smoothing routine is provided by Tolkova for this purpose and has been integrated into SWALS; one must generally use this to avoid instabilities. To apply the bathymetry smoothing, after the elevation has been set in `md%domains(j)%U(:,:,ELV)` you would call the bathymetry smoothing routine, e.g. `call md%domains(j)%smooth_elevation(smooth_method='cliffs')`.
 
-By default our CLIFFS solver uses `md%domains(j)%friction_type = "manning"`. This is Manning friction, and can be spatially variable. It is set using the array `md%domains(j)%manning_squared(:,:)` which interpreted as the (Manning friction)^2. Thus far we have not implemented Chezy friction in the CLIFFS solver (although that would not be difficult). We have implemented the linear-friction model associated with `md%domains(j)%linear_drag_coef` (discussed above), which is zero by default. In practice this model is unlikely to be desirable for use with CLIFFS, which is numerically dissipative in any case.
+By default our CLIFFS solver uses `md%domains(j)%friction_type = "manning"`. Thus far we have not implemented Chezy friction in the CLIFFS solver (although that would not be difficult). We have implemented the linear-friction model associated with `md%domains(j)%linear_drag_coef` (discussed above), which is zero by default. In practice this model is unlikely to be desirable for use with CLIFFS, which is numerically dissipative in any case.
 
 The CLIFFS solver is not mass conservative; see Tolkova papers for discussion of this, especially in relation to wetting and drying. For this reason in SWALS's nesting framework, no flux correction is applied between neighbouring domains if one uses CLIFFS, and mass conservation errors are expected.
