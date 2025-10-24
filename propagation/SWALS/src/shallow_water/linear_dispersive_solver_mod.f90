@@ -109,9 +109,9 @@ module linear_dispersive_solver_mod
             !! Allow quadratic extrapolation in time
 
         type(timer_type) :: evolve_timer
+            !! For timing dispersive terms only
 
-        !logical :: debug_me = .false.
-            !! Hack to help debugging
+        !logical :: debug_me = .false. ! Hack to help debugging
 
         contains
         procedure, non_overridable :: store_last_U => store_last_U
