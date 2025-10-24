@@ -13,7 +13,18 @@ Generally speaking the SWALS code development has focussed most on:
 
 We also include the CLIFFS solver developed by Elena Tolkova (with the option of a dispersive term).
 
-# Variants of the shallow water equations
+## Setting the solver type.
+
+A SWALS `multidomain` object (denoted `md`) contains one or more structured grids (`domains`) on which we solve the shallow water equations. These domains are stored in an allocatable array (`md%domains(:)`) of type `domain_type`. This is allocated at the beginning of an application code (e.g. `allocate(md%domains(10))` will allow 10 domains). 
+
+The solver for each domain is set by specifying its timestepping method. For example by setting `md%domains(3)%timestepping_method = "linear"`, we make the 3rd domain use the linear leapfrog solver. Many examples are included in the [validation test suite](./examples), such as [here](./examples/nthmp/BP09/BP09.f90). 
+
+The solver types supported by SWALS are specified in the file [timestepping\_metadata\_mod.f90](./src/shallow_water/timestepping_metadata_mod.f90). This also sets solver specific constants, such as the halo thickness required to advance one time-step. Additional aspects of the solver behavior are controlled by variables in the `domain_type`, for example, `md%domains(j)%lower_left` defines the lower-left coordinate for the `j`th domain. The `domain_type` variables are well documented in the source code, see definitions under `type :: domain_type` in [domain_mod.f90](./src/shallow_water/domain_mod.f90).
+
+The solvers support use of either Cartesian or Spherical coordinates by specifying the appropriate [compile time option](README.md#advanced-compilation). By default Cartesian coordinates are used. To use spherical coordinates we set the preprocessor varable `-DSPHERICAL` when compiling. [Many examples](./examples) are provided in the test-problems; for instance [this makefile](examples/nthmp/Hilo_Tohoku_tsunami/) uses spherical coordinates (and unrelated code timing) by defining the variable `SWALS_PREPROCESSOR_FLAGS := -DTIMER -DSPHERICAL`. If the variable `-DSPHERICAL` were not set then Cartesian coordinates would be used.
+
+
+# The shallow water equations
 
 SWALS solves variants of the 2D shallow water equations:
 
@@ -71,16 +82,6 @@ By default the dispersive term $\mathbf{\Upsilon}=0$. However if `md%domains(j)%
 * Models using dispersion thus require much more communication and computation (about 3x compute for `midpoint`). In nested grid models, the implicit method may need halos to be thicker than SWALS provides by default, particularly on domains that only take 1 timestep for every global timestep (which are less likely to have thick halos by default). To address this one can increase the halo thickness by setting the integer `md%domains(j)%minimum_nesting_layer_thickness` (e.g. a value of 30 is used on the coarsest grids for some test problems).
 
 Elevation smoothing is sometimes useful to manage numerical instabilities (especially for the CLIFFS scheme, or for models with complex nesting). It can be applied a specific location with the subroutine `md%domains(j)%smooth_elevation_near_point`, or along all coarse-to-fine nesting boundaries with `md%domains(j)%smooth_elevation_near_nesting_fine2coarse_boundaries`.
-
-# Setting the solver type.
-
-A SWALS `multidomain` object (denoted `md`) contains one or more structured grids (`domains`) on which we solve the shallow water equations. These domains are stored in an allocatable array (`md%domains(:)`) of type `domain_type`. This is allocated at the beginning of an application code (e.g. `allocate(md%domains(10))` will allow 10 domains). 
-
-The solver for each domain is set by specifying its timestepping method. For example by setting `md%domains(3)%timestepping_method = "linear"`, we make the 3rd domain use the linear leapfrog solver. Many examples are included in the [validation test suite](./examples), such as [here](./examples/nthmp/BP09/BP09.f90). 
-
-The solver types supported by SWALS are specified in the file [timestepping\_metadata\_mod.f90](./src/shallow_water/timestepping_metadata_mod.f90). This also sets solver specific constants, such as the halo thickness required to advance one time-step. Additional aspects of the solver behavior are controlled by variables in the `domain_type`, for example, `md%domains(j)%lower_left` defines the lower-left coordinate for the `j`th domain. The `domain_type` variables are well documented in the source code, see definitions under `type :: domain_type` in [domain_mod.f90](./src/shallow_water/domain_mod.f90).
-
-The solvers support use of either Cartesian or Spherical coordinates by specifying the appropriate [compile time option](README.md#advanced-compilation). By default Cartesian coordinates are used. To use spherical coordinates we set the preprocessor varable `-DSPHERICAL` when compiling. [Many examples](./examples) are provided in the test-problems; for instance [this makefile](examples/nthmp/Hilo_Tohoku_tsunami/) uses spherical coordinates (and unrelated code timing) by defining the variable `SWALS_PREPROCESSOR_FLAGS := -DTIMER -DSPHERICAL`. If the variable `-DSPHERICAL` were not set then Cartesian coordinates would be used.
 
 
 # Details on the solvers
