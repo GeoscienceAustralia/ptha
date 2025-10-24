@@ -13,9 +13,9 @@ Generally speaking the SWALS code development has focussed most on:
 
 We also include the CLIFFS solver developed by Elena Tolkova (with the option of a dispersive term).
 
-# Variants of the 2D shallow water equations
+# Variants of the shallow water equations
 
-SWALS solves variants of the nonlinear shallow water equations with Manning (or Chezy) friction. 
+SWALS solves variants of the 2D shallow water equations:
 
 $$ \frac{\partial \eta}{\partial t} + \nabla \cdot \mathbf{q} = 0 $$
 
