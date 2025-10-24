@@ -1399,7 +1399,7 @@ __FILE__
                         skip_if_time_after_this_time  = md%domains(j)%time + (0.1_dp*dt/disp_nt_max), &
                         skip_if_unequal_cell_ratios = dispersive_outer_iterations > 1)
 #ifdef TRACK_MULTIDOMAIN_STABILITY
-                        call check_multidomain_stability(md, 'step-after-disp-comms', j)
+                    call check_multidomain_stability(md, 'step-after-disp-comms', j)
 #endif
 
 
@@ -1415,7 +1415,7 @@ TIMER_START('domain_dispersive_it')
 
 TIMER_STOP('domain_dispersive_it')
 #ifdef TRACK_MULTIDOMAIN_STABILITY
-                        call check_multidomain_stability(md, 'step-after-disp-solve', j)
+                    call check_multidomain_stability(md, 'step-after-disp-solve', j)
 #endif
                     ! Send the halos only for domain j. Timing code inside
                     call md%send_halos(domain_index=j, send_to_recv_buffer = send_halos_immediately, time=md%domains(j)%time)
@@ -1445,7 +1445,7 @@ TIMER_STOP('comms_disp')
                     skip_if_time_before_this_time = md%domains(j)%time - (0.1_dp*dt/disp_nt_max), &
                     skip_if_time_after_this_time  = md%domains(j)%time + (0.1_dp*dt/disp_nt_max) )
 #ifdef TRACK_MULTIDOMAIN_STABILITY
-                    call check_multidomain_stability(md, 'step-after-comms', j)
+                call check_multidomain_stability(md, 'step-after-comms', j)
 #endif
             end do get_halos
 
