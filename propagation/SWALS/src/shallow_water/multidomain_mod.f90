@@ -1220,6 +1220,14 @@ TIMER_STOP('check_multidomain_stability')
         real(dp) :: dt_local, max_dt_store(size(md%domains)), tend
         logical :: is_first_step
 
+#if defined(COARRAY) && !defined(COARRAY_USE_MPI_FOR_INTENSIVE_COMMS)
+        ! Remove this if non-MPI coarray communication is supported below.
+        write(md%log_output_unit,*) 'Only MPI parallel communication is supported in evolve_multidomain_one_step_dispersive'
+        write(md%log_output_unit,*) 'Compile with -DCOARRAY -DCOARRAY_USE_MPI_FOR_INTENSIVE_COMMS'
+        flush(md%log_output_unit)
+        call generic_stop()
+#endif
+
 TIMER_START('before_stepping')
         ! All the domains will evolve to this time
         tend = md%domains(1)%time + dt
@@ -1427,7 +1435,7 @@ TIMER_START('comms_disp')
                     call communicate_p2p(md%p2p)
 TIMER_STOP('comms_disp')
                 else
-                    write(md%log_output_unit, *) 'Error: Need to implement support for coarray case (sync before and after)'
+                    write(md%log_output_unit, *) 'Error: Need to implement support for this case (sync before and after)'
                     call generic_stop
                 end if
 
