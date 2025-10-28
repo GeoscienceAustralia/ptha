@@ -2050,7 +2050,7 @@ module nested_grid_comms_mod
         !! This is revised from process_data_to_send_2022Feb, with the intention of dealing with some nesting
         !! instabilities in the dispersive case. The idea is to avoid using U(:,:,k) values that are not in the 
         !! priority domain when constructing data to send.
-        !! This routine also works for NLSW models. The validation tests suggest is is reasonable, although it may be less accurate, 
+        !! This routine also works for NLSW models. The validation tests suggest it is reasonable, although it may be less accurate, 
         !! and would need to be further explored before changing the defaults (there some failures in the validation test suite, likely small matters).
         !! For backward compability of our NLSW models, for now it is preferable to only use this routine in dispersive models.
         !!
