@@ -82,7 +82,9 @@ By default the dispersive term $\mathbf{\Upsilon}=0$. However if `md%domains(j)%
     * After the final substep, apply flux-correction and communicate once more. At this point all domains will have advanced one global timestep $dt = N_{t}\delta t$.
 * Models using dispersion thus require much more communication and computation (about 3x compute for `midpoint`). In nested grid models, the implicit method may need halos to be thicker than SWALS provides by default, particularly on domains that only take 1 timestep for every global timestep (which are less likely to have thick halos by default). To address this one can increase the halo thickness by setting the integer `md%domains(j)%minimum_nesting_layer_thickness` (e.g. a value of 30 is used on the coarsest grids for some test problems).
 
-Elevation smoothing is sometimes useful to manage numerical instabilities (especially for the CLIFFS scheme, or for models with complex nesting). It can be applied a specific location with the subroutine `md%domains(j)%smooth_elevation_near_point`, or along all coarse-to-fine nesting boundaries with `md%domains(j)%smooth_elevation_near_nesting_fine2coarse_boundaries`.
+# Elevation smoothing
+
+Elevation smoothing is sometimes useful to manage numerical instabilities, especially for the CLIFFS scheme and for models with complex nesting. It can be applied a specific location with the subroutine `md%domains(j)%smooth_elevation_near_point`, or along all coarse-to-fine nesting boundaries with `md%domains(j)%smooth_elevation_near_nesting_fine2coarse_boundaries`.
 
 
 # Details on the solvers
