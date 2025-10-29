@@ -10,7 +10,7 @@ A number of [different numerical methods](./SOLVERS.md) are implemented,
 suitable for a range of flow regimes, with particular emphasis on tsunami-like
 problems. This includes: 
 * [shock-capturing finite volume schemes](https://github.com/GeoscienceAustralia/ptha/blob/master/propagation/SWALS/SOLVERS.md#the-finite-volume-solvers)
-* [classical leapfrog schemes](https://github.com/GeoscienceAustralia/ptha/blob/master/propagation/SWALS/SOLVERS.md#the-leapfrog-solvers ),
+* [classical leapfrog schemes](https://github.com/GeoscienceAustralia/ptha/blob/master/propagation/SWALS/SOLVERS.md#the-leapfrog-solvers),
 * The [CLIFFS scheme](https://github.com/GeoscienceAustralia/ptha/blob/master/propagation/SWALS/SOLVERS.md#the-cliffs-solver)
 which was [developed by Elena Tolkova](https://github.com/Delta-function/cliffs-src). CLIFFS is similar to the well-known MOST tsunami solver, but uses a different wetting and drying scheme. 
 
