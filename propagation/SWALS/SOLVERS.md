@@ -165,7 +165,7 @@ One should not try to specify nonlinear friction terms with the linear solvers. 
 
 ## The CLIFFS solver
 
-CLIFFS was developed by Elena Tolkova and is provided [this git repository](https://github.com/Delta-function/cliffs-src). It is similar the well-known MOST solver but uses a different wetting and drying technique. CLIFFS solves the nonlinear shallow water equations, but without any eddy-viscosity or Coriolis terms. SWALS adds support for dispersion using the same finite difference methods as used for the finite-volume schemes. However, when using dispersion, tests to date suggest the `midpoint` finite volume method appears more accurate than CLIFFS. Alternatively, one can setup the CLIFFS solver without dispersion and use appropriately coarse grids to mimic its effect.
+CLIFFS was developed by Elena Tolkova and is provided [this git repository](https://github.com/Delta-function/cliffs-src). It is similar the well-known MOST solver but uses a different wetting and drying technique. CLIFFS solves the nonlinear shallow water equations, but without any eddy-viscosity or Coriolis terms. SWALS adds support for dispersion using the same finite difference methods as used for the finite-volume schemes. However, when using dispersion, tests to date suggest the `midpoint` finite volume method may be more accurate than CLIFFS. Alternatively, one can setup the CLIFFS solver without dispersion and use appropriately coarse grids to mimic its effect.
 
 Elena Tolkova has reported considerable benchmarking of CLIFFS; see links in the README of the aforementioned repository, and also *Tolkova, E. Land--Water Boundary Treatment for a Tsunami Model With Dimensional Splitting Pure and Applied Geophysics, 2014, 171, 2289-2314*.
 
