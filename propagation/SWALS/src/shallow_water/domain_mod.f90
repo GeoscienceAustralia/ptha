@@ -2856,6 +2856,18 @@ TIMER_START('nesting_flux_correction')
                                 end if
 
                                 area_scale = sum(domain%area_cell_y(p0:p1))
+
+#ifdef ALWAYS_FLUX_CORRECT_DRY_CELLS
+                                ! This bypasses some checks about flux-correcting dry areas that are important with dispersion.
+                                ! For non-dispersive domains the checks are always .TRUE. and the more complex code is equivalent,
+                                ! but compilers may produce floating-point level differences (likely this form is easier to optimise).
+                                do k = var1, varN
+                                    domain%U(ni, p0:p1, k) = domain%U(ni, p0:p1, k) - &
+                                        sg * &
+                                        real(domain%nesting%recv_comms(i)%recv_box_flux_error(dir)%x(ni - n0 + 1, k)/&
+                                            area_scale, dp) * fraction_of_local
+                                end do
+#else
                                 do pind = p0, p1
 
                                     ! if flux_correct_dry_cells_outside_priority_domain is FALSE, then only flux correct
@@ -2878,6 +2890,7 @@ TIMER_START('nesting_flux_correction')
                                         end do
                                     end if
                                 end do
+#endif
                             end if
                         end if
                     end do
@@ -2947,6 +2960,15 @@ TIMER_START('nesting_flux_correction')
                                 end if
 
                                 area_scale = sum(domain%area_cell_y(p0:p1))
+
+#ifdef ALWAYS_FLUX_CORRECT_DRY_CELLS
+                                do k = var1, varN
+                                    domain%U(ni, p0:p1, k) = domain%U(ni, p0:p1, k) + &
+                                        sg * &
+                                        real(domain%nesting%recv_comms(i)%recv_box_flux_error(dir)%x(ni - n0 + 1, k)/&
+                                            area_scale, dp) * fraction_of_local
+                                end do
+#else
                                 do pind = p0, p1
 
                                     ! if flux_correct_dry_cells_outside_priority_domain is FALSE, then only flux correct
@@ -2964,6 +2986,7 @@ TIMER_START('nesting_flux_correction')
                                         end do
                                     end if
                                 end do
+#endif
                             end if
                         end if
                     end do
@@ -3045,6 +3068,15 @@ TIMER_START('nesting_flux_correction')
                                 end if
 
                                 area_scale = (domain%area_cell_y(mi)*dx_ratio)
+
+#ifdef ALWAYS_FLUX_CORRECT_DRY_CELLS
+                                do k = var1, varN
+                                    domain%U(p0:p1, mi, k) = domain%U(p0:p1, mi, k) - &
+                                        sg * &
+                                        real(domain%nesting%recv_comms(i)%recv_box_flux_error(dir)%x(mi - m0 + 1, k)/&
+                                             area_scale, dp) * fraction_of_local
+                                end do
+#else
                                 do pind = p0, p1
 
                                     ! if flux_correct_dry_cells_outside_priority_domain is FALSE, then only flux correct
@@ -3062,6 +3094,7 @@ TIMER_START('nesting_flux_correction')
                                         end do
                                     end if
                                 end do
+#endif
                             end if
                         end if
                     end do
@@ -3128,6 +3161,15 @@ TIMER_START('nesting_flux_correction')
                                 end if
 
                                 area_scale = (domain%area_cell_y(mi)*dx_ratio)
+
+#ifdef ALWAYS_FLUX_CORRECT_DRY_CELLS
+                                do k = var1, varN
+                                    domain%U(p0:p1, mi, k) = domain%U(p0:p1, mi, k) + &
+                                        sg * &
+                                        real(domain%nesting%recv_comms(i)%recv_box_flux_error(dir)%x(mi - m0 + 1, k)/&
+                                            area_scale, dp) * fraction_of_local
+                                end do
+#else
                                 do pind = p0, p1
 
                                     ! if flux_correct_dry_cells_outside_priority_domain is FALSE, then only flux correct
@@ -3145,6 +3187,7 @@ TIMER_START('nesting_flux_correction')
                                         end do
                                     end if
                                 end do
+#endif
                             end if
                         end if
                     end do
