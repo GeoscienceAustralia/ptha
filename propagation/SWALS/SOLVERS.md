@@ -137,7 +137,7 @@ The numerical fluxes are derived from the left and right cell edge values using 
 Broadly speaking the solvers with `_low_fr_diffusion` might perform better in low Froude-number flows, although often results will be similar. The solvers with `_upwind_transverse` may have less numerical dissipation in shear flows, which may be a good or bad thing, but more often will be similar. 
 
 
-## The Leapfrog schemes
+## The Leapfrog solvers
 
 The SWALS leapfrog schemes solve the shallow water equations with a particular focus on linear or quasi-linear variants that are efficient for low-Froude-number flow. The most complete scheme is `leapfrog_nonlinear`, which solves the full nonlinear shallow water equations (although without any eddy-viscosity term).
 
