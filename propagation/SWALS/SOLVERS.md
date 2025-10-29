@@ -139,9 +139,13 @@ Broadly speaking the solvers with `_low_fr_diffusion` might perform better in lo
 
 ## The Leapfrog schemes
 
-The SWALS leapfrog schemes solve the nonlinear shallow water equations, with a particular focus on linear or quasi-linear variants that are efficient for low-Froude-number flow. The most complete scheme is `leapfrog_nonlinear`, which solves the nonlinear shallow water equations (although without any eddy-viscosity term).
+The SWALS leapfrog schemes solve the shallow water equations with a particular focus on linear or quasi-linear variants that are efficient for low-Froude-number flow. The most complete scheme is `leapfrog_nonlinear`, which solves the full nonlinear shallow water equations (although without any eddy-viscosity term).
 
-Leapfrog schemes are classically used for deep-ocean tsunami propagation, and are also popular for inundation modelling (although this has not been a focus for leapfrog schemes in SWALS). They have good energy conservation properties for the nonlinear shallow water equations, which makes them much better suited to long-distance deep ocean tsunami propagation, as compared with the finite-volume schemes discussed above. All the SWALS leapfrog schemes also support dispersion. Alternatively, leapfrog schemes on suitably coarse grids can be used to mimic dispersion. Some references that describe classical leapfrog schemes for the linear and nonlinear shallow water equations are:
+Leapfrog schemes are classically used for deep-ocean tsunami propagation, and are also popular for inundation modelling (although this has not been a focus for leapfrog schemes in SWALS). They have good energy conservation properties for the nonlinear shallow water equations, which makes them much better suited to long-distance deep ocean tsunami propagation, as compared with the finite-volume schemes discussed above. 
+
+All the SWALS leapfrog schemes also support dispersion. Alternatively, leapfrog schemes on suitably coarse grids can be used to mimic dispersion. 
+
+Some references that describe classical leapfrog schemes for the linear and nonlinear shallow water equations are:
 
 * *IOC Numerical method of tsunami simulation with the leap-frog scheme IUGG/IOC Time Project, IUGG/IOC Time Project, 1997*
 * *Liu, P. L. F.; Cho, Y.-S.; Briggs, M. J.; Kanoglu, U. & Synolakis, C. E. Runup of solitary waves on a circular Island Journal of Fluid Mechanics, Cambridge University Press, 1995, 302, 259–285*
