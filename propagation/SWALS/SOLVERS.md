@@ -150,7 +150,7 @@ Some references that describe classical leapfrog schemes for the linear and nonl
 * *IOC Numerical method of tsunami simulation with the leap-frog scheme IUGG/IOC Time Project, IUGG/IOC Time Project, 1997*
 * *Liu, P. L. F.; Cho, Y.-S.; Briggs, M. J.; Kanoglu, U. & Synolakis, C. E. Runup of solitary waves on a circular Island Journal of Fluid Mechanics, Cambridge University Press, 1995, 302, 259–285*
 
-In general the leapfrog schemes in SWALS do not have good long-time stability when used in conjunction with nesting. They work well as the coarsest grid in a multidomain, but if used in a refined grid (which receives halo data from a coarser domain) then they often develop instability during long-time integration (even more so if using dispersion). This is not always a problem, especially for short model runs. If it is a problem then consider using a finite-volume scheme such as `midpoint` on nested domains (excepting the coarsest grids). 
+Care must be exercised when using the leapfrog schemes in nested domains. The leapfrog schemes work well as the coarsest grid in a multidomain, but if used in a refined grid (which receives halo data from a coarser domain) then they often develop instability during long-time integration, even more so if using dispersion. This is not always a problem, especially for short model runs. If it is a problem then consider using a finite-volume scheme such as `midpoint` on nested domains (excepting the coarsest grids). 
 
 The leapfrog solver variants provided by SWALS are:
 
