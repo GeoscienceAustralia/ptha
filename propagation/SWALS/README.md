@@ -40,7 +40,7 @@ The code includes various test suits that [can be run automatically](#compiling-
 [unit test suite](./tests/unit_tests), a [parallel unit test suite](./tests/parallel_tests),
  and a [validation test suite](./tests/validation_tests). The latter focusses 
 on tsunami type problems; see [here for various NTHMP tests](./examples/nthmp) 
-(which are well known in the tsunami community) and [here](./examples) for other problems.
+(which are well known in the tsunami community), [here](./examples) for other problems, and [here](./examples/dispersive/) for tests using dispersion. 
 
 Publications using SWALS include:
 * [A paper](https://www.frontiersin.org/articles/10.3389/feart.2020.598235/full) using SWALS to model 5 historic tsunamis in Australia.
@@ -57,9 +57,9 @@ It includes discussion of the range of equations that are solved, the energy con
 
 ## Fortran compiler
 Compilation requires a version of GNU-Fortran or ifort, although the test-suite
-is setup for gfortran by default. The author hasn't comprehensively tested various
-compiler versions, but it is likely that gfortran versions 5 or greater will
-work (without coarrays), and ifort versions 19 and greater. 
+is setup for gfortran by default. The author hasn't comprehensively tested
+various compiler versions, but as of 2025 it is being used with versions of
+`gfortran`, `ifort` and `ifx` released between 2021-2025. 
 
 The code can run in parallel with both shared memory (openmp) and distributed
 memory approaches. Distributed parallel support requires that MPI is installed,
