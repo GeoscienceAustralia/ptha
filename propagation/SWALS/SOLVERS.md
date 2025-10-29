@@ -86,6 +86,8 @@ By default the dispersive term $\mathbf{\Upsilon}=0$. However if `md%domains(j)%
 
 Elevation smoothing is sometimes useful to manage numerical instabilities, especially for the CLIFFS scheme and for models with complex nesting. It can be applied a specific location with the subroutine `md%domains(j)%smooth_elevation_near_point`, or along all coarse-to-fine nesting boundaries with `md%domains(j)%smooth_elevation_near_nesting_fine2coarse_boundaries`.
 
+In general, the finite volume and leapfrog schemes do not need elevation smoothing, except on some occasions near coarse-to-fine nesting boundaries. However, it is important for the CLIFFS scheme even on a single grid.
+
 
 # Details on the solvers
 
