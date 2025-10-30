@@ -1520,11 +1520,15 @@ test_partition_into_k_with_grouping<-function(){
 #' @param multidomain_dir directory containing the multidomain outputs
 #' @param verbose if FALSE, suppress printing
 #' @param domain_index_groups either an empty list, or a list with 2 or more
-#' vectors, each defining a group of domain indices.  In the latter case, the
-#' partition tries to be approximately equal WITHIN each group first, and then
-#' to combine the results in a good way. This will generally be less efficient
-#' than not using groups, unless you have some other information that tells you
-#' that the partition should be done in this way.
+#' entries. Each entry is either a vector of integers (defining a group of
+#' domain indices) or a 2-column matrix (domain index, domain local_index) where
+#' the latter is necessary to distinguish domains that share an index (as
+#' happens if the domain was partitioned in the course of load balancing). If
+#' domain_index_groups is non-empty, the partition tries to be approximately
+#' equal WITHIN each group first, and then to combine the results in a good way.
+#' This will generally be less efficient than not using groups, unless you have
+#' some other information that tells you that the partition should be done in
+#' this way.
 #' @return the function environment invisibly (so you have to use assignment to
 #' capture it).
 #'
@@ -1594,14 +1598,49 @@ make_load_balance_partition<-function(multidomain_dir=NA, verbose=TRUE,
         # equal sums. Further, ensure the sums are also rougly equal for images
         # within the same domain_index_group. 
         stopifnot(is.list(domain_index_groups))
-        # Ensure there are no repeated domain indices
-        tmp = unlist(domain_index_groups)
-        stopifnot(length(tmp) == length(unique(tmp)))
 
-        groups = md_domain_indices_vec * NA
-        for(j in 1:length(domain_index_groups)){
-            k = which(md_domain_indices_vec %in% domain_index_groups[[j]])
-            groups[k] = j
+        # Determine whether the domain_index_groups is a list of vectors, or a list of matrices
+        dig_has_2_columns = unlist(lapply(domain_index_groups, function(x){length(dim(x))==2}))
+        if(!all(dig_has_2_columns == dig_has_2_columns[1])){
+            stop('domain_index_groups must EITHER have all entries being a vector, OR all entries being a 2 column matrix, but cannot contain a mixture of both')
+        }
+        dig_has_2_columns = dig_has_2_columns[1]
+
+        if(!dig_has_2_columns){
+            #
+            # domain_index_groups is a list of vectors (sets of domain indices)
+            #
+        
+            # Ensure there are no repeated domain indices
+            tmp = unlist(domain_index_groups)
+            stopifnot(length(tmp) == length(unique(tmp)))
+
+            groups = md_domain_indices_vec * NA
+            for(j in 1:length(domain_index_groups)){
+                k = which(md_domain_indices_vec %in% domain_index_groups[[j]])
+                groups[k] = j
+            }
+
+        }else{
+            #
+            # domain_index_groups is a list of 2 column matrices
+            #    domain_index, domain_local_index
+            #
+
+            # Convert 2 columns to a vector of strings by pasting "domain_index"_"domain_local_index"
+            dig_as_char = lapply(domain_index_groups, function(x) paste0(x[,1], '_', x[,2]))
+
+            # Ensure there are no repeated domain_index,domain_image pairs
+            tmp = unlist(dig_as_char)
+            stopifnot(length(tmp) == length(unique(tmp)))
+
+            groups = md_domain_indices_vec * NA
+            md_domain_index_and_local_index = paste0(md_domain_indices_vec, '_', md_local_indices_vec)
+            for(j in 1:length(dig_as_char)){
+                k = which(md_domain_index_and_local_index %in% dig_as_char[[j]])
+                groups[k] = j
+            }
+
         }
 
         new_times_and_grouping = partition_into_k_with_grouping(md_times_vec, 
