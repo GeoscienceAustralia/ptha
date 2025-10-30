@@ -66,7 +66,8 @@ By default the dispersive term $\mathbf{\Upsilon}=0$. However if `md%domains(j)%
     * For each substep `s=`$1, 2, \ldots, N_{t}$, we loop over domains
         * Skip domains where `alpha_j > 1` and `mod(s-1, alpha_j) != 0`. (These have a timestep large enough that they do not need to evolve every substep).
         * For domains that remain
-            * Backup the solution for dispersive domains. Then take one shallow water step using the domain specific timestep (`alpha_j`$\delta t$), unless `alpha_j < 1` (non-dispersive domains only) in which case we take enough steps to advance time by $\delta t$. 
+            * Backup the solution for dispersive domains. 
+            * Take one shallow water step using the domain specific timestep (`alpha_j`$\delta t$), unless `alpha_j < 1` (non-dispersive domains only) in which case we take enough steps to advance time by $\delta t$. 
             * Communicate halo data, but do not immediately update the solution.
             * Implicit solve
                 * First *outer iteration*
