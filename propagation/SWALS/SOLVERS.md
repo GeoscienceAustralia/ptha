@@ -28,7 +28,7 @@ The solvers support use of either Cartesian or Spherical coordinates by specifyi
 
 SWALS solves variants of the 2D shallow water equations:
 
-$$ \frac{\partial \eta}{\partial t} + \nabla \cdot \mathbf{q} = 0 $$
+$$ \frac{\partial \eta}{\partial t} + \nabla \cdot \vec{q} = 0 $$
 
 $$ \frac{\partial \mathbf{q}}{\partial t} + \nabla \cdot (\mathbf{u}\otimes\mathbf{q}) + g h \nabla \eta + g h \mathbf{S_f} + \mathbf{\Omega_s} + \mathbf{\Psi} + \mathbf{\Upsilon} = 0 $$
 
