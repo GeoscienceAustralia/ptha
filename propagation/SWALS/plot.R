@@ -1382,25 +1382,38 @@ partition_into_k_with_grouping_WORK<-function(vals, k, vals_groups,
         tmp[[counter]] = local_split
     }
 
-    # Now loop over each group, ordered according to which has the largest value
+    # Now loop over each group, ordered according to which has the largest "range of values".
+    # If these are runtimes, then large "range of values" --> uneven runtimes. If we assign
+    # the most uneven group first, then later we have a chance to correct it by distributing
+    # other groups.
     if(random_ties){
         between_group_order = 
-            rank(unlist(lapply(tmp, function(x) max(x[[2]]))), ties='random')
+            #rank(unlist(lapply(tmp, function(x) max(x[[2]]))), ties='random')
+            rank(unlist(lapply(tmp, function(x) diff(range(x[[2]])))), ties='random')
     }else{
         between_group_order = 
-            rank(unlist(lapply(tmp, function(x) max(x[[2]]))), ties='first')
+            #rank(unlist(lapply(tmp, function(x) max(x[[2]]))), ties='first')
+            rank(unlist(lapply(tmp, function(x) diff(range(x[[2]])))), ties='first')
     }
-    # Flip
+    # Flip ranks (so now the largest has between_group_order=1)
     between_group_order = max(between_group_order) + 1 - between_group_order
 
-    for(g in between_group_order){
+    #for(g in between_group_order){
+    # Loop over groups, in order of the max runtime they would add to any domain
+    for(j in 1:length(between_group_order)){
+        g = which(between_group_order == j); stopifnot(length(g) == 1)
         # Within the groups, the 'vals' are already ordered into k groups,
-        # longest-time first
         within_group_inds = tmp[[g]][[1]]
         within_group_vals = tmp[[g]][[2]]
-        # Here "ties='first'" would cause the test to fail
-        # Experiments suggest it isn't useful to add extra randomness
-        assign_to_order = rank(cumulative_sum_vals_in_group, ties='last')  
+    
+        # Reorder the above, with shorter_time before longer_time
+        o1 = order(within_group_vals, decreasing=FALSE)
+        within_group_vals = within_group_vals[o1]
+        within_group_inds = within_group_inds[o1]
+
+        # Loop over the partitions, in order of their cumulative sums (larger = first)
+        # and assign them the next group of values (smallest = first)
+        assign_to_order = order(cumulative_sum_vals_in_group, decreasing=TRUE)
         for(i in 1:length(assign_to_order)){
             partition_ind = assign_to_order[i]
             inds_in_group[[partition_ind]] = 
@@ -1473,8 +1486,8 @@ test_partition_into_k_with_grouping<-function(){
 
     # Test 1 -- this should partition perfectly
     test = partition_into_k_with_grouping(vals, k=nsplit, vals_groups=group_inds)
-    max_val = max(test[[2]])
-    if(sum(test[[2]] == max_val) == nsplit){
+    test1_max_val = max(test[[2]])
+    if(sum(test[[2]] == test1_max_val) == nsplit){
         print('PASS')
     }else{
         print('FAIL')
@@ -1494,14 +1507,22 @@ test_partition_into_k_with_grouping<-function(){
     }
 
     # Test 3 -- break it even more
-    # Ideally we would have 2 values that differ from 1 by their optimal value.
-    # But this naive algorithm does not achieve that.
+    # Ideally we would have 2 values that are 1 larger than the target_value.
     vals[145] = vals[145] + 1 
     testA = partition_into_k_with_grouping(vals, k=nsplit, vals_groups=group_inds)
+    max_val = max(testA[[2]])
+    # There should be two values with max_val, and all others being max_val - 1
+    if(sum(testA[[2]] == (max_val-1)) == (nsplit-2)){
+        print('PASS')
+    }else{
+        print('FAIL')
+    }
+
+
+    # Check that the random tries does not decrease the performance 
     test = partition_into_k_with_grouping(vals, k=nsplit, vals_groups=group_inds, 
                                           ntries=1000)
-    # Check that the random tries led to improvement
-    if(max(test[[2]]) < max(testA[[2]])){
+    if(max(test[[2]]) <= max(testA[[2]])){
         print('PASS')
     }else{
         print('FAIL')
