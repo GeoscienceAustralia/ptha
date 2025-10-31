@@ -188,6 +188,8 @@ module multidomain_mod
 
         real(force_double), allocatable :: volume_initial(:), volume(:)
             !! Domain volume tracking
+        real(force_double) :: volume_integrated = -HUGE(1.0_dp)
+            !! When the multidomain volume is integrated over domains, store the result here
 
         character(len=charlen) :: output_basedir = default_output_folder
             !! Output directory
@@ -1969,6 +1971,8 @@ TIMER_STOP('comms1b')
             write(md%log_output_unit, "(A, ES25.12E3)") '              volume change: ', dvol
             write(md%log_output_unit, "(A, ES25.12E3)") '     boundary flux integral: ', bfi
             write(md%log_output_unit, "(A, ES25.12E3)") '         unexplained change: ', dvol + bfi
+
+            md%volume_integrated = vol
 
     end subroutine
 
