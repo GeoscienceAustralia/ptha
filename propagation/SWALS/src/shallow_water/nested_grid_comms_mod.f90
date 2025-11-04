@@ -2299,7 +2299,7 @@ module nested_grid_comms_mod
                                     ! Pointwise
                                     if( (central_i == inv_cell_ratios_ip(1)-1) .and. &
                                         (central_j == inv_cell_ratios_ip(2)/2) ) then
-                                        ! Average value of UH along 'y' direction inside cell
+                                        ! Send 'UH' from the middle of the eastern edge of the coarser cell
                                         ip1 = min(i+1, size(U, 1)) ! valid so long as (md%extra_cells_in_halo > 0)
                                         if(is_priority_domain_not_periodic(ip1, j) == 1_ip) then
                                             two_way_nesting_comms%send_buffer(ijkCounter) = &
@@ -2307,7 +2307,6 @@ module nested_grid_comms_mod
                                         else
                                             ! Don't use cells outside the priority domain.
                                             two_way_nesting_comms%send_buffer(ijkCounter) = U(i,j,k)
-                                            ! FIXME: Consider extrapolation
                                             !two_way_nesting_comms%send_buffer(ijkCounter) = U(i,j,k) + &
                                             !    0.5_dp * (U(i,j,k) - U(i-1,j,k))
                                         end if
@@ -2326,6 +2325,7 @@ module nested_grid_comms_mod
                                     ! Pointwise
                                     if( (central_i == inv_cell_ratios_ip(1)/2) .and. &
                                         (central_j == inv_cell_ratios_ip(2)-1) ) then
+                                        ! Send VH from the middle of the northern edge of the coarser cell
                                         jp1 = min(j+1, size(U, 2))! valid so long as (md%extra_cells_in_halo > 0)
                                         if(is_priority_domain_not_periodic(i,jp1) == 1_ip) then
                                             two_way_nesting_comms%send_buffer(ijkCounter) = &
@@ -2341,7 +2341,7 @@ module nested_grid_comms_mod
                                 end if
 
                             else if(my_domain_staggered_grid == 1 .and. neighbour_domain_staggered_grid == 0) then
-                                ! Fine staggered to coarser non-staggered
+                                ! Fine staggered to coarser non-staggered. (Unusual, staggered fine grids tend to be unstable)
 
                                 if(k == STG .or. k == ELV) then
                                     if( (central_i == inv_cell_ratios_ip(1)/2) .and. &
@@ -2356,10 +2356,9 @@ module nested_grid_comms_mod
                                         if(is_priority_domain_not_periodic(im1, j) == 1_ip) then
                                             two_way_nesting_comms%send_buffer(ijkCounter) = &
                                                 two_way_nesting_comms%send_buffer(ijkCounter) + &
-                                                (0.5_dp * U(i,j,k) + 0.5_dp * U(im1,j,k))*cell_ratios(2)
+                                                0.5_dp * (U(i,j,k) + U(im1,j,k))*cell_ratios(2)
                                         else
                                             ! Avoid cells outside priority domain
-                                            ! FIXME: Consider extrapolation
                                             two_way_nesting_comms%send_buffer(ijkCounter) = &
                                                 two_way_nesting_comms%send_buffer(ijkCounter) + &
                                                 (1.0_dp * U(i,j,k)                      )*cell_ratios(2)
@@ -2384,10 +2383,9 @@ module nested_grid_comms_mod
                                         if(is_priority_domain_not_periodic(i, jm1) == 1_ip) then
                                             two_way_nesting_comms%send_buffer(ijkCounter) = &
                                                 two_way_nesting_comms%send_buffer(ijkCounter) + &
-                                                (0.5_dp * U(i,j,k) + 0.5_dp * U(i,jm1,k))*cell_ratios(1)
+                                                0.5_dp * (U(i,j,k) + U(i,jm1,k))*cell_ratios(1)
                                         else
                                             ! Avoid cells outside priority domain
-                                            ! FIXME: Consider extrapolation
                                             two_way_nesting_comms%send_buffer(ijkCounter) = &
                                                 two_way_nesting_comms%send_buffer(ijkCounter) + &
                                                 (1.0_dp * U(i,j,k)                      )*cell_ratios(1)
@@ -2435,6 +2433,7 @@ module nested_grid_comms_mod
 
                     if(two_way_nesting_comms%use_wetdry_limiting) then
                         ! Reduce "gradient_scale" if the depth is rapidly varying
+                        ! NOTE: This operation is nonlinear (even if solving purely linear equations).
 
                         depth_max = -HUGE(1.0_dp)
                         depth_min = HUGE(1.0_dp)
