@@ -2500,7 +2500,7 @@ module nested_grid_comms_mod
                             dU_di_p = U(i+1, j, k) - U(i,j,k)
                             dU_di_m = U(i, j, k) - U(i-1,j,k)
                         else
-                            ! Edge casees
+                            ! Edge cases
                             if(i == iim1) then
                                 dU_di_p = U(i+1, j, k) - U(i, j, k)
                             else if(i == iip1) then
