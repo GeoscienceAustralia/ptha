@@ -2342,6 +2342,9 @@ get_energy_truely_linear_multidomain<-function(multidomain_dir, mc_cores=1){
 #' The output also records the distance between the requested site and the
 #' available site. This can help to catch cases where there is no nearby gauge
 #' (or where the requested gauge is in a different domain to the nearest one).
+#' BEWARE: The ordering of the gauges in the output object might not be the same
+#' as the ordering of xy_sites, but the variables gauges$lon, gauges$lat will show
+#' which is which.
 #'
 #' @param multidomain_dir the multidomain directory
 #' @param xy_sites matrix with desired output sites, which really should
