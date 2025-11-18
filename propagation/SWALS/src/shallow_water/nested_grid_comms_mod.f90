@@ -2096,12 +2096,12 @@ module nested_grid_comms_mod
         ! To not do it at all, use a zero size parameter array.
         integer(ip), parameter :: zero_coarse_gradients_involving_non_priority_cells(2) = [STG, ELV] 
         !integer(ip), parameter :: zero_coarse_gradients_involving_non_priority_cells(0) = [integer(ip):: ]
-        !integer(ip), parameter :: zero_coarse_gradients_involving_non_priority_cells(4) = [STG, UH, VH, ELV] 
+        !integer(ip), parameter :: zero_coarse_gradients_involving_non_priority_cells(4) = [STG, UH, VH, ELV] ! Version before 2025/11/19
 
         ! When a coarse staggered grid sends to a finer grid, should we interpolate the uh/vh values to near where the
         ! finer recipient grid will have them (true) or just send the unadjusted value (false)? While 'true' sounds good,
         ! it has numerical stability trade-offs.
-        logical, parameter :: recentre_uh_vh_from_coarse_staggered_grid = .false.
+        logical, parameter :: recentre_uh_vh_from_coarse_staggered_grid = .false. ! .true. before 2025/11/19
         
 
         ! Quick exit if the type is purely used to recv data
