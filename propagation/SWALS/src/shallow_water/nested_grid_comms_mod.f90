@@ -2048,14 +2048,13 @@ module nested_grid_comms_mod
         !! Copy data to the send buffer, with different treatments for
         !! 'coarse-to-fine', 'fine-to-coarse', or 'same-size' sends.
         !! This is revised from process_data_to_send_2022Feb, with the intention of dealing with some nesting
-        !! instabilities in the dispersive case. The idea is to avoid using U(:,:,k) values that are not in the 
-        !! priority domain when constructing data to send.
+        !! instabilities in the dispersive case. 
         !! This routine also works for NLSW models. The validation tests suggest it is reasonable, although it may be less accurate, 
         !! and would need to be further explored before changing the defaults (there some failures in the validation test suite, likely small matters).
         !! For backward compability of our NLSW models, for now it is preferable to only use this routine in dispersive models.
         !!
-        !! FIXME: This doesn't pass the unit test used for the other send routines, likely because of deliberate crude extrapolation
-        !! near the edges of a send zone (which was important for stability). Be good to develop a more suitable test.
+        !! FIXME: This doesn't pass the unit test used for the other send routines because of deliberate crude extrapolation
+        !! (important for stability). Be good to develop a more suitable test.
         !! 
         class(two_way_nesting_comms_type), intent(inout) :: two_way_nesting_comms
             !! The two way nesting communicator which manages communication on a rectangular patch of the domain.
@@ -2082,13 +2081,28 @@ module nested_grid_comms_mod
         real(dp) :: gradient_scale, depth_min, depth_max, del
         real(dp) :: gradient_scale_x, gradient_scale_y, depth_min_x, depth_max_x, depth_min_y, depth_max_y
         logical :: equal_cell_ratios
-        ! parameters controlling how gradients are limited when doing coarse-to-fine interpolation
-        real(dp), parameter :: depth_limit_upper_threshold = 0.25_dp
-        real(dp), parameter :: depth_limit_lower_threshold = 0.05_dp
-        !real(dp), parameter :: smooth_scale_coarse2fine = 0.0_dp
+
         ! Indices for stage and elevation in U. This is used to do 'wet-dry-limiting'
         ! of gradients in coarse-to-fine sends (which involve interpolation)
         integer(ip), parameter :: STG=1, UH=2, VH=3, ELV=4
+
+        ! Parameters controlling how gradients are limited when doing coarse-to-fine interpolation
+        real(dp), parameter :: depth_limit_upper_threshold = 0.25_dp
+        real(dp), parameter :: depth_limit_lower_threshold = 0.05_dp
+
+        ! When sending from a coarse grid to a finer grid, we send the flow value and 4 gradients (north,south,east,west).
+        ! If the gradients involve use of 'non-priority-domain' cells then it can help with stability to zero them. 
+        ! This has numerical stability tradeoffs - in practice it can be best to only do this for some flow variables, declared here. 
+        ! To not do it at all, use a zero size parameter array.
+        integer(ip), parameter :: zero_coarse_gradients_involving_non_priority_cells(2) = [STG, ELV] 
+        !integer(ip), parameter :: zero_coarse_gradients_involving_non_priority_cells(0) = [integer(ip):: ]
+        !integer(ip), parameter :: zero_coarse_gradients_involving_non_priority_cells(4) = [STG, UH, VH, ELV] 
+
+        ! When a coarse staggered grid sends to a finer grid, should we interpolate the uh/vh values to near where the
+        ! finer recipient grid will have them (true) or just send the unadjusted value (false)? While 'true' sounds good,
+        ! it has numerical stability trade-offs.
+        logical, parameter :: recentre_uh_vh_from_coarse_staggered_grid = .false.
+        
 
         ! Quick exit if the type is purely used to recv data
         if(.not. two_way_nesting_comms%send_active) return
@@ -2333,7 +2347,6 @@ module nested_grid_comms_mod
                                         else
                                             ! Don't use non-priority-domain cells
                                             two_way_nesting_comms%send_buffer(ijkCounter) = U(i,j,k)
-                                            ! FIXME: Consider extrapolation
                                             !two_way_nesting_comms%send_buffer(ijkCounter) = U(i,j,k) + &
                                             !    0.5_dp * (U(i,j,k) - U(i,j-1,k))
                                         end if
@@ -2359,6 +2372,7 @@ module nested_grid_comms_mod
                                                 0.5_dp * (U(i,j,k) + U(im1,j,k))*cell_ratios(2)
                                         else
                                             ! Avoid cells outside priority domain
+                                            ! FIXME: Consider extrapolation
                                             two_way_nesting_comms%send_buffer(ijkCounter) = &
                                                 two_way_nesting_comms%send_buffer(ijkCounter) + &
                                                 (1.0_dp * U(i,j,k)                      )*cell_ratios(2)
@@ -2383,7 +2397,7 @@ module nested_grid_comms_mod
                                         if(is_priority_domain_not_periodic(i, jm1) == 1_ip) then
                                             two_way_nesting_comms%send_buffer(ijkCounter) = &
                                                 two_way_nesting_comms%send_buffer(ijkCounter) + &
-                                                0.5_dp * (U(i,j,k) + U(i,jm1,k))*cell_ratios(1)
+                                                (0.5_dp * U(i,j,k) + 0.5_dp * U(i,jm1,k))*cell_ratios(1)
                                         else
                                             ! Avoid cells outside priority domain
                                             two_way_nesting_comms%send_buffer(ijkCounter) = &
@@ -2434,7 +2448,6 @@ module nested_grid_comms_mod
                     if(two_way_nesting_comms%use_wetdry_limiting) then
                         ! Reduce "gradient_scale" if the depth is rapidly varying
                         ! NOTE: This operation is nonlinear (even if solving purely linear equations).
-
                         depth_max = -HUGE(1.0_dp)
                         depth_min = HUGE(1.0_dp)
                         do jj = jjm1, jjp1
@@ -2523,92 +2536,96 @@ module nested_grid_comms_mod
                             dU_dj_m = dU_dj_p
                         end if
 
-                        ! Avoid using gradients that involve non-priority domain points
-                        if(is_priority_domain_not_periodic(iip1,j) == 0_ip) dU_di_p = 0.0_dp !dU_di_m
-                        if(is_priority_domain_not_periodic(iim1,j) == 0_ip) dU_di_m = 0.0_dp !dU_di_p
-                        if(is_priority_domain_not_periodic(i,jjp1) == 0_ip) dU_dj_p = 0.0_dp !dU_dj_m
-                        if(is_priority_domain_not_periodic(i,jjm1) == 0_ip) dU_dj_m = 0.0_dp !dU_dj_p
-
                         uc = U(i,j,k)
+
+                        if(size(zero_coarse_gradients_involving_non_priority_cells) > 0) then
+                            ! For some variables, it can help with stability to
+                            ! zero the gradients that involve non-priority domain points.
+                            if(any(k == zero_coarse_gradients_involving_non_priority_cells)) then
+                                if(is_priority_domain_not_periodic(iip1,j) == 0_ip) dU_di_p = 0.0_dp !dU_di_m
+                                if(is_priority_domain_not_periodic(iim1,j) == 0_ip) dU_di_m = 0.0_dp !dU_di_p
+                                if(is_priority_domain_not_periodic(i,jjp1) == 0_ip) dU_dj_p = 0.0_dp !dU_dj_m
+                                if(is_priority_domain_not_periodic(i,jjm1) == 0_ip) dU_dj_m = 0.0_dp !dU_dj_p
+                            end if
+                        end if
 
                         if(my_domain_staggered_grid == 1) then
                             ! Sending from a coarse staggered grid to a finer grid.
                             ! The finer grid will expect the UH/VH components to be nearer the middle of the cell
 
                             if(k == UH) then
+                                !
                                 ! UH is offset east of where the receive grid wants it
+                                !
 
-                                if(neighbour_domain_staggered_grid == 1) then
-                                    ! Slightly east of middle of the cell
-                                    ! But not stable to do this
-                                    del = 0.5_dp - inv_cell_ratios(1)*0.5_dp
-                                else
-                                    ! Middle of the cell
-                                    del = 0.5_dp
-                                end if
+                                if(recentre_uh_vh_from_coarse_staggered_grid) then
 
-                                ! Since UH is on the east edge of the cell,
-                                ! avoid gradients if they would touch the edge of a priority domain area.
-                                !if(is_priority_domain_not_periodic(iip1, j) == 0_ip) dU_di_m = 0.0_dp
+                                    ! There is only one relevent EW gradient -- the 'minus' one
+                                    dU_di_p = dU_di_m
 
-                                ! Move uh to cell centre
-                                uc = uc - dU_di_m*del
+                                    if(neighbour_domain_staggered_grid == 1) then
+                                        ! Slightly east of middle of the cell
+                                        del = 0.5_dp - inv_cell_ratios(1)*0.5_dp
+                                    else
+                                        ! Middle of the cell
+                                        del = 0.5_dp
+                                    end if
 
-                                ! There is only one relevent EW gradient -- the 'minus' one
-                                dU_di_p = dU_di_m
+                                    ! Move uh to cell centre
+                                    uc = uc - dU_di_m*del
 
-                                ! Recentre the j+ gradient if it doesn't need non-priority-domain cells
-                                if(all(is_priority_domain_not_periodic(iim1, j:jjp1) == 1_ip)) then
-                                    dU_dj_p = 0.5_dp * dU_dj_p + 0.5_dp * (U(iim1,jjp1,k) - U(iim1,j  ,k))
-                                !else if(all(is_priority_domain_not_periodic(iip1, j:jjp1) == 1_ip)) then
-                                !    ! Try extrapolating from the other gradient
-                                !    dU_dj_p = 1.5_dp * dU_dj_p - 0.5_dp * (U(iip1,jjp1,k) - U(iip1,j  ,k))
-                                end if
+                                    ! Recentre the j+ gradient if it doesn't need non-priority-domain cells
+                                    if(all(is_priority_domain_not_periodic(iim1, j:jjp1) == 1_ip)) then
+                                        dU_dj_p = 0.5_dp * dU_dj_p + 0.5_dp * (U(iim1,jjp1,k) - U(iim1,j  ,k))
+                                    !else if(all(is_priority_domain_not_periodic(iip1, j:jjp1) == 1_ip)) then
+                                    !    ! Try extrapolating from the other gradient
+                                    !    dU_dj_p = 1.5_dp * dU_dj_p - 0.5_dp * (U(iip1,jjp1,k) - U(iip1,j  ,k))
+                                    end if
 
-                                ! Recentre the j- gradient if it doesn't need non-priority-domain cells
-                                if(all(is_priority_domain_not_periodic(iim1, jjm1:j) == 1_ip)) then
-                                    dU_dj_m = 0.5_dp * dU_dj_m + 0.5_dp * (U(iim1,j  ,k) - U(iim1,jjm1,k))
-                                !else if(all(is_priority_domain_not_periodic(iip1, jjm1:j) == 1_ip)) then
-                                !    ! Try extrapolating from the other gradient
-                                !    dU_dj_m = 1.5_dp * dU_dj_m - 0.5_dp * (U(iip1,j  ,k) - U(iip1,jjm1,k))
+                                    ! Recentre the j- gradient if it doesn't need non-priority-domain cells
+                                    if(all(is_priority_domain_not_periodic(iim1, jjm1:j) == 1_ip)) then
+                                        dU_dj_m = 0.5_dp * dU_dj_m + 0.5_dp * (U(iim1,j  ,k) - U(iim1,jjm1,k))
+                                    !else if(all(is_priority_domain_not_periodic(iip1, jjm1:j) == 1_ip)) then
+                                    !    ! Try extrapolating from the other gradient
+                                    !    dU_dj_m = 1.5_dp * dU_dj_m - 0.5_dp * (U(iip1,j  ,k) - U(iip1,jjm1,k))
+                                    end if
                                 end if
 
                             else if(k == VH) then
                                 !
                                 ! VH is offset north of where the receive grid wants it
                                 !
-                                if(neighbour_domain_staggered_grid == 1) then
-                                    ! Slightly north of middle of the cell
-                                    ! but not stable to do this
-                                    del = 0.5_dp - inv_cell_ratios(2)*0.5_dp
-                                else
-                                    ! Middle of the cell
-                                    del = 0.5_dp
-                                end if
 
-                                ! Since VH is on the north edge of the cell,
-                                ! avoid gradients if they would touch the edge of a priority domain area.
-                                !if(is_priority_domain_not_periodic(i, jjp1) == 0_ip) dU_dj_m = 0.0_dp
+                                if(recentre_uh_vh_from_coarse_staggered_grid) then
+                            
+                                    ! There is only one relevant gradient NS
+                                    dU_dj_p = dU_dj_m
 
-                                ! Move VH back to where we want it
-                                uc = uc - dU_dj_m*del
+                                    if(neighbour_domain_staggered_grid == 1) then
+                                        ! Slightly north of middle of the cell
+                                        del = 0.5_dp - inv_cell_ratios(2)*0.5_dp
+                                    else
+                                        ! Middle of the cell
+                                        del = 0.5_dp
+                                    end if
 
-                                ! There is only one relevant gradient NS
-                                dU_dj_p = dU_dj_m
+                                    ! Move VH back to where we want it
+                                    uc = uc - dU_dj_m*del
 
-                                ! Recentre the i- gradient if it doesn't need non-priority-domain cells
-                                if(all(is_priority_domain_not_periodic(i:iip1, jjm1) == 1_ip)) then
-                                    dU_di_p = 0.5_dp * dU_di_p + 0.5_dp * (U(iip1,jjm1,k) - U(i  ,jjm1,k))
-                                !else if(all(is_priority_domain_not_periodic(iim1:i, jjm1) == 1_ip)) then
-                                !    ! Try extrapolating from the other gradient
-                                !    dU_di_p = 1.5_dp * dU_di_p - 0.5_dp * (U(i,jjm1, k) - U(iim1, jjm1, k))
-                                end if
+                                    ! Recentre the i- gradient if it doesn't need non-priority-domain cells
+                                    if(all(is_priority_domain_not_periodic(i:iip1, jjm1) == 1_ip)) then
+                                        dU_di_p = 0.5_dp * dU_di_p + 0.5_dp * (U(iip1,jjm1,k) - U(i  ,jjm1,k))
+                                    !else if(all(is_priority_domain_not_periodic(iim1:i, jjm1) == 1_ip)) then
+                                    !    ! Try extrapolating from the other gradient
+                                    !    dU_di_p = 1.5_dp * dU_di_p - 0.5_dp * (U(i,jjm1, k) - U(iim1, jjm1, k))
+                                    end if
 
-                                if(all(is_priority_domain_not_periodic(iim1:i, jjm1) == 1_ip)) then
-                                    dU_di_m = 0.5_dp * dU_di_m + 0.5_dp * (U(i  ,jjm1,k) - U(iim1,jjm1,k))
-                                !else if(all(is_priority_domain_not_periodic(i:iip1, jjm1) == 1_ip)) then
-                                !    ! Try extrapolating from the other gradient
-                                !    dU_di_m = 1.5_dp * dU_di_m - 0.5_dp * (U(iip1  ,jjm1,k) - U(i,jjm1,k))
+                                    if(all(is_priority_domain_not_periodic(iim1:i, jjm1) == 1_ip)) then
+                                        dU_di_m = 0.5_dp * dU_di_m + 0.5_dp * (U(i  ,jjm1,k) - U(iim1,jjm1,k))
+                                    !else if(all(is_priority_domain_not_periodic(i:iip1, jjm1) == 1_ip)) then
+                                    !    ! Try extrapolating from the other gradient
+                                    !    dU_di_m = 1.5_dp * dU_di_m - 0.5_dp * (U(iip1  ,jjm1,k) - U(i,jjm1,k))
+                                    end if
                                 end if
                             else
                                 !
@@ -2620,13 +2637,13 @@ module nested_grid_comms_mod
                         if(my_domain_staggered_grid == 0 .and. neighbour_domain_staggered_grid == 1) then
                             ! Adjust the UH/VH components from the co-located grid to match the locations expected
                             ! of the finer staggered grid
-
-                            if(k == UH) then
-                                uc = uc + 0.5_dp * inv_cell_ratios(1) * dU_di_p
-                            else if (k == VH) then
-                                uc = uc + 0.5_dp * inv_cell_ratios(2) * dU_dj_p
+                            if(recentre_uh_vh_from_coarse_staggered_grid) then
+                                if(k == UH) then
+                                    uc = uc + 0.5_dp * inv_cell_ratios(1) * dU_di_p
+                                else if (k == VH) then
+                                    uc = uc + 0.5_dp * inv_cell_ratios(2) * dU_dj_p
+                                end if
                             end if
-
                         end if
 
                         ! The definition of gradients above could cause issues at
