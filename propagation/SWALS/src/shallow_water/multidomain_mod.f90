@@ -1331,8 +1331,10 @@ TIMER_START('domain_evolve')
                     ! If dispersion is used then backup the flow state
                     call md%domains(j)%copy_U_to_dispersive_last_timestep()
 
-                    ! Take a shallow water step
-                    call md%domains(j)%evolve_one_step(dt_local)
+                    ! Take a shallow water step. For dispersive domains, do not update max_quantities
+                    ! (that will happen after treating the dispersive terms)
+                    call md%domains(j)%evolve_one_step(dt_local, &
+                        update_max_quantities_after_timestep = (.not. md%domains(j)%use_dispersion))
 #ifdef TRACK_MULTIDOMAIN_STABILITY
                     call check_multidomain_stability(md, 'inner', j)
 #endif
@@ -1429,6 +1431,17 @@ TIMER_STOP('domain_dispersive_it')
 #endif
                     ! Send the halos only for domain j. Timing code inside
                     call md%send_halos(domain_index=j, send_to_recv_buffer = send_halos_immediately, time=md%domains(j)%time)
+
+                    ! Update max quantities on the last dispersive iteration
+                    ! (as dispersive domains do not do this in the shallow water steps).
+                    if(dispersive_outer_iterations == md%dispersive_outer_iterations_count) then
+                        ! Only update if time > static_before_time
+                        if((md%domains(j)%time >= md%domains(j)%static_before_time) .and. &
+                            ! Only update every max_U_update_frequency (usually every step)
+                           (mod(md%domains(j)%nsteps_advanced, md%domains(j)%max_U_update_frequency) == 0)) then
+                            call md%domains(j)%update_max_quantities
+                        end if
+                    end if
 
                 end do domain_dispersive_loop
 

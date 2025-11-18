@@ -1666,7 +1666,7 @@ EVOLVE_TIMER_STOP('backup')
 #include "domain_mod_timestepping_alternatives_include.f90"
 
 
-    subroutine evolve_one_step(domain, timestep)
+    subroutine evolve_one_step(domain, timestep, update_max_quantities_after_timestep)
         !
         ! Main 'high-level' evolve routine.
         ! The actual timestepping method used is determined by the value of
@@ -1676,12 +1676,20 @@ EVOLVE_TIMER_STOP('backup')
         real(dp), optional, intent(in):: timestep
             !! Optional for some domain%timestepping_method's, necessary for others.
             !! If provided it must satisfy the CFL condition.
+        logical, optional, intent(in) :: update_max_quantities_after_timestep
+            !! Default .TRUE.. If FALSE then do not call domain%update_max_quantities() after taking a timestep.
+            !! The option .FALSE. is useful if dispersive terms are included (after shallow water steps) since 
+            !! in that case we wait until after the dispersive terms are applied to update_max_quantities.
 
         real(dp):: time0
         character(len=charlen) :: timestepping_method
         real(dp):: static_before_time
+        logical :: update_maxq
 
 TIMER_START('evolve_one_step')
+
+        update_maxq = .true.
+        if(present(update_max_quantities_after_timestep)) update_maxq = update_max_quantities_after_timestep
 
         timestepping_method = domain%timestepping_method
         time0 = domain%time
@@ -1774,7 +1782,7 @@ TIMER_START('evolve_one_step')
         ! For some problems updating max U can take a significant fraction of the time,
         ! so we allow it to only be done occasionally
         if(timestepping_method /= 'static') then
-            if(mod(domain%nsteps_advanced, domain%max_U_update_frequency) == 0) then
+            if(update_maxq .and. (mod(domain%nsteps_advanced, domain%max_U_update_frequency) == 0)) then
                 call domain%update_max_quantities()
             end if
         end if
