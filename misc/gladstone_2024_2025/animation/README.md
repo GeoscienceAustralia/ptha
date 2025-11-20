@@ -24,9 +24,12 @@ And then actually make the frames by submitting it as a PBS job
   ```
   qsub run_frames.R
   ```
+Or run the `make_frames.R` script from an interactive job.
 
-3. [make_intro.R](make_intro.R) to make intro slides.
-4. [merge_frames.R](merge_frames.R) to put all the frames into a single directory with frame numbers and combine them into a video with ffmpeg.
+3. [make_intro.R](make_intro.R) to make intro slides. This might need a little customisation to suit your intro speed and content.
+4. Run [merge_frames.R](merge_frames.R) to copy all the frames into a single directory with frame numbers and combine them into a video with ffmpeg.
+
+Once the movie is created you can delete all the sub-directories with the frames e.g. `solomon_90/coral_sea`.
 
 ## R Subfunctions
 Subfunctions are all put inside the [R/](R/) directory. These files define functions used in the main scripts: `osm_backdrop.R` to download and cache the OpenStreetMap, `make_image_2d.R` to generate the png image, `combine_frame.R` to combine elements (side panels and headers) in each frame and `make_ic.R` to plot scenario initial conditions. 
