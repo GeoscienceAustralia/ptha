@@ -1632,7 +1632,6 @@ module nested_grid_comms_mod
                                     ! Pointwise
                                     if( (central_i == inv_cell_ratios_ip(1)-1) .and. &
                                         (central_j == inv_cell_ratios_ip(2)/2) ) then
-                                        ! Average value of UH along 'y' direction inside cell
                                         ip1 = min(i+1, size(U, 1)) ! valid so long as (md%extra_cells_in_halo > 0)
                                         two_way_nesting_comms%send_buffer(ijkCounter) = &
                                             0.5_dp * (U(i,j,k) + U(ip1,j,k))
