@@ -52,7 +52,7 @@ source("../../../../propagation/SWALS/plot.R")
 #'     add_scale_bar = FALSE
 #'   )
 #' )
-make_image_2d <- function(t, dir_save, backdrop, multidomain_dir, ll, ur, plot_config, cities = NA, site_grids = NA) {
+make_image_2d <- function(t, dir_save, backdrop, multidomain_dir, ll, ur, plot_config, cities = NA, site_grids = NA, dry_depth = 1e-3, remove_cells_with_maxima_below = 0.05) {
   filename <- file.path(dir_save, sprintf("stage%03d.png", t))
   print(paste0("Working on ", filename))
   png(filename = filename, width = plot_config$width, height = plot_config$height)
@@ -69,9 +69,6 @@ make_image_2d <- function(t, dir_save, backdrop, multidomain_dir, ll, ur, plot_c
     print(msg)
     warning(msg)
   }
-
-  dry_depth <- 1e-3
-  remove_cells_with_maxima_below <- 0.05
 
   # Configure plot (e.g. margins)
   par(plot_config$par)
