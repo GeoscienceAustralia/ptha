@@ -4,20 +4,23 @@ library(tibble)
 library(dplyr)
 
 shots <- rbind(
-  tibble(dir = "pacific", start = 1, end = 433, file_pattern = "frame_%03d.png"),
-  tibble(dir = "coral_sea", start = 123, end = 187, file_pattern = "frame_%03d.png"),
-  tibble(dir = "yeppoon_offshore", start = 123, end = 187, file_pattern = "frame_%03d.png")
+    tibble(dir = "intro", start = 1, end = 152, file_pattern = "intro_%03d.png"),
+    tibble(dir = "pacific", start = 1, end = 433, file_pattern = "frame_%03d.png"),
+    tibble(dir = "coral_sea", start = 120, end = 240, file_pattern = "frame_%03d.png"),
+    tibble(dir = "capricornia", start = 120, end = 433, file_pattern = "frame_%03d.png")
 ) %>%
-  # see how long they'll be with a framerate of 12 fps
-  mutate(sec = (end - start) / 12)
+    # see how long they'll be with a framerate of 12 fps
+    mutate(sec = (end - start) / 12)
 
 # extracted times manually from netcfd file. Could do automatically.
 scenario <- list(
   multidomain_dir = "../../swals/OUTPUTS/kamchatka2025_42699_movie-full-ambient_sea_level_0/RUN_20250811_095631327",
+  intro_title = "Kamchatka 2025 Tsunami Simulation",
   title = "Kamchatka 2025 Tsunami Simulation",
   dir = "kamchatka",
-  info_text = "On 29/07/2025 23:24:52 (UTC) a Mw 8.8 earthquake occured 25 km deep off the east coast of Kamchatka. It caused a tsunami throughout the Pacific Ocean. This simulation recreates the tsunami using a similar scenario from the PTHA18 database as it progresses towards Gladstone, Queensland.",
+  info_text = "On 29/07/2025 23:24:52 (UTC) a Mw 8.8 earthquake occured 25 km deep off the east coast of Kamchatka. It caused a tsunami throughout the Pacific Ocean. This simulation recreates the tsunami using a similar scenario from the PTHA18 database as it progresses towards Queensland.",
   info_text_2 = "The impacts in the region were negligable and no onshore inundation was recorded. However, tide gauges observed deviations in the sea level which are well matched by the simulations.",
+  info_text_3 = "",
   zlim = c(-0.15, 0.15)
 )
 
@@ -34,7 +37,7 @@ get_output_times <- function(nc_file) {
   return(OUTPUT_TIMES)
 }
 
-file_path <- file.path(scenario$dir, "times.csv")
+file_path = file.path(scenario$dir, "times.csv")
 dir.create(scenario$dir)
 if (file.exists(file_path)) {
   OUTPUT_TIMES <- read.csv(file_path)
