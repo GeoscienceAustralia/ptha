@@ -3,7 +3,7 @@
 library(terra)
 
 
-md_dirs <- Sys.glob("/g/data/w85/tsunami/MODELS/inundation/QLD_tsunami_inundation_QFES/Gladstone_2024/swals/OUTPUTS/ptha/sea_level_vary/random_kermadectonga2/ptha18_random_scenarios_kermadectonga2_row_*_Mw_94_HS-full-ambient_sea_level_0")
+md_dirs <- Sys.glob("../swals/OUTPUTS/ptha/sea_level_vary/random_kermadectonga2/ptha18_random_scenarios_kermadectonga2_row_*_Mw_94_HS-full-ambient_sea_level_0")
 
 for (md_dir in md_dirs) {
     tif <- paste("/vsitar", md_dir, "raster_output_files.tar", "max_stage_domain_98.tif", sep = "/")
