@@ -57,8 +57,6 @@ make_image_2d <- function(t, dir_save, backdrop, multidomain_dir, ll, ur, plot_c
   print(paste0("Working on ", filename))
   png(filename = filename, width = plot_config$width, height = plot_config$height)
 
-  stopifnot(!is.null(backdrop))
-
   xlim <- c(ll[1], ur[1])
   ylim <- c(ll[2], ur[2])
   asp <- 1 / cos(mean(ylim) / 180 * pi)
@@ -75,14 +73,10 @@ make_image_2d <- function(t, dir_save, backdrop, multidomain_dir, ll, ur, plot_c
   dry_depth <- 1e-3
   remove_cells_with_maxima_below <- 0.05
 
-  # Set-up plot with colour scale
-  par(
-    cex.axis = plot_config$cex.axis,
-    cex.lab = plot_config$cex.axis,
-    mgp = c(3, 3, 0),
-    oma = c(0, 2, 0, 2)
-  )
+  # Configure plot (e.g. margins)
+  par(plot_config$par)
 
+  # set-up blank plotting area
   image.plot(
     matrix(0, nrow = 2, ncol = 2),
     asp = asp,
@@ -107,8 +101,16 @@ make_image_2d <- function(t, dir_save, backdrop, multidomain_dir, ll, ur, plot_c
   )
 
   # add the background imagery
-  if (plot_config$add_backdrop) {
-    plot(backdrop, xlim = xlim, ylim = ylim, asp = asp, add = TRUE, xlab = "", ylab = "")
+  if (!is.null(backdrop)) {
+    plot(
+      backdrop,
+      xlim = xlim,
+      ylim = ylim,
+      asp = asp,
+      add = TRUE,
+      xlab = "",
+      ylab = ""
+    )
   }
 
   # add the stage

@@ -39,13 +39,19 @@ plot_config <- list(
   cex.axis = 2 * image_scale,
   legend.axis = 2,
   legend_line = 6,
-  add_backdrop = TRUE
+  par = list(
+    cex.axis = 2 * image_scale,
+    cex.lab = 2 * image_scale,
+    mgp = c(3, 3, 0),
+    oma = c(0, 2, 0, 4)
+  )
 )
-
-if (scene$dir == "pacific") plot_config$add_backdrop <- FALSE
 
 # only make required frames for shots with this scene
 this_shots <- left_join(scene, shots, by = "dir")
+if (nrow(this_shots) == 0) {
+  stop(paste0("No frames required for requested dir: ", scene$dir))
+}
 time_index <- unique(unlist(mapply(seq, this_shots$start, this_shots$end)))
 if (!all(time_index %in% scenario$time_index)) {
   stop("The shots requested a time index not in netCDF file.")
@@ -75,10 +81,12 @@ osm_backdrop_reproj <- get_osm_backdrop_reproj(
   zoom = scene$osm_zoom
 )
 
+# don't plot if crossing anti-meridian
+if (scene$dir == "pacific") osm_backdrop_reproj <- NULL
+
 if (grepl("login", system("hostname", intern = TRUE))) {
   stop("Don't proceed if on a login node.")
 }
-
 
 # make images
 image_result <- mclapply(
@@ -88,7 +96,7 @@ image_result <- mclapply(
   ll = ll,
   ur = ur,
   multidomain_dir = scenario$multidomain_dir,
-  osm_backdrop_reproj = osm_backdrop_reproj,
+  backdrop = osm_backdrop_reproj,
   plot_config = plot_config,
   cities = scene$cities[[1]],
   site_grids = site_grids,
