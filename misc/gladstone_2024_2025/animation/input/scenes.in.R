@@ -1,7 +1,7 @@
 library(dplyr)
 library(tibble)
 
-
+# Define points to label in the Capricornia scene
 cities <- data.frame(
   name = c("Yeppoon", "Gladstone", "Agnes Waters", "Baffle Creek", "Lady Elliot\nIsland", "Heron Island", "Bundaberg"),
   lon = c(150.74369, 151.25518, 151.90428, 152.02027, 152.715520, 151.913020, 152.3489),
@@ -10,6 +10,7 @@ cities <- data.frame(
   cex = c(2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5)
 )
 
+# Define town labels for the Yeppoon offshore scene
 yeppoon_cities <- data.frame(
   name = c("Yeppoon", "Great Keppel\nIsland", "Rosslyn"),
   lon = c(150.79, 150.95262, 150.78),
@@ -18,6 +19,20 @@ yeppoon_cities <- data.frame(
   cex = c(3, 3, 3)
 )
 
+#' Scenes tibble defines image extents
+#' 
+#' Title: Displayed in header of side panel
+#' domains: list(NULL) or list(numeric vector) defining which domains to read
+#'  and use for plotting. NULL reads all domains (slower).
+#' ll_*: lower left lat and lon
+#' ur_*: upper right lat and lon
+#' dbox: list(numeric) or list(vector of length 4) of buffer around extent to
+#'  download imagery. If length 4 uses c(xmin, xmax, ymin, ymax)
+#' osm_zoom: Open Street Map zoom level
+#' dir: sub-directory inside the scenario dir to save the frames for this scene
+#' cities: NULL or dataframe of cities to overlay on plot
+#' plot_initial_conditions: Logical of whether to plot the initial conditions
+#'  for all scenarios in R/make_ic.R 
 scenes <- bind_rows(
   tibble(
     title = "Gladstone Harbour",

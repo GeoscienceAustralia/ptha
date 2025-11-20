@@ -2,13 +2,9 @@
 #' combine into a movie with ffmpeg
 library(tibble)
 
-
-frame_rate <- 24
-
 # load camera shots data frame
 # source("input/kermadec_94.in.R")
 source("input/solomon_90.in.R")
-
 
 frame_dir <- file.path(scenario$dir, "frames")
 dir.create(frame_dir)
@@ -33,6 +29,6 @@ for (scene_idx in seq_len(nrow(shots))) {
 # merge shots into movie
 system(
     paste0(
-        "ffmpeg -framerate ", frame_rate, " -i ", frame_dir, "/frame_%05d.png -c:v libx264 -pix_fmt yuv420p ", scenario$dir, "/", scenario$dir, ".mp4"
+        "ffmpeg -framerate ", scenario$fps, " -i ", frame_dir, "/frame_%05d.png -c:v libx264 -pix_fmt yuv420p ", scenario$dir, "/", scenario$dir, ".mp4"
     )
 )

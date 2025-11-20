@@ -1,4 +1,7 @@
-# Kermadec-Tonga Mw 9.4 scenario inputs as data frame
+#' Solomon Mw 9.0 movie inputs
+#' 
+#' Two tibbles expected: scenario and shots as described below
+#' These are used by make_intro, make_frames.R and merge_frames.R
 library(ncdf4)
 library(tibble)
 library(dplyr)
@@ -11,7 +14,8 @@ scenario <- list(
   info_text = "Geoscience Australia modelled hundreds of earthquake tsunami scenarios to assess the hazard in and around Gladstone.",
   info_text_2 = "This simulation shows one example - a hypothetical tsunami from a magnitude 9.0 earthquake near the Solomon Islands. It is a large but plausible event.",
   info_text_3 = "",
-  zlim = c(-2.0, 2.0)
+  zlim = c(-2.0, 2.0),
+  fps = 24
 )
 
 shots <- rbind(
@@ -25,8 +29,8 @@ shots <- rbind(
   tibble(dir = "capricornia", start = 961, end = 1393, file_pattern = "frame_%03d.png"),
   tibble(dir = "coral_sea", start = 1394, end = 1802, file_pattern = "frame_%03d.png")
 ) %>%
-  # see how long they'll be with a framerate of 24 fps
-  mutate(sec = (end - start) / 24)
+  # see how long they'll be with the framerate
+  mutate(sec = (end - start) / scenario$fps)
 
 
 nc_file <- file.path(scenario$multidomain_dir, "RUN_ID00000000010000000001_00001_20251111_103624.945", "Grid_output_ID00000000010000000001.nc")

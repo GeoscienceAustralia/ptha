@@ -7,8 +7,7 @@ library(dplyr)
 # source("input/kermadec_94.in.R")
 source("input/solomon_90.in.R")
 
-fps <- 24
-n_slides <- c(9 * fps, 10 * fps, 12 * fps)
+n_slides <- c(9 * scenario$fps, 10 * scenario$fps, 12 * scenario$fps)
 
 logo <- image_read("input/intro_images/geoscience_inline.png")
 logo <- image_scale(logo, "x100")
