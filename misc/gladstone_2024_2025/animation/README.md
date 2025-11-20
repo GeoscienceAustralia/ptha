@@ -3,7 +3,7 @@
 ## Inputs
 Inputs are stored in `.R` files which are sourced as needed. You'll need two input files:
 1. a [input/scenes.in.R](input/scenes.in.R) to define the scenes (lat-lon extents) you want. If only a subset of all the domains cover your area, it's efficient to specify which ones in the `scenes$domains` (by changing `NULL` to a vector).
-2. a scenario specific file e.g. [input/kermadec_94.in.R](input/kermadec_94.in.R). This sets up file paths to the SWALS simulation (which must temporal stage saved) and extracts the times it saved. It also defines when to cut to each scene using a `shots` tibble/dataframe.
+2. a scenario specific file e.g. [input/kermadec_94.in.R](input/kermadec_94.in.R). This sets up file paths to the SWALS simulation (which must have temporal stage saved) and extracts the times it saved. It also defines when to cut to each scene using a `shots` tibble/dataframe.
 
 The colourmaps are also defined here in the [input/custom_colours.R](inputs/custom_colours.R) file.
 
@@ -13,7 +13,7 @@ The colourmaps are also defined here in the [input/custom_colours.R](inputs/cust
 Rscript make_frames.R sw_pacific
 ```
 where the first argument `sw_pacific` is the `dir` (directory) of the scene you want.
-  - Run once with an internet connection (i.e. on an NCI login node) to download the background imagery. If running on NCI this will automatically stop if after downloading the imagery it detects you're on a login node (by checking the hostname).
+  - Run once with an internet connection (i.e. on an NCI login node) to download the background imagery. If running on NCI this will automatically stop if, after downloading the imagery, it detects you're on a login node (by checking the hostname).
   - Then run on a compute node. Making frames is "embarrassingly parallel" so benefits from having more cores (up to one per frame).
   
 2. [run_frames.pbs](run_frames.pbs) is a PBS script that automates running [make_frames.R](make_frames.R) for many scenes. You could use it as a bash script to download all the imagery on a login node.
