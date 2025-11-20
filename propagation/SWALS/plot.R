@@ -685,6 +685,8 @@ make_max_stage_raster<-function(swals_out, proj4string='EPSG:4326',
 #' labels on the colourbar.
 #' @param dry_depth Used to determine dry regions, see documentation above for 
 #' NA_if_stage_not_above_elev
+#' @param nc_files Specify a list of net cdf files to plot. Default NULL will
+#' get all Grid*.nc files in the multidomain_dir.
 #' @return Nothing, but make the plot.
 multidomain_image<-function(multidomain_dir, variable, time_index, 
     xlim, ylim, zlim, cols, add=FALSE,
@@ -693,12 +695,14 @@ multidomain_image<-function(multidomain_dir, variable, time_index,
     NA_if_max_flux_is_zero = FALSE, 
     use_fields=FALSE, clip_to_zlim=FALSE,
     buffer_is_priority_domain=FALSE, asp=1, fields_axis_args=list(), 
-    dry_depth = 1.0e-03){
+    dry_depth = 1.0e-03, nc_files = NULL){
 
     .library_quiet('ncdf4')
     .library_quiet(fields)
     # Find all netcdf
-    all_nc = Sys.glob(paste0(multidomain_dir, '/*/Grid*.nc')) 
+    if (is.null(nc_files)) {
+        nc_files = Sys.glob(paste0(multidomain_dir, '/*/Grid*.nc'))
+    }
 
     # Start a new plot
     if(use_fields){
@@ -712,10 +716,10 @@ multidomain_image<-function(multidomain_dir, variable, time_index,
     }
 
     # Loop over all domains, and add them to the image
-    for(i in 1:length(all_nc)){
+    for(i in 1:length(nc_files)){
 
         # Open data
-        fid = nc_open(all_nc[i], readunlim=FALSE)
+        fid = nc_open(nc_files[i], readunlim=FALSE)
       
         # Get x/y coords 
         xs = ncvar_get(fid, 'x')
