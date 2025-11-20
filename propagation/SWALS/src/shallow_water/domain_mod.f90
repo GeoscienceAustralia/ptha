@@ -245,7 +245,10 @@ module domain_mod
         !
         ! Dispersion
         !
-        logical :: use_dispersion = .false. ! By default do not use dispersion
+        logical :: use_dispersion = .false. 
+            !! By default do not use dispersion
+        logical :: skip_flux_correction_of_momentum_if_use_dispersion = .true. 
+            !! If true, and domain%use_dispersion is true, then do not flux correct momentum (it can cause instability)
         type(dispersive_solver_type) :: ds
 
         !
@@ -3572,9 +3575,11 @@ TIMER_STOP('nesting_flux_correction')
                    varN = -2
                 else
                     ! Some flux correction should be applied
-                    if(timestepping_metadata(cor_tsi)%flux_correction_of_mass_only) then
+                    !if(timestepping_metadata(cor_tsi)%flux_correction_of_mass_only) then
+                    if(timestepping_metadata(cor_tsi)%flux_correction_of_mass_only .or. &
+                       (domain%use_dispersion .and. domain%skip_flux_correction_of_momentum_if_use_dispersion)) then
                         ! Treat solvers that can only do mass-flux correction, not advective momentum fluxes.
-                        ! (e.g. linear solvers where the momentum advection terms are ignored)
+                        ! (e.g. linear solvers where the momentum advection terms are ignored, or dispersive solvers where it causes instability)
                         var1 = STG
                         varN = STG
                     else

@@ -21,6 +21,7 @@ module nested_grid_comms_mod
     use reshape_array_mod, only: repack_rank1_array
     use logging_mod, only: log_output_unit
     use coarray_intrinsic_alternatives, only: this_image2, num_images2
+    use extrapolation_limiting_mod, only: minmod
     !use mpi
 
     !use iso_c_binding, only: C_DOUBLE
@@ -2092,16 +2093,17 @@ module nested_grid_comms_mod
 
         ! When sending from a coarse grid to a finer grid, we send the flow value and 4 gradients (north,south,east,west).
         ! If the gradients involve use of 'non-priority-domain' cells then it can help with stability to zero them. 
-        ! This has numerical stability tradeoffs - in practice it can be best to only do this for some flow variables, declared here. 
-        ! To not do it at all, use a zero size parameter array.
-        integer(ip), parameter :: zero_coarse_gradients_involving_non_priority_cells(2) = [STG, ELV] 
-        !integer(ip), parameter :: zero_coarse_gradients_involving_non_priority_cells(0) = [integer(ip):: ]
-        !integer(ip), parameter :: zero_coarse_gradients_involving_non_priority_cells(4) = [STG, UH, VH, ELV] ! Version before 2025/11/19
+        ! This is only done for coarse staggered grids, and can be done for only a subset of variables
+        !integer(ip), parameter :: zero_coarse_staggered_gradients_involving_non_priority_cells(2) = [STG, ELV] 
+        !integer(ip), parameter :: zero_coarse_staggered_gradients_involving_non_priority_cells(2) = [UH,VH] 
+        !integer(ip), parameter :: zero_coarse_staggered_gradients_involving_non_priority_cells(1) = [STG] 
+        !integer(ip), parameter :: zero_coarse_staggered_gradients_involving_non_priority_cells(0) = [integer(ip):: ]
+        integer(ip), parameter :: zero_coarse_staggered_gradients_involving_non_priority_cells(4) = [STG, UH, VH, ELV] 
 
         ! When a coarse staggered grid sends to a finer grid, should we interpolate the uh/vh values to near where the
         ! finer recipient grid will have them (true) or just send the unadjusted value (false)? While 'true' sounds good,
         ! it has numerical stability trade-offs.
-        logical, parameter :: recentre_uh_vh_from_coarse_staggered_grid = .false. ! .true. before 2025/11/19
+        logical, parameter :: recentre_uh_vh_from_coarse_staggered_grid = .true. !.false.
         
 
         ! Quick exit if the type is purely used to recv data
@@ -2513,7 +2515,7 @@ module nested_grid_comms_mod
                             dU_di_p = U(i+1, j, k) - U(i,j,k)
                             dU_di_m = U(i, j, k) - U(i-1,j,k)
                         else
-                            ! Edge cases
+                            ! Edge cases where i-1 or i+1 would be out of bounds
                             if(i == iim1) then
                                 dU_di_p = U(i+1, j, k) - U(i, j, k)
                             else if(i == iip1) then
@@ -2527,7 +2529,7 @@ module nested_grid_comms_mod
                             dU_dj_p = U(i, j+1, k) - U(i,j,k)
                             dU_dj_m = U(i, j, k) - U(i,j-1,k)
                         else
-                            ! Edge cases
+                            ! Edge cases where j-1 or j+1 would be out of bounds
                             if(j == jjm1) then
                                 dU_dj_p = U(i, j+1, k) - U(i, j, k)
                             else if(j == jjp1) then
@@ -2538,26 +2540,39 @@ module nested_grid_comms_mod
 
                         uc = U(i,j,k)
 
-                        if(size(zero_coarse_gradients_involving_non_priority_cells) > 0) then
-                            ! For some variables, it can help with stability to
-                            ! zero the gradients that involve non-priority domain points.
-                            if(any(k == zero_coarse_gradients_involving_non_priority_cells)) then
-                                if(is_priority_domain_not_periodic(iip1,j) == 0_ip) dU_di_p = 0.0_dp !dU_di_m
-                                if(is_priority_domain_not_periodic(iim1,j) == 0_ip) dU_di_m = 0.0_dp !dU_di_p
-                                if(is_priority_domain_not_periodic(i,jjp1) == 0_ip) dU_dj_p = 0.0_dp !dU_dj_m
-                                if(is_priority_domain_not_periodic(i,jjm1) == 0_ip) dU_dj_m = 0.0_dp !dU_dj_p
-                            end if
-                        end if
-
                         if(my_domain_staggered_grid == 1) then
                             ! Sending from a coarse staggered grid to a finer grid.
-                            ! The finer grid will expect the UH/VH components to be nearer the middle of the cell
 
+                            if(size(zero_coarse_staggered_gradients_involving_non_priority_cells) > 0) then
+                                ! For some variables, it can help with stability to
+                                ! zero the gradients that involve non-priority domain points.
+                                if(any(k == zero_coarse_staggered_gradients_involving_non_priority_cells)) then
+                                    if(is_priority_domain_not_periodic(iip1,j) == 0_ip) dU_di_p = 0.0_dp !dU_di_m
+                                    if(is_priority_domain_not_periodic(iim1,j) == 0_ip) dU_di_m = 0.0_dp !dU_di_p
+                                    if(is_priority_domain_not_periodic(i,jjp1) == 0_ip) dU_dj_p = 0.0_dp !dU_dj_m
+                                    if(is_priority_domain_not_periodic(i,jjm1) == 0_ip) dU_dj_m = 0.0_dp !dU_dj_p
+                                end if
+                            end if
+
+                            ! The finer grid will expect the UH/VH components to be nearer the middle of the cell
                             if(k == UH) then
+
+                                if(is_priority_domain_not_periodic(iip1, j) == 0) then
+                                    ! In this case the east cell is outside the senders priority domain,
+                                    ! and the staggered grid implies UH is on the edge of the two domains. For 
+                                    ! stability it is better not to use that value directly. Use of UH[i-1,j] 
+                                    ! works but in principle we could have UH[i,j] = 0, so use minmod to deal
+                                    ! with such cases. 
+                                    uc = minmod(U(i-1,j,k) , U(i,j,k))
+                                    dU_di_p = 0.0_dp
+                                    dU_di_m = 0.0_dp
+                                    dU_dj_p = 0.0_dp
+                                    dU_dj_m = 0.0_dp
+                                end if
+
                                 !
                                 ! UH is offset east of where the receive grid wants it
                                 !
-
                                 if(recentre_uh_vh_from_coarse_staggered_grid) then
 
                                     ! There is only one relevent EW gradient -- the 'minus' one
@@ -2575,7 +2590,7 @@ module nested_grid_comms_mod
                                     uc = uc - dU_di_m*del
 
                                     ! Recentre the j+ gradient if it doesn't need non-priority-domain cells
-                                    if(all(is_priority_domain_not_periodic(iim1, j:jjp1) == 1_ip)) then
+                                    if(all(is_priority_domain_not_periodic(iim1:iip1, j:jjp1) == 1_ip)) then
                                         dU_dj_p = 0.5_dp * dU_dj_p + 0.5_dp * (U(iim1,jjp1,k) - U(iim1,j  ,k))
                                     !else if(all(is_priority_domain_not_periodic(iip1, j:jjp1) == 1_ip)) then
                                     !    ! Try extrapolating from the other gradient
@@ -2583,7 +2598,7 @@ module nested_grid_comms_mod
                                     end if
 
                                     ! Recentre the j- gradient if it doesn't need non-priority-domain cells
-                                    if(all(is_priority_domain_not_periodic(iim1, jjm1:j) == 1_ip)) then
+                                    if(all(is_priority_domain_not_periodic(iim1:iip1, jjm1:j) == 1_ip)) then
                                         dU_dj_m = 0.5_dp * dU_dj_m + 0.5_dp * (U(iim1,j  ,k) - U(iim1,jjm1,k))
                                     !else if(all(is_priority_domain_not_periodic(iip1, jjm1:j) == 1_ip)) then
                                     !    ! Try extrapolating from the other gradient
@@ -2592,10 +2607,23 @@ module nested_grid_comms_mod
                                 end if
 
                             else if(k == VH) then
+
+                                if(is_priority_domain_not_periodic(i, jjp1) == 0) then
+                                    ! In this case the north cell is outside the senders priority domain,
+                                    ! and the staggered grid implies VH is on the edge of the two domains.
+                                    ! For stability it is better not to use that value directly. Use of VH[i,j-1]
+                                    ! works but in principle we could have VH[i,j] = 0, so use minmod to deal
+                                    ! with such cases. 
+                                    uc = minmod(U(i,j-1,k), U(i,j,k))
+                                    dU_dj_m = 0.0_dp
+                                    dU_dj_p = 0.0_dp
+                                    dU_di_p = 0.0_dp
+                                    dU_di_m = 0.0_dp
+                                end if
+
                                 !
                                 ! VH is offset north of where the receive grid wants it
                                 !
-
                                 if(recentre_uh_vh_from_coarse_staggered_grid) then
                             
                                     ! There is only one relevant gradient NS
@@ -2613,14 +2641,14 @@ module nested_grid_comms_mod
                                     uc = uc - dU_dj_m*del
 
                                     ! Recentre the i- gradient if it doesn't need non-priority-domain cells
-                                    if(all(is_priority_domain_not_periodic(i:iip1, jjm1) == 1_ip)) then
+                                    if(all(is_priority_domain_not_periodic(i:iip1, jjm1:jjp1) == 1_ip)) then
                                         dU_di_p = 0.5_dp * dU_di_p + 0.5_dp * (U(iip1,jjm1,k) - U(i  ,jjm1,k))
                                     !else if(all(is_priority_domain_not_periodic(iim1:i, jjm1) == 1_ip)) then
                                     !    ! Try extrapolating from the other gradient
                                     !    dU_di_p = 1.5_dp * dU_di_p - 0.5_dp * (U(i,jjm1, k) - U(iim1, jjm1, k))
                                     end if
 
-                                    if(all(is_priority_domain_not_periodic(iim1:i, jjm1) == 1_ip)) then
+                                    if(all(is_priority_domain_not_periodic(iim1:i, jjm1:jjp1) == 1_ip)) then
                                         dU_di_m = 0.5_dp * dU_di_m + 0.5_dp * (U(i  ,jjm1,k) - U(iim1,jjm1,k))
                                     !else if(all(is_priority_domain_not_periodic(i:iip1, jjm1) == 1_ip)) then
                                     !    ! Try extrapolating from the other gradient
@@ -2653,18 +2681,6 @@ module nested_grid_comms_mod
                         dU_dj_p = dU_dj_p * gradient_scale_y
                         dU_di_m = dU_di_m * gradient_scale_x
                         dU_dj_m = dU_dj_m * gradient_scale_y
-
-                        ! !if(my_domain_staggered_grid == 0 .and. neighbour_domain_staggered_grid == 1) then
-                        ! !    ! Sending from non-staggered to staggered
-                        ! !    if(k == UH) then
-                        ! !        !UH is offset slightly west of where the staggered grid wants it
-                        ! !        uc = uc + dU_di_p * 0.5_dp/cell_ratios(1)
-                        ! !    else if(k == VH) then
-                        ! !        ! VH is offset slightly south of where the staggered grid wants it
-                        ! !        uc = uc + dU_dj_p*0.5_dp/cell_ratios(2)
-                        ! !    end if
-                        ! !
-                        ! !end if
 
                         ! Index offset where we pack the send buffer
                         send_ind_offset = &
