@@ -1,0 +1,25 @@
+# Source code location
+SWALS_SRC := ../../../src
+
+#SWALS_BUILD_WITH_PARALLEL_DEFAULTS := true
+SWALS_PREPROCESSOR_FLAGS := -DTIMER #-O1 -g -pg -fbounds-check
+#SWALS_PREPROCESSOR_FLAGS := -O1 -g -pg -fbounds-check
+include $(SWALS_SRC)/src_standard_compiler_var
+
+#
+# Application-specific compilation
+#
+# Name for the main model file is $(mymodel).f90
+mymodel := nesting_stability
+# Clean up
+clean: $(mymodel)
+	rm *.o *.mod
+# Link everything
+$(mymodel): $(SWALS_LIBRARY) $(mymodel).o
+	$(SWALS_FORTRAN) $(mymodel).o -o $@ $(SWALS_LIBRARY) $(SWALS_FC_LIBS)
+# Compile the driver script
+$(mymodel).o: $(mymodel).f90
+	$(SWALS_FORTRAN) -c $^ 
+# Build main source
+include $(SWALS_SRC)/src_make_commands
+
