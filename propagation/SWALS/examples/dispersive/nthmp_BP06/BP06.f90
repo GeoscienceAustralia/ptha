@@ -369,6 +369,7 @@ module local_routines
 
         ! Ensure stage >= elevation
         domain%U(:,:,STG) = max(domain%U(:,:,STG), domain%U(:,:,ELV) + 1.0e-07_dp)
+        where(domain%U(:,:,STG) < domain%U(:,:,ELV) + 2.0e-07_dp) domain%U(:,:,UH) = 0.0_dp
 
         ! Gauges
         leftmost_x = [5.76_dp, 6.82_dp, 7.56_dp]

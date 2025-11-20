@@ -2105,6 +2105,11 @@ module nested_grid_comms_mod
         ! finer recipient grid will have them (true) or just send the unadjusted value (false)? While 'true' sounds good,
         ! it has numerical stability trade-offs.
         logical, parameter :: recentre_uh_vh_from_coarse_staggered_grid = .true. !.false.
+
+        ! When a coarse staggered grid sends to a finer grid, the staggering means that UH and VH will actually
+        ! be right on the boundary with the other domain in the east and north respectively. For stability it can
+        ! be better to not use these values
+        logical, parameter :: avoid_coarse_staggered_uh_vh_on_domain_boundary = .true.
         
 
         ! Quick exit if the type is purely used to recv data
@@ -2558,7 +2563,8 @@ module nested_grid_comms_mod
                             ! The finer grid will expect the UH/VH components to be nearer the middle of the cell
                             if(k == UH) then
 
-                                if(is_priority_domain_not_periodic(iip1, j) == 0) then
+                                if(avoid_coarse_staggered_uh_vh_on_domain_boundary .and. &
+                                    is_priority_domain_not_periodic(iip1, j) == 0) then
                                     ! In this case the east cell is outside the senders priority domain,
                                     ! and the staggered grid implies UH is on the edge of the two domains. For 
                                     ! stability it is better not to use that value directly. Use of UH[i-1,j] 
@@ -2609,7 +2615,8 @@ module nested_grid_comms_mod
 
                             else if(k == VH) then
 
-                                if(is_priority_domain_not_periodic(i, jjp1) == 0) then
+                                if(avoid_coarse_staggered_uh_vh_on_domain_boundary .and. &
+                                    is_priority_domain_not_periodic(i, jjp1) == 0) then
                                     ! In this case the north cell is outside the senders priority domain,
                                     ! and the staggered grid implies VH is on the edge of the two domains.
                                     ! For stability it is better not to use that value directly. Use of VH[i,j-1]
