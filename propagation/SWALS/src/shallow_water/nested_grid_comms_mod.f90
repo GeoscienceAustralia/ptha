@@ -2049,9 +2049,10 @@ module nested_grid_comms_mod
         !! Copy data to the send buffer, with different treatments for
         !! 'coarse-to-fine', 'fine-to-coarse', or 'same-size' sends.
         !! This is revised from process_data_to_send_2022Feb, with the intention of dealing with some nesting
-        !! instabilities in the dispersive case. 
+        !! instabilities in the dispersive case (see also domain%skip_flux_correction_of_momentum_if_use_dispersion).
+        !!
         !! This routine also works for NLSW models. The validation tests suggest it is reasonable, although it may be less accurate, 
-        !! and would need to be further explored before changing the defaults (there some failures in the validation test suite, likely small matters).
+        !! and would need to be further explored before changing the defaults (some failures in the validation test suite, likely small matters).
         !! For backward compability of our NLSW models, for now it is preferable to only use this routine in dispersive models.
         !!
         !! FIXME: This doesn't pass the unit test used for the other send routines because of deliberate crude extrapolation

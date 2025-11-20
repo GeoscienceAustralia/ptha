@@ -14,7 +14,10 @@ k = grep("Global speed range", x, fixed=TRUE)
 y = as.numeric(x[k+1])
 
 # Choose a threshold that will notice early models with artefacts here
-if(max(y) < 7e-12){
+# It distinguished cases with/without long-time instabilities that we tested,
+# without having to run for much longer.
+threshold = 7e-12 # See above before changing this.
+if(max(y) < threshold){
     print(c('PASS', max(y)))
 }else{
     print(c('FAIL', max(y), run_tag))
