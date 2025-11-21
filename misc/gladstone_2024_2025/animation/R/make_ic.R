@@ -2,8 +2,18 @@ library(terra)
 library(magick)
 
 
-# make pngs for scenario initial conditions
-make_ic_png <- function(k, plot_config, multidomain_dir, scene, dir_ic, ic_files) {
+#' Make pngs for scenario initial conditions
+#'
+#' Plot (an initial condition) raster with elevation background.
+#' k: file index within ic_files
+#' plot_config: a list with width, height, elevation_zlim, zlim and cols
+#' multidomain_dir: Multidomain directory
+#' scene: A list with ll_x, ll_y, ur_x, ur_y
+#' dir_ic: directory to create and save images in
+#' ic_files: a list of (initial condition) raster files to read
+#' ic_threshold: the minimum absolute tsunami stage to plot. The elevation shows
+#'  where the tsunami is smaller than this.
+make_ic_png <- function(k, plot_config, multidomain_dir, scene, dir_ic, ic_files, ic_threshold = 0.05) {
     dir.create(dir_ic, showWarnings = FALSE)
 
     xlim <- c(scene$ll_x, scene$ur_x)
@@ -20,7 +30,7 @@ make_ic_png <- function(k, plot_config, multidomain_dir, scene, dir_ic, ic_files
         time_index = 1,
         xlim = xlim,
         ylim = ylim,
-        zlim = c(-5000, 1000),
+        zlim = plot_config$elevation_zlim,
         cols = gray.colors(256),
         add = FALSE,
         var_transform_function = NULL,
@@ -38,7 +48,8 @@ make_ic_png <- function(k, plot_config, multidomain_dir, scene, dir_ic, ic_files
     ic <- extend(ic, extent, fill = 0)
 
     # Remove initially wet areas that are never really affected by the tsunami
-    is_small <- abs(ic) < 0.05
+    # To see the background elevation instead
+    is_small <- abs(ic) < ic_threshold
     ic[is_small] <- NA
 
     # Clip to zlim
