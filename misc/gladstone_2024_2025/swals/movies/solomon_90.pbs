@@ -1,0 +1,31 @@
+#!/bin/bash
+#PBS -P w85
+#PBS -q normalsr
+#PBS -l walltime=12:00:00
+#PBS -lmem=500GB
+#PBS -lncpus=104
+#PBS -l wd
+#PBS -l storage=scratch/w85+gdata/w85
+
+
+# Run this script from the swals directory
+path_swals=.
+source ../modules_SWALS_ifx_2024.sh
+
+# Initial stage from Tohoku2011
+stage_file=$path_swals/../sources/hazard/ptha_batch/random_solomon2/scenario_initial_conditions/solomon2_row_0015016_Mw_90_HS.tif
+# Default res and load balance. No varying tidal adjustment
+multidomain_design_namelists=$path_swals/multidomain_design_control/NNL4_defaultRes_movie.nml
+# Model name
+model_name=movie_solomon2_0015016_Mw_90
+# Ambient sea level of 0.0m, approximation of expected sea level
+ambient_sea_level=0
+
+# Run the model
+mpiexec -n 8 -map-by numa:SPAN -bind-to numa -x OMP_NUM_THREADS=13 -x OMP_PROC_BIND=TRUE \
+    $path_swals/model_build \
+    $stage_file \
+    $multidomain_design_namelists \
+    $model_name \
+    full \
+    $ambient_sea_level > $path_swals/movies/$model_name.log$PBS_JOBID
