@@ -238,3 +238,4 @@ for(szad in source_zone_ariv_dirs){
 
 }
 
+print('NOTE: This script does not include code to create and include the land warning zone clipped in areas with max-stage less than a threshold (as it was created later). Add that in if needed. The code to make those products is in "jatwc_to_inundation_zones_edited".')
