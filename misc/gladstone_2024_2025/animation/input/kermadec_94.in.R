@@ -38,7 +38,8 @@ shots <- rbind(
   tibble(dir = "boyne_island", start = 1081, end = 1321, file_pattern = "frame_%03d.png"),
   # tibble(dir = "lady_elliot", start = 1322, end = 1562, file_pattern = "frame_%03d.png"),
   tibble(dir = "capricornia", start = 1322, end = 1801, file_pattern = "frame_%03d.png"),
-  tibble(dir = "sw_pacific", start = 1802, end = 2162, file_pattern = "frame_%03d.png")
+  tibble(dir = "sw_pacific", start = 1802, end = 2162, file_pattern = "frame_%03d.png"),
+  tibble(dir = "../outro", start = 1, end = 192, file_pattern = "outro_%03d.png")
 ) %>%
   # see how long they'll be with the framerate
   mutate(sec = (end - start) / scenario$fps)
