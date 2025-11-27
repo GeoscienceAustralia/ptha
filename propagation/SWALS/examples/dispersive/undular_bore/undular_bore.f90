@@ -10,6 +10,10 @@ module local_routines
     real(dp), parameter :: mean_elevation = -20.0_dp, length = 30000.0_dp
     real(dp), parameter :: amplitude = 2.0_dp, period = 780.0_dp
 
+    ! Approx timestep between outputs
+    real(dp), parameter :: approximate_writeout_frequency = 10.0_dp
+    real(dp), parameter :: final_time = 1550.0_dp !* 2.0_dp
+
     contains
 
     function boundary_function(domain, t, i, j) result(stage_uh_vh_elev)
@@ -75,10 +79,6 @@ program undular_bore
     implicit none
 
     type(multidomain_type):: md
-
-    ! Approx timestep between outputs
-    real(dp), parameter :: approximate_writeout_frequency = 10.0_dp
-    real(dp), parameter :: final_time = 1550.0_dp
 
     ! Domain info
     character(charlen) :: timestepping_method, buf

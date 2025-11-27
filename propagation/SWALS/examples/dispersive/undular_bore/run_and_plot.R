@@ -4,6 +4,10 @@
 numerical_schemes = c('midpoint', 'leapfrog_nonlinear', 'rk2', 'cliffs')
 resolutions = c(20, 10, 5, 2)
 
+desired_time = 1500
+plot_xlim = c(19000, 22000)
+test_xrange = seq(21250, 21600, by=10) # Leading part of bore
+
 omp_run_command = Sys.getenv('OMP_RUN_COMMAND')
 
 for(nm in numerical_schemes){
@@ -28,7 +32,7 @@ for(nm in numerical_schemes){
     madsen_2008_bore = read.csv('madsen_2008_bore.csv')
 
     # Plot like second panel of Figure 10 in Madsen et al (2008)
-    png(paste0('Time_1500_', nm, '.png'), width=8, height=6, units='in', res=200)
+    png(paste0('Time_', desired_time, '_', nm, '.png'), width=8, height=6, units='in', res=200)
     library(ncdf4)
     for(i in 1:length(matching_dirs)){
         nc_file = Sys.glob(paste0(matching_dirs[i], '/RUN*/Grid*.nc'))
@@ -37,12 +41,12 @@ for(nm in numerical_schemes){
         x = ncvar_get(fid, 'x')
         time = ncvar_get(fid, 'time')
         nc_close(fid)
-        ind = which.min(abs(time-1500))
+        ind = which.min(abs(time-desired_time))
         stage = stg[,3,ind]
-        if(abs(time[ind] - 1500) > 1) print('WARNING: output time varies from 1500 by more than 1 second')
+        if(abs(time[ind] - desired_time) > 1) print(paste0('WARNING: output time varies from ', desired_time, ' by more than 1 second'))
         if(i == 1){
-            plot(x, stage, t='l', ylim=c(-0.5, 3.5), xlim=c(19000, 22000), col=i, 
-                main='Undular bore at different resolutions', xlab='x', ylab='Stage (m) @ t=1500')
+            plot(x, stage, t='l', ylim=c(-0.5, 3.5), xlim=plot_xlim, col=i, 
+                main='Undular bore at different resolutions', xlab='x', ylab=paste0('Stage (m) @ t=', desired_time))
             grid()
         }else{
             points(x, stage, t='l', col=i)
@@ -59,7 +63,6 @@ for(nm in numerical_schemes){
     dev.off()
 
     # Add in a PASS/FAIL test by comparison with Madsen
-    test_xrange = seq(21250, 21600, by=10) # Leading part of bore
     test_SWALS = approx(x, stage, xout=test_xrange)$y # Due to plot ordering, this should be the highest-res solution
     test_Madsen = approx(madsen_2008_bore[,1], madsen_2008_bore[,2], xout=test_xrange)$y
 
@@ -70,7 +73,7 @@ for(nm in numerical_schemes){
     if(test_stat < err_tol){
         print('PASS')
     }else{
-        print(paste0('FAIL', nm, test_stat))
+        print(paste0('FAIL ', nm, ' ', test_stat))
     }
 
     # Test 2 -- compare maxima with Madsen
@@ -79,7 +82,7 @@ for(nm in numerical_schemes){
     if(abs(test_stat_2) < err_tol_2){
         print('PASS')
     }else{
-        print(paste0('FAIL', nm, test_stat, test_stat_2))
+        print(paste0('FAIL ', nm, ' ', test_stat, ' ', test_stat_2))
     }
 
 }
