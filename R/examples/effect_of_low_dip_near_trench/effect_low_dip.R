@@ -32,9 +32,9 @@ dim(dip_15_dz) = c(length(xs), length(ys))
 
 library(fields)
 par(mfrow=c(1,3))
-par(oma=c(0,2,0,2))
+#par(oma=c(0,1,0,1))
 ZLIM = c(-0.3, 0.3)
-image.plot(xs, ys, dip_5_dz, zlim=ZLIM, main=paste0('Dip = 5 degrees, max = ', round(max(dip_5_dz), 2)))
-image.plot(xs, ys, dip_10_dz, zlim=ZLIM, main=paste0('Dip = 10 degrees, max = ', round(max(dip_10_dz), 2)))
-image.plot(xs, ys, dip_15_dz, zlim=ZLIM, main=paste0('Dip = 15 degrees, max = ', round(max(dip_15_dz), 2)))
+image.plot(xs, ys, dip_5_dz, zlim=ZLIM, main=paste0('Dip = 5 degrees, max = ', round(max(dip_5_dz), 2)), asp=1)
+image.plot(xs, ys, dip_10_dz, zlim=ZLIM, main=paste0('Dip = 10 degrees, max = ', round(max(dip_10_dz), 2)), asp=1)
+image.plot(xs, ys, dip_15_dz, zlim=ZLIM, main=paste0('Dip = 15 degrees, max = ', round(max(dip_15_dz), 2)), asp=1)
 
