@@ -23,10 +23,18 @@ dip_10 = okada_tsunami(0,0,centroid_depth,0,dip,length,width,0,1, mypts[,1],mypt
 dip_10_dz = dip_10[[3]]
 dim(dip_10_dz) = c(length(xs), length(ys))
 
+dip =15 
+centroid_depth = width/2*sin(dip/180*pi) # Rupture to trench
+dip_15 = okada_tsunami(0,0,centroid_depth,0,dip,length,width,0,1, mypts[,1],mypts[,2])
+dip_15_dz = dip_15[[3]]
+dim(dip_15_dz) = c(length(xs), length(ys))
+
+
 library(fields)
-par(mfrow=c(1,2))
+par(mfrow=c(1,3))
 par(oma=c(0,2,0,2))
 ZLIM = c(-0.3, 0.3)
 image.plot(xs, ys, dip_5_dz, zlim=ZLIM, main=paste0('Dip = 5 degrees, max = ', round(max(dip_5_dz), 2)))
 image.plot(xs, ys, dip_10_dz, zlim=ZLIM, main=paste0('Dip = 10 degrees, max = ', round(max(dip_10_dz), 2)))
+image.plot(xs, ys, dip_15_dz, zlim=ZLIM, main=paste0('Dip = 15 degrees, max = ', round(max(dip_15_dz), 2)))
 

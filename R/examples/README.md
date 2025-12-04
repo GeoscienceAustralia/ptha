@@ -35,7 +35,7 @@ be useful for hydrodynamic modelling.
 effect_of_low_dip_near_trench 
 -----------------------------
 
-Comparison of unit sources near the trench with 5 degree and 10 degree dip
+Comparison of unit sources near the trench with varying low dip
 
 
 event_rates
