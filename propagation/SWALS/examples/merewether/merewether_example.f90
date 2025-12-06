@@ -190,6 +190,7 @@ program merewether
     md%domains(1)%nx = global_nx
     md%domains(1)%lower_left = global_ll
     md%domains(1)%timestepping_method = default_nonlinear_timestepping_method
+    !md%domains(1)%stage_extrema_include_dry_cells = .false.
 
     ! Initialise the domain
     call md%setup()
