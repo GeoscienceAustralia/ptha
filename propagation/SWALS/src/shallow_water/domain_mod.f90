@@ -434,6 +434,10 @@ module domain_mod
         real(dp) :: arrival_stage_threshold_above_msl_linear = 0.01_dp
             !! The "arrival time" is defined as the time at which the stage exceeds
             !! (msl_linear + arrival_stage_threshold_above_msl_linear) AND the cell is wet
+        logical :: stage_extrema_include_dry_cells = .true.
+            !! If .TRUE. then max stage can be a 'dry cell' value (i.e. where the stage is the elevation).
+            !! If .FALSE. then we only update the max stage if the cell has depth > minimum_allowed_depth.
+            !! The difference can be substantive in models which have time-varying elevation.
         type(point_gauge_type) :: point_gauges
             !! Type to manage storing of tide gauges
 
@@ -2261,7 +2265,9 @@ EVOLVE_TIMER_START('update_max_quantities')
                         !$OMP DO SCHEDULE(STATIC)
                         do j = domain%yL, domain%yU !1, domain%nx(2)
                             do i = domain%xL, domain%xU !1, domain%nx(1)
-                                if(domain%U(i,j,STG) > domain%max_U(i,j,k)) then
+                                if( (domain%U(i,j,STG) > domain%max_U(i,j,k)) .and. &
+                                    ( domain%stage_extrema_include_dry_cells .or. &
+                                      (domain%U(i,j,STG) > domain%U(i,j,ELV) + minimum_allowed_depth))) then
                                     domain%max_U(i,j,k) = domain%U(i,j,STG)
                                     domain%max_U(i,j,toms) = domain%time
                                 end if
@@ -2273,7 +2279,10 @@ EVOLVE_TIMER_START('update_max_quantities')
                         !$OMP DO SCHEDULE(STATIC)
                         do j = domain%yL, domain%yU !1, domain%nx(2)
                             do i = domain%xL, domain%xU !1, domain%nx(1)
-                                domain%max_U(i,j,k) = max(domain%max_U(i,j,k), domain%U(i,j,STG))
+                                if( domain%stage_extrema_include_dry_cells .or. &
+                                    (domain%U(i,j,STG) > domain%U(i,j,ELV) + minimum_allowed_depth)) then
+                                    domain%max_U(i,j,k) = max(domain%max_U(i,j,k), domain%U(i,j,STG))
+                                end if
                             end do
                         end do
                         !$OMP END DO NOWAIT
@@ -2369,7 +2378,10 @@ EVOLVE_TIMER_START('update_max_quantities')
                     !$OMP DO SCHEDULE(STATIC)
                     do j = domain%yL, domain%yU !1, domain%nx(2)
                         do i = domain%xL, domain%xU !1, domain%nx(1)
-                            domain%max_U(i,j,k) = min(domain%max_U(i,j,k), domain%U(i,j,STG))
+                            if( domain%stage_extrema_include_dry_cells .or. &
+                                (domain%U(i,j,STG) > domain%U(i,j,ELV) + minimum_allowed_depth)) then
+                                domain%max_U(i,j,k) = min(domain%max_U(i,j,k), domain%U(i,j,STG))
+                            end if
                         end do
                     end do
                     !$OMP END DO NOWAIT
