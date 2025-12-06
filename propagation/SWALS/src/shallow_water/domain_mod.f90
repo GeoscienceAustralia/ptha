@@ -437,7 +437,10 @@ module domain_mod
         logical :: stage_extrema_include_dry_cells = .true.
             !! If .TRUE. then max stage can be a 'dry cell' value (i.e. where the stage is the elevation).
             !! If .FALSE. then we only update the max stage if the cell has depth > minimum_allowed_depth.
-            !! The difference can be substantive in models which have time-varying elevation.
+            !! The difference can be substantive in models which have time-varying elevation, e.g., if a cell
+            !! is always dry but is subsiding over time, then a value of .true. means the max-stage will be set
+            !! to the highest elevation obtained over time, while a value of .false. means the max-stage will be
+            !! a missing-data value (large negative)
         type(point_gauge_type) :: point_gauges
             !! Type to manage storing of tide gauges
 
