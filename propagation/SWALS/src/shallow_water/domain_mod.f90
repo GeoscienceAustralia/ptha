@@ -247,8 +247,8 @@ module domain_mod
         !
         logical :: use_dispersion = .false. 
             !! By default do not use dispersion
-        logical :: skip_flux_correction_of_momentum_if_use_dispersion = .true. 
-            !! If true, and domain%use_dispersion is true, then do not flux correct momentum (it can cause instability)
+        logical :: skip_flux_correction_of_momentum_if_use_dispersion = .true.
+            !! If true, and domain%use_dispersion is true, then do not flux correct momentum (imperfectly tracked and can cause instability)
         type(dispersive_solver_type) :: ds
 
         !
@@ -3710,7 +3710,7 @@ TIMER_STOP('nesting_flux_correction')
     end subroutine
 
     subroutine receive_halos(domain, p2p, skip_if_time_before_this_time, skip_if_time_after_this_time, &
-        skip_if_unequal_cell_ratios)
+        skip_if_unequal_cell_ratios, skip_if_my_domain_is_coarser)
         !!
         !! Loop over domain%nesting%receive_comms, and receive the halo data
         !!
@@ -3718,7 +3718,7 @@ TIMER_STOP('nesting_flux_correction')
         type(p2p_comms_type), intent(in) :: p2p
         real(dp), optional, intent(in) :: skip_if_time_before_this_time
         real(dp), optional, intent(in) :: skip_if_time_after_this_time
-        logical, optional, intent(in) :: skip_if_unequal_cell_ratios
+        logical, optional, intent(in) :: skip_if_unequal_cell_ratios, skip_if_my_domain_is_coarser
 
         integer(ip) :: i, j, ii, jj, iL, iU, jL, jU, ip1, jp1, nbr_j, nbr_ti
         real(dp) :: elev_lim
@@ -3735,7 +3735,8 @@ TIMER_START('receive_halos')
             call process_received_data(domain%nesting%recv_comms(i), p2p, domain%U, &
                 skip_if_time_before_this_time = skip_if_time_before_this_time, &
                 skip_if_time_after_this_time  = skip_if_time_after_this_time, &
-                skip_if_unequal_cell_ratios = skip_if_unequal_cell_ratios)
+                skip_if_unequal_cell_ratios = skip_if_unequal_cell_ratios, &
+                skip_if_my_domain_is_coarser = skip_if_my_domain_is_coarser)
         end do
         !$OMP END DO
 
@@ -3901,31 +3902,26 @@ TIMER_STOP('receive_halos')
             !! to do all communications at once, which can be faster as it enables
             !! multiple sends between the same images to be collapsed into a single send).
         real(dp), intent(in), optional :: time
-        logical, intent(in), optional :: use_dispersive_send
+        logical, intent(in), optional :: use_dispersive_send !! FIXME Defunct
 
         integer(ip) :: i
         logical :: dispersive_send
         
-        dispersive_send = .FALSE.
-        if(present(use_dispersive_send)) dispersive_send = use_dispersive_send
+        !dispersive_send = .FALSE.
+        !if(present(use_dispersive_send)) dispersive_send = use_dispersive_send
 
 TIMER_START('send_halos')
-            !! Seems faster to do the openmp inside "process_data_to_send"?
-            !! So comment out openmp here. Also, ifort19 seg-faulted when I used openmp here.
-            !!$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain, send_to_recv_buffer_local, time)
-            !!$OMP DO SCHEDULE(DYNAMIC)
-            do i = 1, size(domain%nesting%send_comms, kind=ip)
+        !! Seems faster to do the openmp inside "process_data_to_send"?
+        !! So comment out openmp here. Also, ifort19 seg-faulted when I used openmp here.
+        !!$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain, send_to_recv_buffer_local, time)
+        !!$OMP DO SCHEDULE(DYNAMIC)
+        do i = 1, size(domain%nesting%send_comms, kind=ip)
 
-                if(dispersive_send) then
-                    call domain%nesting%send_comms(i)%process_data_to_send_better_dispersive_stability(&
-                        domain%U, domain%nesting%is_priority_domain_not_periodic, time=time)
-                else
-                    call domain%nesting%send_comms(i)%process_data_to_send(domain%U, time=time)
-                end if
-                call domain%nesting%send_comms(i)%send_data(p2p, send_to_recv_buffer=send_to_recv_buffer)
-            end do
-            !!$OMP END DO
-            !!$OMP END PARALLEL
+            call domain%nesting%send_comms(i)%process_data_to_send(domain%U, time=time)
+            call domain%nesting%send_comms(i)%send_data(p2p, send_to_recv_buffer=send_to_recv_buffer)
+        end do
+        !!$OMP END DO
+        !!$OMP END PARALLEL
 TIMER_STOP('send_halos')
 
     end subroutine

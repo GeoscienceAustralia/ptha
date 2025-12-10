@@ -235,9 +235,10 @@ module multidomain_mod
             !! and for such messages, the file locations may be messed up if using more than one multidomain
         logical :: use_dispersion = .FALSE.
             !! This will be .TRUE. if any domain uses dispersion, and .FALSE. otherwise
-        integer(ip) :: dispersive_outer_iterations_count = 2_ip
+        integer(ip) :: dispersive_outer_iterations_count = 1_ip
             !! When doing dispersive solves, we solve the dispersive term on each domain individually, communicate, and repeat
-            !! dispersive_outer_iterations times. Larger numbers could allow information to cross domains more easily.
+            !! dispersive_outer_iterations times. Larger numbers could allow information to cross domains more easily. Once
+            !! corresponds to no iterations and can work fine in some cases.
         integer(ip) :: dispersive_nt_max = -1_ip
             !! When doing dispersive solves, the global timestep is split into substeps of size nt_max. Communication happens
             !! in each substep, so in parallel we need to ensure every image uses the same nt_max, which is stored here.
@@ -1219,8 +1220,9 @@ TIMER_STOP('check_multidomain_stability')
 
         integer(ip) :: dispersive_outer_iterations, disp_nt_max, domain_stepcycles(size(md%domains)), &
             j, substep, nt, i, inner_steps
-        real(dp) :: dt_local, max_dt_store(size(md%domains)), tend
+        real(dp) :: dt_local, dt_local_inner, max_dt_store(size(md%domains)), tend, tstart, tsubstep_end, t_eps
         logical :: is_first_step
+        logical :: did_substep_or_iterate(size(md%domains))
 
 #if defined(COARRAY) && !defined(COARRAY_USE_MPI_FOR_INTENSIVE_COMMS)
         ! Remove this if non-MPI coarray communication is supported below.
@@ -1231,6 +1233,9 @@ TIMER_STOP('check_multidomain_stability')
 #endif
 
 TIMER_START('before_stepping')
+
+        tstart = md%domains(1)%time
+
         ! All the domains will evolve to this time
         tend = md%domains(1)%time + dt
         ! However they may take different numbers of steps to get
@@ -1279,6 +1284,8 @@ TIMER_START('before_stepping')
         !     OR
         !        (mod(substep - 1, domain_stepcycles(j)) == 0) ! Typical case
 
+        t_eps = 0.1_dp * dt/disp_nt_max ! Epsilon for time - much smaller than time between substeps
+
 TIMER_STOP('before_stepping')
 
         if(any(domain_stepcycles == 0 .and. (md%domains(:)%use_dispersion))) then
@@ -1305,28 +1312,27 @@ TIMER_STOP('before_stepping')
         ! For all sub-timesteps
         substeps_loop: do substep = 1, disp_nt_max
 
-            ! Evolve every domain, sending the data to communicate straight after
-            ! the evolve
+            ! Time that we will have advanced to at the end of this substep
+            tsubstep_end = tstart + dt*(1.0_dp * substep)/(1.0_dp * disp_nt_max)
+
+            ! Shallow water sub-steps
             domain_SW_loop: do j = 1, size(md%domains, kind=ip)
 
-                ! Advance short-time-step domains ahead of big time-step domains
-                !if(mod(substep, domain_stepcycles(j)) /= 0) cycle domain_SW_loop
-                !is_first_step = (substep == domain_stepcycles(j))
+                nt = md%domains(j)%timestepping_refinement_factor
+                dt_local = dt/(1.0_dp * nt)
 
-                ! Advance big-time-step domains ahead of short time-step domains
-                if(domain_stepcycles(j) > 0) then
-                    if(mod(substep-1, domain_stepcycles(j)) /= 0) cycle domain_SW_loop
-                end if
-                is_first_step = (substep == 1)
+                ! Timestep the domain only if this would lead to it having the correct time at the end of this substep.
+                did_substep_or_iterate(j) = equal_within_tol(md%domains(j)%time + dt_local, tsubstep_end, t_eps)
+                if(.not. did_substep_or_iterate(j)) cycle domain_SW_loop
+
+                ! We know the first step because time = tstart
+                is_first_step = equal_within_tol(md%domains(j)%time, tstart, t_eps)
 
 TIMER_START('domain_evolve')
-                ! Evolve each domain one or more steps, for a total time of dt
-                nt = md%domains(j)%timestepping_refinement_factor
 
                 if(nt <= disp_nt_max) then
                     ! Treat all dispersive domains, and any shallow water domain that does not
                     ! need a shorter timestep than all dispersive domains.
-                    dt_local = dt/(1.0_dp * nt)
 
                     ! If dispersion is used then backup the flow state
                     call md%domains(j)%copy_U_to_dispersive_last_timestep()
@@ -1348,16 +1354,16 @@ TIMER_START('domain_evolve')
                     ! How many inner timesteps?
                     inner_steps = ceiling((1.0_dp * nt)/(1.0_dp * disp_nt_max)) 
                     ! What timestep should they take to advance a total time of dt/(1.0_dp * disp_nt_max)
-                    dt_local = dt/(1.0_dp * disp_nt_max * inner_steps)
+                    dt_local_inner = dt/(1.0_dp * disp_nt_max * inner_steps)
 
                     ! Evolve a few steps
-                    call md%domains(j)%evolve_one_step(dt_local)
+                    call md%domains(j)%evolve_one_step(dt_local_inner)
 #ifdef TRACK_MULTIDOMAIN_STABILITY
                     call check_multidomain_stability(md, 'inner', j)
 #endif
                     if(is_first_step) max_dt_store(j) = md%domains(j)%max_dt
                     do i = 2, inner_steps                    
-                        call md%domains(j)%evolve_one_step(dt_local)
+                        call md%domains(j)%evolve_one_step(dt_local_inner)
 #ifdef TRACK_MULTIDOMAIN_STABILITY
                         call check_multidomain_stability(md, 'innerB', j)
 #endif
@@ -1368,52 +1374,36 @@ TIMER_START('domain_evolve')
 
 TIMER_STOP('domain_evolve')
 
-                ! Send the halos only for domain j. Timing code inside
-                call md%send_halos(domain_index=j, send_to_recv_buffer = send_halos_immediately, time=md%domains(j)%time)
+                ! Send the halos for non-dispersive domains (dispersive domains do it after applying dispersion)
+                if(.not. md%domains(j)%use_dispersion) call md%send_halos(domain_index=j, &
+                    send_to_recv_buffer = send_halos_immediately, time=md%domains(j)%time)
             end do domain_SW_loop
-
-            if(.not. send_halos_immediately) then
-                ! Do all the parallel communication in one hit
-                ! This lets us 'collapse' multiple sends to a single image,
-                ! and is more efficient in a bunch of cases.
-TIMER_START('comms1')
-                call communicate_p2p(md%p2p)
-TIMER_STOP('comms1')
-            else
-                write(md%log_output_unit, *) 'Error: Need to implement support for this case (sync before and after)', &
-                    __LINE__, &
-__FILE__
-                call generic_stop
-            end if
 
             ! Dispersive terms
             dispersive_outer_iterations = 0_ip
             dispersive_outer_loop: do while(dispersive_outer_iterations < md%dispersive_outer_iterations_count)
-                ! Iterations allow communication between domains during the dispersive solve.
+                ! Iterations can allow communication between domains during the dispersive solve. Not always needed
                 dispersive_outer_iterations = dispersive_outer_iterations + 1
 
                 !write(log_output_unit, *) 'DOI: ', dispersive_outer_iterations
 
                 domain_dispersive_loop: do j = 1, size(md%domains, kind=ip)
         
-                    ! Only update dispersive domains
-                    if(.not. md%domains(j)%use_dispersion) cycle domain_dispersive_loop
+                    ! Only update dispersive domains that just took a substep
+                    if( (.not. md%domains(j)%use_dispersion) .or. (.not. did_substep_or_iterate(j))) cycle domain_dispersive_loop
 
-                    ! Skip domains unless we updated their shallow water solution on this substep.
-                    ! ( Note that only dispersive domains get to this point - they always have domain_stepcycles(j) > 0 )
-                    if(mod(substep-1, domain_stepcycles(j)) /= 0) cycle domain_dispersive_loop
-
-                    call md%domains(j)%receive_halos(md%p2p, &
-                        ! Only receive from domains that have advanced to the current timestep. 
-                        ! Use a timestep window to protect against roundoff (only includes current timestep). 
-                        ! Timing code inside
-                        skip_if_time_before_this_time = md%domains(j)%time - (0.1_dp*dt/disp_nt_max), &
-                        skip_if_time_after_this_time  = md%domains(j)%time + (0.1_dp*dt/disp_nt_max), &
-                        skip_if_unequal_cell_ratios = dispersive_outer_iterations > 1)
+                    if(dispersive_outer_iterations > 1) then
+                        call md%domains(j)%receive_halos(md%p2p, &
+                            ! Only receive from domains that have advanced to the current timestep. 
+                            ! Use a timestep window to protect against roundoff (only includes current timestep). 
+                            ! Timing code inside
+                            skip_if_time_before_this_time = md%domains(j)%time - t_eps, &
+                            skip_if_time_after_this_time  = md%domains(j)%time + t_eps, &
+                            skip_if_unequal_cell_ratios = .true.)
+                    end if
 #ifdef TRACK_MULTIDOMAIN_STABILITY
                     call check_multidomain_stability(md, 'step-after-disp-comms', j)
 #endif
-
 
 TIMER_START('domain_dispersive_it')
 
@@ -1448,6 +1438,8 @@ TIMER_STOP('domain_dispersive_it')
                 if(.not. send_halos_immediately) then
 TIMER_START('comms_disp')
                     call communicate_p2p(md%p2p)
+                        ! This could skip communicating data for send domains that are not stepping on this substep
+                        ! and also skip communicating data for non-dispersive send domains.
 TIMER_STOP('comms_disp')
                 else
                     write(md%log_output_unit, *) 'Error: Need to implement support for this case (sync before and after)'
@@ -1458,15 +1450,13 @@ TIMER_STOP('comms_disp')
 
             ! RECEIVE HALOS
             get_halos: do j = 1, size(md%domains)
-                ! Only receive if we just stepped or at the last step
-                if(domain_stepcycles(j) > 0) then
-                    if(mod(substep-1, domain_stepcycles(j)) /= 0 .and. substep /= disp_nt_max) cycle get_halos
-                end if
+                ! Do not receive if we didn't just step or iterate -- except at the last step
+                if((.not. did_substep_or_iterate(j)) .and. substep /= disp_nt_max) cycle get_halos
 
-                ! Get the halo information from neighbours. Timing code inside
+                ! Get the halo information from neighbours that have advanced to the same time. Timing code inside
                 call md%domains(j)%receive_halos(md%p2p, &
-                    skip_if_time_before_this_time = md%domains(j)%time - (0.1_dp*dt/disp_nt_max), &
-                    skip_if_time_after_this_time  = md%domains(j)%time + (0.1_dp*dt/disp_nt_max) )
+                    skip_if_time_before_this_time = md%domains(j)%time - t_eps, &
+                    skip_if_time_after_this_time  = md%domains(j)%time + t_eps)
 #ifdef TRACK_MULTIDOMAIN_STABILITY
                 call check_multidomain_stability(md, 'step-after-comms', j)
 #endif
@@ -1503,6 +1493,15 @@ TIMER_STOP('comms1b')
 #ifdef TRACK_MULTIDOMAIN_STABILITY
         call check_multidomain_stability(md, 'step-after-final-recv')
 #endif
+
+    contains
+
+        function equal_within_tol(a, b, tol) result(within_tol)
+            ! Is a == b to within tolerance tol?
+            real(dp), intent(in) :: a, b, tol
+            logical :: within_tol
+            within_tol = (a < (b+tol)) .and. (a > (b - tol))
+        end function
 
     end subroutine
 
