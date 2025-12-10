@@ -235,7 +235,7 @@ module multidomain_mod
             !! and for such messages, the file locations may be messed up if using more than one multidomain
         logical :: use_dispersion = .FALSE.
             !! This will be .TRUE. if any domain uses dispersion, and .FALSE. otherwise
-        integer(ip) :: dispersive_outer_iterations_count = 1_ip
+        integer(ip) :: dispersive_outer_iterations_count = 2_ip
             !! When doing dispersive solves, we solve the dispersive term on each domain individually, communicate, and repeat
             !! dispersive_outer_iterations times. Larger numbers could allow information to cross domains more easily. Once
             !! corresponds to no iterations and can work fine in some cases.
