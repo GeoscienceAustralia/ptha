@@ -1274,38 +1274,10 @@ TIMER_START('before_stepping')
         !   The latter is useful to reduce parallel communication overhead
         !   (we have to communicate at least once per substep, but it's actually only required for the dispersive domains).
         !
-        ! The following is a useful integer for determining which domains should evolve on which substep
-        domain_stepcycles = disp_nt_max / md%domains(:)%timestepping_refinement_factor 
-        !     For domains that use dispersion, this MUST be a nonzero integer without roundoff. 
-        !     For domains without dispersion, this can either be a nonzero integer without roundoff, or zero 
-        !     (in which case we take multiple shallow water steps within the smallest dispersive substep).
-        !     We timestep domain(j) if 
-        !        (domain_stepcycles(j) == 0)  ! Case of rapidly stepping non-dispersive domains
-        !     OR
-        !        (mod(substep - 1, domain_stepcycles(j)) == 0) ! Typical case
 
         t_eps = 0.1_dp * dt/disp_nt_max ! Epsilon for time - much smaller than time between substeps
 
-TIMER_STOP('before_stepping')
-
-        if(any(domain_stepcycles == 0 .and. (md%domains(:)%use_dispersion))) then
-            write(md%log_output_unit, *) 'BUG: Dispersive domains should never have domain_stepcycles == 0'
-            call generic_stop
-        end if
-
-        ! Ensure that if domain_stepcycles > 0, then the timestepping_refinement_factor EXACTLY divides disp_nt_max
-        if(any( &
-          (domain_stepcycles > 0) .and. &
-          (abs(domain_stepcycles - (disp_nt_max*1.0_dp)/(md%domains(:)%timestepping_refinement_factor*1.0_dp)) > 1e-10_dp ))) then
-            write(md%log_output_unit,*) &
-                'Timestepping refinement factors must EXACTLY divide md%dispersive_nt_max = ', md%dispersive_nt_max, &
-                    NEW_LINE(' '), &
-                '    (except non-dispersive domains that take smaller timesteps than all dispersive domains)', NEW_LINE(' '), &
-                'Consider using timestepping_refinement_factors that are powers of 2, e.g., (max = 8) 1, 2, 4, 8.', &
-                    NEW_LINE(' '), &
-                'Some other valid examples are (max=6) 1, 6, 2, 3 ... or (max=27) 1, 3, 27 ...'
-            call generic_stop
-        end if
+        if(tstart == 0.0_dp) call check_timestepping_refinement
 
         !print*, 'disp_nt_max = ', disp_nt_max
 
@@ -1502,6 +1474,37 @@ TIMER_STOP('comms1b')
             logical :: within_tol
             within_tol = (a < (b+tol)) .and. (a > (b - tol))
         end function
+
+        subroutine check_timestepping_refinement
+            ! Check that the timestepping matches constraints
+
+            domain_stepcycles = disp_nt_max / md%domains(:)%timestepping_refinement_factor 
+            !     For domains that use dispersion, this MUST be a nonzero integer without roundoff. 
+            !     For domains without dispersion, this can either be a nonzero integer without roundoff, or zero 
+            !     (in which case we take multiple shallow water steps within the smallest dispersive substep).
+
+    TIMER_STOP('before_stepping')
+
+            if(any(domain_stepcycles == 0 .and. (md%domains(:)%use_dispersion))) then
+                write(md%log_output_unit, *) 'BUG: Dispersive domains should never have domain_stepcycles == 0'
+                call generic_stop
+            end if
+
+            ! Ensure that if domain_stepcycles > 0, then the timestepping_refinement_factor EXACTLY divides disp_nt_max
+            if(any( (domain_stepcycles > 0) .and. &
+                    (abs(domain_stepcycles - &
+                        (disp_nt_max*1.0_dp)/(md%domains(:)%timestepping_refinement_factor*1.0_dp)) > 1e-10_dp ))&
+                ) then
+                write(md%log_output_unit,*) &
+                    'Timestepping refinement factors must EXACTLY divide md%dispersive_nt_max = ', md%dispersive_nt_max, &
+                        NEW_LINE(' '), &
+                    '    (except non-dispersive domains that take smaller timesteps than all dispersive domains)', NEW_LINE(' '), &
+                    'Consider using timestepping_refinement_factors that are powers of 2, e.g., (max = 8) 1, 2, 4, 8.', &
+                        NEW_LINE(' '), &
+                    'Some other valid examples are (max=6) 1, 6, 2, 3 ... or (max=27) 1, 3, 27 ...'
+                call generic_stop
+            end if
+        end subroutine
 
     end subroutine
 
