@@ -1262,18 +1262,6 @@ TIMER_START('before_stepping')
 
         ! Timestepping levels.
         disp_nt_max = md%dispersive_nt_max
-        !   The timestepping is split into substeps (substep = 1, ... disp_nt_max), where disp_nt_max is
-        !   controlled by the dispersive domains with the worst time-step restrictions.
-        !
-        !   Dispersive domains can call evolve_one_step at most once each
-        !   substep, because they need to communicate for the implicit solve. But
-        !   if they can take a larger timestep, they don't have to evolve on every substep.
-        !
-        !   Non-dispersive domains can do the same, but also have the option of calling evolve_one_step more 
-        !   than once in a substep (for rapidly timestepping shallow water domains),
-        !   The latter is useful to reduce parallel communication overhead
-        !   (we have to communicate at least once per substep, but it's actually only required for the dispersive domains).
-        !
 
         t_eps = 0.1_dp * dt/disp_nt_max ! Epsilon for time - much smaller than time between substeps
 
@@ -1476,7 +1464,20 @@ TIMER_STOP('comms1b')
         end function
 
         subroutine check_timestepping_refinement
-            ! Check that the timestepping matches constraints
+            ! Check that the timestepping meets some constraints
+            !
+            !   The timestepping is split into substeps (substep = 1, ... disp_nt_max), where disp_nt_max is
+            !   controlled by the dispersive domains with the worst time-step restrictions.
+            !
+            !   Dispersive domains can call evolve_one_step at most once each
+            !   substep, because they need to communicate for the implicit solve. But
+            !   if they can take a larger timestep, they don't have to evolve on every substep.
+            !
+            !   Non-dispersive domains can do the same, but also have the option of calling evolve_one_step more 
+            !   than once in a substep (for rapidly timestepping shallow water domains),
+            !   The latter is useful to reduce parallel communication overhead
+            !   (we have to communicate at least once per substep, but it's actually only required for the dispersive domains).
+            !
 
             domain_stepcycles = disp_nt_max / md%domains(:)%timestepping_refinement_factor 
             !     For domains that use dispersion, this MUST be a nonzero integer without roundoff. 
