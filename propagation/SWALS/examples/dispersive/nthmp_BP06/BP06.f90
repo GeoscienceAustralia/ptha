@@ -508,7 +508,7 @@ program BP06
         md%domains(1)%ds%td2 = 0.05_dp
 
         ! Ensure a reasonable halo for dispersive iteration
-        md%domains(1)%minimum_nesting_layer_thickness = 20_ip
+        md%domains(1)%minimum_nesting_layer_thickness = nint(20_ip*mesh_refine)
     end if
 
     if(nd > 1) then
@@ -531,7 +531,7 @@ program BP06
             md%domains(2)%ds%td2 = 0.05_dp
 
             ! Ensure a reasonable halo for dispersive iteration
-            md%domains(2)%minimum_nesting_layer_thickness = 30_ip ! Covering about 3x depth
+            md%domains(2)%minimum_nesting_layer_thickness = nint(30_ip*mesh_refine) ! Covering about 3x depth
         end if
     end if 
 
