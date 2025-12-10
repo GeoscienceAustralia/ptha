@@ -7,6 +7,8 @@ module local_routines
     use read_raster_mod, only: multi_raster_type
     implicit none
 
+    real(dp), parameter :: bed_elev = -4000.0_dp
+
     contains 
 
     subroutine set_initial_conditions_nesting_stability(domain)
@@ -15,7 +17,6 @@ module local_routines
         !
         class(domain_type), target, intent(inout):: domain
 
-        real(dp), parameter :: bed_elev = -4000.0_dp
         type(multi_raster_type):: stage_data
         integer(ip) :: i, j
         real(dp), allocatable :: x(:), y(:)
@@ -87,7 +88,8 @@ program nesting_stability
     real(dp) :: global_dt = 1.2_dp * 401.0_dp/(global_nx(1) * timestepping_refinement_factor) !* (1.0_dp/3.0_dp)
     integer(ip), parameter :: nested_timestepping_refinement_factor = 3_ip * timestepping_refinement_factor
 
-    integer(ip), parameter :: mnlt = 40 ! Min nesting layer thickness
+    !integer(ip), parameter :: mnlt = 40 ! Min nesting layer thickness:
+    real(dp), parameter :: nesting_layer_thick_on_depth = 2.5_dp
 
     ! Misc
     integer(ip) :: j, nd
@@ -110,7 +112,7 @@ program nesting_stability
     md%domains(1)%lower_left = global_ll
     md%domains(1)%nx = global_nx
     md%domains(1)%msl_linear = 0.0_dp
-    md%domains(1)%minimum_nesting_layer_thickness = mnlt
+    md%domains(1)%minimum_nesting_layer_thickness = nint(nesting_layer_thick_on_depth * (-bed_elev)/maxval(global_lw/global_nx)) !mnlt
     md%domains(1)%theta = 4.0_dp
     md%domains(1)%timestepping_refinement_factor = timestepping_refinement_factor
     md%domains(1)%use_dispersion = .true.
@@ -125,7 +127,8 @@ program nesting_stability
     md%domains(2)%timestepping_method = 'midpoint' !
     md%domains(2)%theta = 4.0_dp
     md%domains(2)%msl_linear = 0.0_dp
-    md%domains(2)%minimum_nesting_layer_thickness = mnlt
+    md%domains(2)%minimum_nesting_layer_thickness = nint(&
+        nesting_layer_thick_on_depth * (-bed_elev)/maxval(global_lw/global_nx)) !mnlt
     md%domains(2)%use_dispersion = .true.
 
     ! Output variables to store
