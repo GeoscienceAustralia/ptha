@@ -86,9 +86,9 @@ program radial_potential
     ! lower left in spherical coordinates
     real(dp), parameter :: global_ll(2) = central_lonlat - global_lw/2.0_dp
 
-    integer(ip), parameter :: timestepping_refinement_factor = 1_ip ! Overall timestep scale
+    integer(ip), parameter :: timestepping_refinement_factor = 1_ip, dx_refinement_factor = 3_ip
     real(dp) :: global_dt = 1.2_dp * 401.0_dp/(global_nx(1) * timestepping_refinement_factor) !* (1.0_dp/3.0_dp)
-    integer(ip), parameter :: nested_timestepping_refinement_factor = 3_ip * timestepping_refinement_factor
+    integer(ip), parameter :: nested_timestepping_refinement_factor = dx_refinement_factor * timestepping_refinement_factor
 
     !integer(ip), parameter :: mnlt = 40 ! Min nesting layer thickness:
     real(dp), parameter :: nesting_layer_thick_on_depth = 2.5_dp
@@ -124,7 +124,7 @@ program radial_potential
     md%domains(1)%lower_left = global_ll
     md%domains(1)%nx = global_nx
     md%domains(1)%msl_linear = 0.0_dp
-    md%domains(1)%minimum_nesting_layer_thickness = nint(nesting_layer_thick_on_depth * (-bed_elev)/maxval(global_lw/global_nx)) !mnlt
+    md%domains(1)%minimum_nesting_layer_thickness = nint(nesting_layer_thick_on_depth * (-bed_elev)/minval(global_lw/global_nx)) !mnlt
     md%domains(1)%theta = 4.0_dp
     md%domains(1)%timestepping_refinement_factor = timestepping_refinement_factor
     md%domains(1)%use_dispersion = .true.
@@ -137,13 +137,13 @@ program radial_potential
             parent_domain=md%domains(1), &
             lower_left = global_ll + global_lw/4.0_dp, &
             upper_right = global_ll + global_lw*(13.0_dp/24.0_dp), & ! Deliberately not symmetric
-            dx_refinement_factor = 3_ip, &
+            dx_refinement_factor = dx_refinement_factor, &
             timestepping_refinement_factor = nested_timestepping_refinement_factor)
         md%domains(2)%timestepping_method = 'midpoint' !default_nonlinear_timestepping_method !'rk2' !'leapfrog_nonlinear' !'linear'
         md%domains(2)%theta = 4.0_dp
         md%domains(2)%msl_linear = 0.0_dp
         md%domains(2)%minimum_nesting_layer_thickness = nint(&
-            nesting_layer_thick_on_depth * (-bed_elev)/maxval(global_lw/global_nx)) !mnlt
+            dx_refinement_factor*nesting_layer_thick_on_depth * (-bed_elev)/minval(global_lw/global_nx)) !mnlt
         md%domains(2)%use_dispersion = .true.
         !md%domains(2)%nc_grid_output%flush_every_n_output_steps = 1_ip
         !md%domains(2)%boundary_subroutine => transmissive_boundary !flather_boundary

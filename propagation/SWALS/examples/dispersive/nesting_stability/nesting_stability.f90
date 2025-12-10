@@ -84,9 +84,9 @@ program nesting_stability
     ! grid size (number of x/y cells)
     integer(ip), parameter, dimension(2):: global_nx = nint([100, 50]*mesh_refine + 1) ! Deliberately uneven
 
-    integer(ip), parameter :: timestepping_refinement_factor = 1_ip ! Overall timestep scale
+    integer(ip), parameter :: timestepping_refinement_factor = 1_ip, dx_refinement_factor = 3_ip ! Overall timestep scale
     real(dp) :: global_dt = 1.2_dp * 401.0_dp/(global_nx(1) * timestepping_refinement_factor) !* (1.0_dp/3.0_dp)
-    integer(ip), parameter :: nested_timestepping_refinement_factor = 3_ip * timestepping_refinement_factor
+    integer(ip), parameter :: nested_timestepping_refinement_factor = dx_refinement_factor * timestepping_refinement_factor
 
     !integer(ip), parameter :: mnlt = 40 ! Min nesting layer thickness:
     real(dp), parameter :: nesting_layer_thick_on_depth = 2.5_dp
@@ -112,7 +112,7 @@ program nesting_stability
     md%domains(1)%lower_left = global_ll
     md%domains(1)%nx = global_nx
     md%domains(1)%msl_linear = 0.0_dp
-    md%domains(1)%minimum_nesting_layer_thickness = nint(nesting_layer_thick_on_depth * (-bed_elev)/maxval(global_lw/global_nx)) !mnlt
+    md%domains(1)%minimum_nesting_layer_thickness = nint(nesting_layer_thick_on_depth * (-bed_elev)/minval(global_lw/global_nx)) !mnlt
     md%domains(1)%theta = 4.0_dp
     md%domains(1)%timestepping_refinement_factor = timestepping_refinement_factor
     md%domains(1)%use_dispersion = .true.
@@ -122,13 +122,13 @@ program nesting_stability
         parent_domain=md%domains(1), &
         lower_left = global_ll + global_lw/4.0_dp, &
         upper_right = global_ll + global_lw*(13.0_dp/24.0_dp), & ! Deliberately not symmetric
-        dx_refinement_factor = 3_ip, &
+        dx_refinement_factor = dx_refinement_factor, &
         timestepping_refinement_factor = nested_timestepping_refinement_factor)
     md%domains(2)%timestepping_method = 'midpoint' !
     md%domains(2)%theta = 4.0_dp
     md%domains(2)%msl_linear = 0.0_dp
     md%domains(2)%minimum_nesting_layer_thickness = nint(&
-        nesting_layer_thick_on_depth * (-bed_elev)/maxval(global_lw/global_nx)) !mnlt
+        dx_refinement_factor * nesting_layer_thick_on_depth * (-bed_elev)/minval(global_lw/global_nx)) !mnlt
     md%domains(2)%use_dispersion = .true.
 
     ! Output variables to store
