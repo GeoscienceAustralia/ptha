@@ -124,7 +124,8 @@ program radial_potential
     md%domains(1)%lower_left = global_ll
     md%domains(1)%nx = global_nx
     md%domains(1)%msl_linear = 0.0_dp
-    md%domains(1)%minimum_nesting_layer_thickness = nint(nesting_layer_thick_on_depth * (-bed_elev)/minval(global_lw/global_nx)) !mnlt
+    md%domains(1)%minimum_nesting_layer_thickness = &
+        nint(nesting_layer_thick_on_depth * (-bed_elev)/minval(global_lw_cartesian/global_nx)) !mnlt
     md%domains(1)%theta = 4.0_dp
     md%domains(1)%timestepping_refinement_factor = timestepping_refinement_factor
     md%domains(1)%use_dispersion = .true.
@@ -143,7 +144,7 @@ program radial_potential
         md%domains(2)%theta = 4.0_dp
         md%domains(2)%msl_linear = 0.0_dp
         md%domains(2)%minimum_nesting_layer_thickness = nint(&
-            dx_refinement_factor*nesting_layer_thick_on_depth * (-bed_elev)/minval(global_lw/global_nx)) !mnlt
+            dx_refinement_factor*nesting_layer_thick_on_depth * (-bed_elev)/minval(global_lw_cartesian/global_nx)) !mnlt
         md%domains(2)%use_dispersion = .true.
         !md%domains(2)%nc_grid_output%flush_every_n_output_steps = 1_ip
         !md%domains(2)%boundary_subroutine => transmissive_boundary !flather_boundary
