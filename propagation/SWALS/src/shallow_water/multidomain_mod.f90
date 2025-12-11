@@ -1350,9 +1350,9 @@ TIMER_STOP('domain_evolve')
             end do domain_SW_loop
 
             if(.not. send_halos_immediately) then
-TIMER_START('comms_disp')
+TIMER_START('comms_1')
                 call communicate_p2p(md%p2p)
-TIMER_STOP('comms_disp')
+TIMER_STOP('comms_1')
             else
                 write(md%log_output_unit, *) 'Error: Need to implement support for this case (sync before and after)'
                 call generic_stop
