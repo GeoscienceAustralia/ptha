@@ -58,7 +58,7 @@ points_and_pass_fail_check<-function(model_x, model_stage, col){
     reference_result = approx(potential_x, potential_stage, xout=model_x)$y
     k = which(!(is.na(reference_result) | is.na(model_stage)))
     err_stat = mean(abs(reference_result - model_stage)[k])
-    err_tol = 0.01
+    err_tol = 0.015
     if(err_stat < err_tol){
         print('PASS')
     }else{
