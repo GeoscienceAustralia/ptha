@@ -3726,7 +3726,8 @@ TIMER_STOP('nesting_flux_correction')
 TIMER_START('receive_halos')
 
         !$OMP PARALLEL DEFAULT(PRIVATE) &
-        !$OMP SHARED(domain, p2p, skip_if_time_before_this_time, skip_if_time_after_this_time, skip_if_unequal_cell_ratios)
+        !$OMP SHARED(domain, p2p, skip_if_time_before_this_time, skip_if_time_after_this_time) &
+        !$OMP SHARED(skip_if_unequal_cell_ratios, skip_if_my_domain_is_coarser)
         !$OMP DO SCHEDULE(DYNAMIC)
         do i = 1, size(domain%nesting%recv_comms, kind=ip)
 
