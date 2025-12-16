@@ -394,7 +394,6 @@ random_scenario_exceedance_rates_all_logic_tree_branches<-function(
     }
 
     mean_rate_any_event = sum(logic_tree_rates_of_any_event * post_prob)
-    # This should be the same (up to floating point) as 
     # For testing it is useful to compute the mean-curve implied by the logic-tree branches.
     # This should be the same as previous results (but errors in interpolation
     # and so on lead to differences -- this helped catch some errors while writing the code)
