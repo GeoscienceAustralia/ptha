@@ -109,3 +109,11 @@ get the database working again.
 * The outer-rise treatment should be considered more deeply and perhaps revised.
 
 * The PTHA18 source geometries are derived by transforming to the depth-below-the-nearby-trench. This doesn't properly consider the situation where the trench is significantly buried, or the effect of the varying topography above the fault. Consider using an approach like [this](https://doi.org/10.1029/2024JB030903) to treat varying topography and perhaps separately extend the fault through buried sediments (like in Carvajal et al. 2025, which cites earlier work).
+
+* Include sloping seabed contribution to vertical deformation.
+
+* Check if Java 1994, 2006, Aleutians 1957, 1946 will need an alternative treatment.
+
+* Rates of large events seem low at Kamchatka (near 1952 eq) and probably Cascadia -- check the recent paleo work
+
+* Consider including information on whether the historical earthquakes were or were not "tsunami earthquakes" when doing the Mw-frequency weight update.
