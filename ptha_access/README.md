@@ -24,6 +24,8 @@ For ideas on how to use the PTHA18 results for inundation hazard assessment, see
 * [Technical report covering both scenario-based and Monte Carlo approaches](https://repository.oceanbestpractices.org/handle/11329/2062)
 * [Conference paper on Monte Carlo methods with an application in Western Australia](http://dx.doi.org/10.9753/icce.v37.papers.18)
 * [Technical report on an inundation hazard assessment in Western Australia](http://dx.doi.org/10.26186/150015)
+* [Technical report on an inundation hazard assessment for NSW](https://dx.doi.org/10.26186/150281)
+* [Technical report on an inundation hazard assessment for Gladstone (QLD)](https://doi.org/10.26186/150488)
 
 Code used to conduct the analysis is available open-source
 in the [ptha package](https://github.com/GeoscienceAustralia/ptha). This includes
