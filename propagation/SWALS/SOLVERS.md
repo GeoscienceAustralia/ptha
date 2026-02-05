@@ -69,7 +69,7 @@ By default the dispersive term $\mathbf{\Upsilon}=0$. However if `md%domains(j)%
             * Non-dispersive domains have the same constraint unless they take a timestep smaller than $\delta t$ (in which case we could have `alpha_j = 1./2, 1./3, 1./4, ...`). 
     * For each substep `s=`$1, 2, \ldots, N_{t}$, we loop over domains
         * Let $t_{end} = t_{start} + s\delta t$.
-        * If the domain has a timestep $>= \delta t$, then skip it unless a single timestep will cause it to reach time $t_{end}$.
+        * If the domain has a timestep $\ge \delta t$, then skip it unless a single timestep will cause it to reach time $t_{end}$.
         * For domains that remain
             * Backup the solution for dispersive domains. 
             * Take one shallow water step using the domain specific timestep (`alpha_j`$\delta t$), unless `alpha_j < 1` (non-dispersive domains only) in which case we take enough steps to advance time by $\delta t$. 
