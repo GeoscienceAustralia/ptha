@@ -58,13 +58,18 @@ By default the dispersive term $\mathbf{\Upsilon}=0$. However if `md%domains(j)%
 * Energy conservation is not expected using dispersion (it is no longer a property of the underlying equations). 
 * If using finite volume methods with dispersion, it is suggested to use `midpoint`, which is more accurate than the other finite volume solvers because the dispersive terms are included in both the predictor and the main timestep.
 * If any domain uses dispersion, SWALS must use a different subroutine to advance the solution on all domains (whether or not they use dispersion). This requires substantially more communication and computation, places more restrictions on the allowed timestepping, and tends to reduce the stability of nesting 
-    * If domains with the shortest timesteps do not use dispersion, then the communication burden can be significantly reduced. This can be useful if dispersion matters for the global domain, but not for the highest resolution nearshore domains.
-* Solution method (for all numerical schemes)
+    * If domains with the shortest timesteps do not use dispersion then communication is significantly reduced. Think twice about using dispersion in highly resolved domains if it isn't physically important there. 
+* Numerical solution method (all numerical schemes)
     * The time-derivatives are represented as the difference between terms involving purely spatial derivatives at the current time level and the next time level. There is one discretisation for the finite-volume and CLIFFS solvers, and another for the leapfrog solvers.
-    * To solve the resulting implicit equations, the multidomain global timestep $dt$ is split into a $N_{t}$ substeps of size $\delta t$, where $\delta t$ is the smallest timestep required by any *dispersive* domain. Thus $dt = N_{t}\delta t$ and the substeps can be indexed as $1, 2, 3, \ldots, N_{t}$. Domain $j$ has its own timestep (`alpha_j`$\delta t$), usually determined by its CFL condition. Then SWALS requires dispersive domains to have `alpha_j` being an integer that EXACTLY divides $N_{t}$ (e.g. if $N_{t} = 8$ then dispersive domains could have `alpha_j = 1, 2, 4, 8`). Non-dispersive domains have the same constraint, even if only 1 other domain uses dispersion, unless they take a timestep smaller than $\delta t$ (in which case we could have `alpha_j = 1./2, 1./3, 1./4, ...`). At the beginning of a global timestep the time is $t_{start}$ on all domains.
+    * To solve the resulting implicit equations, the multidomain global timestep $dt$ is split into a $N_{t}$ substeps of size $\delta t$, where $\delta t$ is the smallest timestep required by any *dispersive* domain. 
+        * Thus $dt = N_{t}\delta t$ and the substeps can be indexed as $1, 2, 3, \ldots, N_{t}$. 
+        * At the beginning of a global timestep the time is $t_{start}$ on all domains.
+        * Domain $j$ has its own timestep (`alpha_j`$\delta t$), usually determined by its CFL condition. 
+            * SWALS requires dispersive domains to have `alpha_j` being an integer that EXACTLY divides $N_{t}$ (e.g. if $N_{t} = 8$ then dispersive domains could have `alpha_j = 1, 2, 4, 8`). 
+            * Non-dispersive domains have the same constraint unless they take a timestep smaller than $\delta t$ (in which case we could have `alpha_j = 1./2, 1./3, 1./4, ...`). 
     * For each substep `s=`$1, 2, \ldots, N_{t}$, we loop over domains
         * Let $t_{end} = t_{start} + s\delta t$.
-        * If the domain has a timestep $>= \delta t$, then skip it, unless a single timestep will cause it to reach time $t_{end}$.
+        * If the domain has a timestep $>= \delta t$, then skip it unless a single timestep will cause it to reach time $t_{end}$.
         * For domains that remain
             * Backup the solution for dispersive domains. 
             * Take one shallow water step using the domain specific timestep (`alpha_j`$\delta t$), unless `alpha_j < 1` (non-dispersive domains only) in which case we take enough steps to advance time by $\delta t$. 
