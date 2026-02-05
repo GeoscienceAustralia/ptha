@@ -76,12 +76,12 @@ By default the dispersive term $\mathbf{\Upsilon}=0$. However if `md%domains(j)%
             * Communicate halo data, but do not immediately update the solution.
             * Implicit solve
                 * First *outer iteration*: Loop over domains, skipping those that are non-dispersive or were skipped on this substep
-                    1. Receive halos from domains that have advanced to the same time, and have the same cell size.
-                    2. Compute the right-hand-side for the implicit solve.
-                    3. Guess the solution at the end of the substep using quadratic-in-time extrapolation from solutions at the start of the last 3 global timesteps. 
-                    4. Iteratively update the solution with implicit solves applied sequentially in the x-and-y directions (tridiagonal solves). These *inner iterations* are repeated once by default (corresponding to `md%domains(j)%tridiagonal_inner_iter=2`).
+                    a. Receive halos from domains that have advanced to the same time, and have the same cell size.
+                    b. Compute the right-hand-side for the implicit solve.
+                    c. Guess the solution at the end of the substep using quadratic-in-time extrapolation from solutions at the start of the last 3 global timesteps. 
+                    d. Iteratively update the solution with implicit solves applied sequentially in the x-and-y directions (tridiagonal solves). These *inner iterations* are repeated once by default (corresponding to `md%domains(j)%tridiagonal_inner_iter=2`).
                 * Communicate halo data (among all domains) and receive halos from domains that have advanced to the same time.
-                * By default this completes the dispersive solve. But if `md%dispersive_outer_iterations_count > 1` then repeat the *outer iteration* (steps 1 and 4 only) and subsequent communication until that many outer iterations are complete.
+                * By default this completes the dispersive solve. But if `md%dispersive_outer_iterations_count > 1` then repeat the *outer iteration* (steps a. and d. only) and subsequent communication until that many outer iterations are complete.
                     * The default number of inner (2) and outer (1) iterations are adequate for problems tried so far, but can be adjusted if needed.
         * Advance to the next substep
     * After the final substep, apply flux-correction and communicate once more. At this point all domains will have advanced one global timestep $dt = N_{t}\delta t$.
