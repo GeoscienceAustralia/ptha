@@ -80,7 +80,7 @@ By default the dispersive term $\mathbf{\Upsilon}=0$. However if `md%domains(j)%
                     * Compute the right-hand-side for the implicit solve.
                     * Guess the solution at the end of the substep using quadratic-in-time extrapolation from solutions at the start of the last 3 global timesteps. 
                     * Iteratively update the solution with implicit solves applied sequentially in the x-and-y directions (tridiagonal solves). These *inner iterations* are repeated once by default (corresponding to `md%domains(j)%tridiagonal_inner_iter=2`).
-                * Communicate halo data (among all domains)
+                * Communicate halo data (among all domains) and receive halos from domains that have advanced to the same time.
                 * By default this completes the dispersive solve. But if `md%dispersive_outer_iterations_count > 1` then repeat the *outer iteration* until that many are complete, using use the existing solution as the starting guess (no quadratic-in-time extrapolation). Communicate halos once at the end of each outer iteration. 
                     * The default number of inner (2) and outer (1) iterations are adequate for problems tried so far, but can be adjusted if needed.
         * Advance to the next substep
