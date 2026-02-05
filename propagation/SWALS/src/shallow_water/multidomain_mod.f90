@@ -2736,7 +2736,7 @@ __FILE__
             ! If dispersion is used, all (parallel) multidomains must use the same value of the
             ! maximum "dispersive domain" timestepping refinement factor.
             md%dispersive_nt_max = maxval(md%domains(:)%timestepping_refinement_factor, &
-                                          mask=md%domains%use_dispersion)
+                                          mask=md%domains(:)%use_dispersion)
         end if
         md%nt_max = maxval(md%domains(:)%timestepping_refinement_factor)
 
