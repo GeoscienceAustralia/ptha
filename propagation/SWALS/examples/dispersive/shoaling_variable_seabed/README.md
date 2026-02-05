@@ -10,7 +10,7 @@ significant (in principle beyond the limits of the simple dispersive model in
 SWALS), while nonlinearity is also significant because the wave amplitudes are
 around 10% of the depth.
 
-![Initial condition](Initial_condition.png)
+![Initial condition](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/dispersive/shoaling_variable_seabed/Initial_condition.png)
 
 We compare the numerical water surface maxima/minima with the Whispers3D
 reference solution of [Coulaud et al. (2025)](http://dx.doi.org/10.1016/j.coastaleng.2024.104645), digitized from their paper. The
@@ -34,18 +34,18 @@ give near identical results.
 ## Midpoint
 
 
-![Figure 1: Mid point solver](FIXME)
+![Figure 1: Mid point solver](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/dispersive/shoaling_variable_seabed/Solution_midpoint.png)
 
 
 ## rk2
 
-![Figure 2: rk2 solver](FIXME)
+![Figure 2: rk2 solver](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/dispersive/shoaling_variable_seabed/Solution_rk2.png)
 
 ## Leapfrog nonlinear
 
-![Figure 3: Leapfrog nonlinear solver](FIXME)
+![Figure 3: Leapfrog nonlinear solver](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/dispersive/shoaling_variable_seabed/Solution_leapfrog_nonlinear.png)
 
 ## Cliffs
 
-![Figure 4: Cliffs solver](FIXME)
+![Figure 4: Cliffs solver](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/dispersive/shoaling_variable_seabed/Solution_cliffs.png)
 
