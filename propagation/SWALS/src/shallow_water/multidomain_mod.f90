@@ -1378,9 +1378,9 @@ TIMER_STOP('comms_1')
 
                     dispersive_solves_occurred = .true. ! At least one domain did a dispersive solve
 
-                    ! FIXME: This seems redundant if (dispersive_outer_iterations > 1) due to 
-                    ! the receive at the end of dispersive_outer_loop. Would matter if max_dispersive_outer_iterations > 1
-                    call md%domains(j)%receive_halos(md%p2p, &
+                    ! The receive is only needed if (dispersive_outer_iterations == 1) due to 
+                    ! the receive at the end of dispersive_outer_loop. 
+                    if(dispersive_outer_iterations == 1) call md%domains(j)%receive_halos(md%p2p, &
                         ! Only receive from domains that have advanced to the current timestep. 
                         ! Use a timestep window to protect against roundoff (only includes current timestep). 
                         ! Timing code inside
