@@ -21,7 +21,7 @@ model resolution) was noted for the FUNWAVE model in a test by [Yuan et al.
 The midpoint solver gives similar results at 2m and 5m resolution, while at 10m
 resolution the undular bores have reduced amplitude, and at 20 m resolution
 they are barely present.
-![Figure 1: Mid point solver](FIXME)
+![Figure 1: Mid point solver](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/dispersive/undular_bore/Time_1500_midpoint.png)
 
 # rk2
 
@@ -29,7 +29,7 @@ The rk2 solver is expected to be lower-order-accuracy than midpoint when
 dispersion matters, because it employs separate shallow water and dispersive
 steps (whereas midpoint includes dispersion in the predictor as well as the
 corrector step). 
-![Figure 2: rk2 solver](FIXME)
+![Figure 2: rk2 solver](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/dispersive/undular_bore/Time_1500_rk2.png)
 
 # Leapfrog nonlinear
 
@@ -40,11 +40,11 @@ resolution this solver does a better job of reflecting the presence of bores,
 likely because the leapfrog nonlinear solver does not include fancy treatments
 of dissipation near discontinuities (i.e. limiters).
 
-![Figure 3: Leapfrog Nonlinear solver](FIXME)
+![Figure 3: Leapfrog Nonlinear solver](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/dispersive/undular_bore/Time_1500_leapfrog_nonlinear.png)
 
 # Cliffs
 
 This seems slower to converge at high resolution, likely reflecting limitations of
 how SWALS includes dispersive terms to CLIFFS.
 
-![Figure 4: Cliffs solver](FIXME)
+![Figure 4: Cliffs solver](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/dispersive/undular_bore/Time_1500_cliffs.png)

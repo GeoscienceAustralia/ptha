@@ -8,37 +8,37 @@ Figures 1 and 2 below show the [SWALS model](model.f90) structure, elevation dat
 
 A wave time-series is applied from the west. Gauges WG3, WG4 are used to check that the boundary forcing is reasonable. The city includes 4 rows of gauges (A1-9, B1-9, C1-9, D1-4), where the model is compared with data on depths, cross-shore velocities, and cross-shore momentum fluxes $(u^2h)$. Here "cross-shore" is taken to be the x-direction as specified in the NTHMP problem description.
 
-![Figure 1: Multidomain structure (red lines), elevation and gauge locations. The wave arrives from the west.](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/dispersive/nthmp_Seaside_OSU_model/Model_elevation_and_gauges.png)
+![Figure 1: Multidomain structure (red lines), elevation and gauge locations. The wave arrives from the west.](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/dispersive/nthmp_Seaside_OSU/Model_elevation_and_gauges.png)
 
-![Figure 2: Inner domain elevation and gauge locations.](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/dispersive/nthmp_Seaside_OSU_model/Model_elevation_and_gauges_zoom.png)
+![Figure 2: Inner domain elevation and gauge locations.](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/dispersive/nthmp_Seaside_OSU/Model_elevation_and_gauges_zoom.png)
 
 The model is forced using a provided synthetic stage time-series at x=5m, which bypasses the need for a wavemaker forcing around x=0m. The boundary speeds are specified with the plane wave relation $(uh = \sqrt{g h} stage)$. Both are provided to a Flather boundary condition which aims to enforce the wave while minimising spurious boundary reflections. Figure 3 compares the modelled and prescribed boundary stage, along with a gauge observation at x=2m (outside our domain, but inside the experimental domain). The model does a reasonable job of representing the boundary forcing, and increases the stage at later times (consistent with the observed gauge) to reduce boundary reflections.
 
-![Figure 3: Boundary time-series](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/dispersive/nthmp_Seaside_OSU_model/boundary_check.png)
+![Figure 3: Boundary time-series](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/dispersive/nthmp_Seaside_OSU/boundary_check.png)
 
 Figure 4 compares the model and observations at gauges WG3 and WG4. They are in general agreement once the model is time-shifted to the left by 0.7s, which previous studies also found to be needed (Macais et al., 2020) and attributed to an error in the forcing. 
 
-![Figure 4: Time-series at gauges WG3 and WG4](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/dispersive/nthmp_Seaside_OSU_model/gauges_wg3_wg4.png)
+![Figure 4: Time-series at gauges WG3 and WG4](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/dispersive/nthmp_Seaside_OSU/gauges_wg3_wg4.png)
 
 # Model performance at the urban gauges
 
 Below we compare the modeled and observed depths, cross-shore speeds, and cross-shore momentum fluxes. The model is in general agreement with the data. There are a few cases where the model does less well (e.g. the momentum fluxes for gauges B1 and C1), similar to reports in other studies. 
 
-![Figure 5: Modelled and observed depths at gauges A1-A9](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/dispersive/nthmp_Seaside_OSU_model/urban_gauge_group_A_depth.png)
-![Figure 6: Modelled and observed cross-shore speed at gauges A1-A9](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/dispersive/nthmp_Seaside_OSU_model/urban_gauge_group_A_speed.png)
-![Figure 7: Modelled and observed cross-shore momentum flux at gauges A1-A9](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/dispersive/nthmp_Seaside_OSU_model/urban_gauge_group_A_convective_flux_hv2.png)
+![Figure 5: Modelled and observed depths at gauges A1-A9](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/dispersive/nthmp_Seaside_OSU/urban_gauge_group_A_depth.png)
+![Figure 6: Modelled and observed cross-shore speed at gauges A1-A9](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/dispersive/nthmp_Seaside_OSU/urban_gauge_group_A_speed.png)
+![Figure 7: Modelled and observed cross-shore momentum flux at gauges A1-A9](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/dispersive/nthmp_Seaside_OSU/urban_gauge_group_A_convective_flux_hv2.png)
 
-![Figure 8: Modelled and observed depths at gauges B1-B9](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/dispersive/nthmp_Seaside_OSU_model/urban_gauge_group_B_depth.png)
-![Figure 9: Modelled and observed cross-shore speed at gauges B1-B9](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/dispersive/nthmp_Seaside_OSU_model/urban_gauge_group_B_speed.png)
-![Figure 10: Modelled and observed cross-shore momentum flux at gauges B1-B9](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/dispersive/nthmp_Seaside_OSU_model/urban_gauge_group_B_convective_flux_hv2.png)
+![Figure 8: Modelled and observed depths at gauges B1-B9](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/dispersive/nthmp_Seaside_OSU/urban_gauge_group_B_depth.png)
+![Figure 9: Modelled and observed cross-shore speed at gauges B1-B9](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/dispersive/nthmp_Seaside_OSU/urban_gauge_group_B_speed.png)
+![Figure 10: Modelled and observed cross-shore momentum flux at gauges B1-B9](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/dispersive/nthmp_Seaside_OSU/urban_gauge_group_B_convective_flux_hv2.png)
 
-![Figure 11: Modelled and observed depths at gauges C1-C9](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/dispersive/nthmp_Seaside_OSU_model/urban_gauge_group_C_depth.png)
-![Figure 12: Modelled and observed cross-shore speed at gauges C1-C9](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/dispersive/nthmp_Seaside_OSU_model/urban_gauge_group_C_speed.png)
-![Figure 13: Modelled and observed cross-shore momentum flux at gauges C1-C9](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/dispersive/nthmp_Seaside_OSU_model/urban_gauge_group_C_convective_flux_hv2.png)
+![Figure 11: Modelled and observed depths at gauges C1-C9](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/dispersive/nthmp_Seaside_OSU/urban_gauge_group_C_depth.png)
+![Figure 12: Modelled and observed cross-shore speed at gauges C1-C9](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/dispersive/nthmp_Seaside_OSU/urban_gauge_group_C_speed.png)
+![Figure 13: Modelled and observed cross-shore momentum flux at gauges C1-C9](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/dispersive/nthmp_Seaside_OSU/urban_gauge_group_C_convective_flux_hv2.png)
 
-![Figure 14: Modelled and observed depths at gauges D1-D9](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/dispersive/nthmp_Seaside_OSU_model/urban_gauge_group_D_depth.png)
-![Figure 15: Modelled and observed cross-shore speed at gauges D1-D9](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/dispersive/nthmp_Seaside_OSU_model/urban_gauge_group_D_speed.png)
-![Figure 16: Modelled and observed cross-shore momentum flux at gauges D1-D9](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/dispersive/nthmp_Seaside_OSU_model/urban_gauge_group_D_convective_flux_hv2.png)
+![Figure 14: Modelled and observed depths at gauges D1-D9](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/dispersive/nthmp_Seaside_OSU/urban_gauge_group_D_depth.png)
+![Figure 15: Modelled and observed cross-shore speed at gauges D1-D9](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/dispersive/nthmp_Seaside_OSU/urban_gauge_group_D_speed.png)
+![Figure 16: Modelled and observed cross-shore momentum flux at gauges D1-D9](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/dispersive/nthmp_Seaside_OSU/urban_gauge_group_D_convective_flux_hv2.png)
 
 ## Issues
 
