@@ -11,6 +11,7 @@ The key folders are:
 - [test-full](test-full) -- full duration tests and validation cases like historic events
 - [run_ptha](run_ptha) -- run all scenarios for PTHA
 - [post_process](post_process) -- post-processing of model outputs
+- [movies](movies) -- runs with frequent stage saving to make movies 
 - [multidomain_design_control](multidomain_design_control) -- model configuration files
 - [OUTPUTS](OUTPUTS) -- model outputs
 

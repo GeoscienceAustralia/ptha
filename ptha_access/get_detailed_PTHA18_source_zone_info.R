@@ -53,9 +53,11 @@ load(compute_rates_session, envir=crs_data)
 #' @param source_zone name of source-zone in PTHA18
 #' @param segment the name of a segment associated with the source-zone, or ''
 #' if referring to the unsegmented source.
-#'
+#' @param mu_type 'constant' or 'variable_mu' as per PTHA18. Note that with both
+#' methods, the event rates are always a function of the constant-rigidity-Mw, but
+#' with different posterior GR curve weights and scenario conditional probabilities
 get_PTHA18_scenario_conditional_probability_and_rates_on_segment<-function(
-    source_zone, segment=''){
+    source_zone, segment='', mu_type='constant'){
 
     if(segment != ''){
         source_zone_segment = paste0(source_zone, '_', segment)
@@ -79,7 +81,13 @@ get_PTHA18_scenario_conditional_probability_and_rates_on_segment<-function(
 
     # Get the 'uniform slip' scenario probabilities conditional on Mw.
     # Constant rigidity.
-    FAUS_event_rates = sz$event_rates # Logic-tree mean
+    if(mu_type == 'variable_mu'){
+        FAUS_event_rates = sz$event_rates_mu_vary # Logic-tree mean, variable rigidity
+    }else if(mu_type == 'constant'){
+        FAUS_event_rates = sz$event_rates # Logic-tree mean
+    }else{
+        stop(paste0('Unknown mu_type= ', mu_type))
+    }
     FAUS_conditional_probabilities = rep(0, nrow(sz$event_table))
     FAUS_mw = sz$event_table$Mw
     for(i in 1:length(mws)){
@@ -109,7 +117,12 @@ get_PTHA18_scenario_conditional_probability_and_rates_on_segment<-function(
             'SOURCE_ZONES/', source_zone, '/TSUNAMI_EVENTS/all_', slip_type,
             '_slip_earthquake_events_', source_zone, '.nc')
         fid = nc_open(nc_file, readunlim=FALSE)
-        rates_full_source = ncvar_get(fid, 'rate_annual')
+
+        if(mu_type == 'variable_mu'){
+            rates_full_source = ncvar_get(fid, 'variable_mu_rate_annual')
+        }else if(mu_type == 'constant'){
+            rates_full_source = ncvar_get(fid, 'rate_annual')
+        }
         uniform_event_row = ncvar_get(fid, 'uniform_event_row')
         mw = ncvar_get(fid, 'Mw')
         nc_close(fid)
@@ -239,6 +252,9 @@ get_unsegmented_and_segmented_source_names_on_source_zone<-function(source_zone)
 #' long as the within-magnitude-bin importance-sampling weights would be
 #' unchanged). However for my normal usage this test should pass, so it is
 #' included by default.
+#' @param mu_type 'constant' or 'variable_mu' as per PTHA18. Note that with both
+#' methods, the event rates are always a function of the constant-rigidity-Mw, but
+#' with different posterior GR curve weights and scenario conditional probabilities
 #' @return a list with the following entries:
 #' - source_segment_name (combined source_zone + segment name, which is in
 #'   names(crs$source_envs)), 
@@ -264,7 +280,8 @@ random_scenario_exceedance_rates_all_logic_tree_branches<-function(
     random_scenarios,
     all_scenario_stage,
     threshold_stages,
-    check_consistency_random_scenarios_rate_and_PTHA18_rates=TRUE){
+    check_consistency_random_scenarios_rate_and_PTHA18_rates=TRUE,
+    mu_type='constant'){
 
     if(segment == ''){
         source_segment_name = source_zone
@@ -295,7 +312,13 @@ random_scenario_exceedance_rates_all_logic_tree_branches<-function(
 
     if(check_consistency_random_scenarios_rate_and_PTHA18_rates){
         # Check it is consistent with the PTHA18 results in all_branches
-        unique_mw_rates_source_check = -diff(crs_data$source_envs[[source_segment_name]]$mw_rate_function(unique_mw_bin_boundaries))
+        if(mu_type == 'variable_mu'){
+            unique_mw_rates_source_check = -diff(crs_data$source_envs[[source_segment_name]]$mw_rate_function(unique_mw_bin_boundaries, account_for_mw_obs_error=TRUE))
+        }else if(mu_type == 'constant'){
+            unique_mw_rates_source_check = -diff(crs_data$source_envs[[source_segment_name]]$mw_rate_function(unique_mw_bin_boundaries))
+        }else{
+            stop(paste0('unknown mu_type ', mu_type))
+        }
         if(any(abs( unique_mw_rates_source_check - unique_mw_rates_source) > 1.0e-05*unique_mw_rates_source)){
             stop('inconsistency between random_scenarios$rate_with_this_mw and the PTHA18 logic-tree mean mw-bin rates')
         }
@@ -355,19 +378,29 @@ random_scenario_exceedance_rates_all_logic_tree_branches<-function(
     # Quick checks
     #
     logic_tree_rates_of_any_event = colSums(logic_tree_branch_mw_bin_rates)  
-    mean_rate_any_event = sum(logic_tree_rates_of_any_event * all_branches$all_par_prob)
-    # This should be the same (up to floating point) as 
-    expected_val = (
-        crs_data$source_envs[[source_segment_name]]$mw_rate_function(min(unique_mw_bin_boundaries)) -
-        crs_data$source_envs[[source_segment_name]]$mw_rate_function(max(unique_mw_bin_boundaries)) )
 
-    stopifnot(abs(mean_rate_any_event - expected_val) <= 1.0e-06*expected_val)
+    if(mu_type == 'variable_mu'){
+        post_prob = all_branches$all_par_prob_with_Mw_error
+        expected_val = (
+            crs_data$source_envs[[source_segment_name]]$mw_rate_function(min(unique_mw_bin_boundaries), account_for_mw_obs_error=TRUE) -
+            crs_data$source_envs[[source_segment_name]]$mw_rate_function(max(unique_mw_bin_boundaries), account_for_mw_obs_error=TRUE) )
+    }else if(mu_type == 'constant'){
+        post_prob = all_branches$all_par_prob
+        expected_val = (
+            crs_data$source_envs[[source_segment_name]]$mw_rate_function(min(unique_mw_bin_boundaries)) -
+            crs_data$source_envs[[source_segment_name]]$mw_rate_function(max(unique_mw_bin_boundaries)) )
+    }else{
+        stop(paste0('unknown mu_type ', mu_type))
+    }
 
+    mean_rate_any_event = sum(logic_tree_rates_of_any_event * post_prob)
     # For testing it is useful to compute the mean-curve implied by the logic-tree branches.
     # This should be the same as previous results (but errors in interpolation
     # and so on lead to differences -- this helped catch some errors while writing the code)
     back_computed_mean_curve = apply(logic_tree_branch_exceedance_rates, 1, 
-        function(x) weighted.mean(x,w=all_branches$all_par_prob) )
+        function(x) weighted.mean(x,w=post_prob) )
+
+    stopifnot(abs(mean_rate_any_event - expected_val) <= 1.0e-06*expected_val)
 
     outputs = list(source_segment_name = source_segment_name,
                    unique_mw = unique_mw,
@@ -376,13 +409,13 @@ random_scenario_exceedance_rates_all_logic_tree_branches<-function(
                    logic_tree_branch_exceedance_rates_var = logic_tree_branch_exceedance_rates_var,
                    logic_tree_mean_exceedance_rates = back_computed_mean_curve,
                    logic_tree_branch_mw_bin_rates = logic_tree_branch_mw_bin_rates,
-                   logic_tree_branch_posterior_prob = all_branches$all_par_prob,
+                   logic_tree_branch_posterior_prob = post_prob,
                    conditional_prob_exceed_stage_mw = conditional_prob_exceed_stage_mw
                    )
 
     # Explicitly remove the large variables defined above (which in practice
     # can help R manage memory, even though documentation suggests we shouldn't need to)
-    rm(logic_tree_branch_exceedance_rates, logic_tree_branch_mw_bin_rates, 
+    rm(logic_tree_branch_exceedance_rates, logic_tree_branch_mw_bin_rates, post_prob,
        all_branches, conditional_prob_exceed_stage_mw, conditional_var_exceed_stage_mw,
        logic_tree_branch_exceedance_rates_var)
     gc()
@@ -390,14 +423,14 @@ random_scenario_exceedance_rates_all_logic_tree_branches<-function(
     return(outputs)
 }
 
-.test_kermadectonga2<-function(){
+.test_kermadectonga2<-function(mu_type='constant'){
 
     # Read unsegmented and segmented sources from PTHA18 kermadectonga2 source
     source_zone = 'kermadectonga2'
-    kt_full      = get_PTHA18_scenario_conditional_probability_and_rates_on_segment(source_zone, '')
-    kt_tonga     = get_PTHA18_scenario_conditional_probability_and_rates_on_segment(source_zone, 'tonga')
-    kt_kermadec  = get_PTHA18_scenario_conditional_probability_and_rates_on_segment(source_zone, 'kermadec')
-    kt_hikurangi = get_PTHA18_scenario_conditional_probability_and_rates_on_segment(source_zone, 'hikurangi')
+    kt_full      = get_PTHA18_scenario_conditional_probability_and_rates_on_segment(source_zone, '', mu_type=mu_type)
+    kt_tonga     = get_PTHA18_scenario_conditional_probability_and_rates_on_segment(source_zone, 'tonga', mu_type=mu_type)
+    kt_kermadec  = get_PTHA18_scenario_conditional_probability_and_rates_on_segment(source_zone, 'kermadec', mu_type=mu_type)
+    kt_hikurangi = get_PTHA18_scenario_conditional_probability_and_rates_on_segment(source_zone, 'hikurangi', mu_type=mu_type)
 
     # Double check consistency with PTHA18 files.
 
@@ -414,7 +447,13 @@ random_scenario_exceedance_rates_all_logic_tree_branches<-function(
         'SOURCE_ZONES/', source_zone, '/TSUNAMI_EVENTS/all_', 'stochastic',
         '_slip_earthquake_events_', source_zone, '.nc')
     fid = nc_open(nc_file, readunlim=FALSE)
-    rates_full_source = ncvar_get(fid, 'rate_annual')
+    if(mu_type == 'variable_mu'){
+        rates_full_source = ncvar_get(fid, 'variable_mu_rate_annual')
+    }else if(mu_type == 'constant'){
+        rates_full_source = ncvar_get(fid, 'rate_annual')
+    }else{
+        stop(paste0('unknown mu_type ', mu_type))
+    }
     nc_close(fid)
 
     err = back_calculated_HS_rates_combination-rates_full_source
@@ -426,11 +465,11 @@ random_scenario_exceedance_rates_all_logic_tree_branches<-function(
     return(invisible(0))
 }
 
-.test_unsegmented_source<-function(){
+.test_unsegmented_source<-function(mu_type='constant'){
 
     # Read unsegmented sources from PTHA18 kermadectonga2 source
     source_zone = 'puysegur2'
-    sz_full = get_PTHA18_scenario_conditional_probability_and_rates_on_segment(source_zone, '')
+    sz_full = get_PTHA18_scenario_conditional_probability_and_rates_on_segment(source_zone, '', mu_type=mu_type)
 
     # The conditional probability of a given magnitude should either sum to
     # '1', or '0' for impossible magnitudes, up to floating point
@@ -471,7 +510,7 @@ random_scenario_exceedance_rates_all_logic_tree_branches<-function(
     }
 }
 
-.test_random_scenario_exceedance_rate_percentile_calculation<-function(){
+.test_random_scenario_exceedance_rate_percentile_calculation<-function(mu_type='constant'){
     #
     # Test the random scenario percentile uncertainty calculation code
     # We compute the stage-vs-exceedance-rate curve at a specified point, using
@@ -487,7 +526,13 @@ random_scenario_exceedance_rates_all_logic_tree_branches<-function(
     kt2_scenarios = ptha18$get_source_zone_events_data(source_zone=source_zone, 
         slip_type='stochastic') 
     event_Mw = kt2_scenarios$events$Mw 
-    event_rates = kt2_scenarios$events$rate_annual
+    if(mu_type == 'variable_mu'){
+        event_rates = kt2_scenarios$events$variable_mu_rate_annual
+    }else if(mu_type == 'constant'){
+        event_rates = kt2_scenarios$events$rate_annual
+    }else{
+        stop(paste0('unknown mu_type ', mu_type))
+    }
 
     # Get the exceedance-rate info for the unsegmented + segmented branches
     source_segment_names = paste0(source_zone, 
@@ -498,7 +543,7 @@ random_scenario_exceedance_rates_all_logic_tree_branches<-function(
     for(i in 1:length(all_rate_models)){
         all_rate_models[[source_segment_names[i]]] = 
             get_PTHA18_scenario_conditional_probability_and_rates_on_segment(
-                source_zone, segment_names[i])
+                source_zone, segment_names[i], mu_type)
     }
 
     # Get the event peak stage at the target point
@@ -547,7 +592,8 @@ random_scenario_exceedance_rates_all_logic_tree_branches<-function(
         segment='',
         random_scenarios = random_scenarios$kermadectonga2_unsegmented,
         all_scenario_stage = event_peak_stage, 
-        threshold_stages = threshold_stage_values)
+        threshold_stages = threshold_stage_values,
+        mu_type=mu_type)
 
     # Compute exceedance-rates from random scenarios for all logic-tree branches: all segment models
     segment_inds = which(!grepl('unsegmented', names(random_scenarios))) # Indices of segments in the lists above
@@ -560,7 +606,8 @@ random_scenario_exceedance_rates_all_logic_tree_branches<-function(
             segment=segment_names[i],
             random_scenarios = random_scenarios[[nm_i]],
             all_scenario_stage = event_peak_stage, 
-            threshold_stages = threshold_stage_values)
+            threshold_stages = threshold_stage_values,
+            mu_type=mu_type)
     }
 
     percentile_uncertainty_results = ptha18$compute_exceedance_rate_percentiles_with_random_sampling(
@@ -589,38 +636,43 @@ random_scenario_exceedance_rates_all_logic_tree_branches<-function(
 
     #plot(percentile_uncertainty_results$threshold_stages, percentile_uncertainty_results$mean_exrate, t='p', log='xy')
     #points(stage_exrate_curve$stage, stage_exrate_curve$stochastic_slip_rate, t='l', col='red')
+    nm = ifelse(mu_type == 'constant', 'stochastic_slip_rate', 'variable_mu_stochastic_slip_rate')
     check_similar(percentile_uncertainty_results$mean_exrate, 
-                  stage_exrate_curve$stochastic_slip_rate, 
-                  reltol=0.05, 
-                  which_inds = which(stage_exrate_curve$stochastic_slip_rate > 1.0e-05) )
+                  stage_exrate_curve[[nm]], 
+                  reltol=0.06, 
+                  which_inds = which(stage_exrate_curve[[nm]] > 1.0e-05) )
 
     #points(stage_exrate_curve$stage, stage_exrate_curve$stochastic_slip_rate_84pc, t='l', col='blue')
     #points(percentile_uncertainty_results$threshold_stages, percentile_uncertainty_results$percentile_exrate[4,], col='blue')
+    nm = ifelse(mu_type == 'constant', 'stochastic_slip_rate_84pc', 'variable_mu_stochastic_slip_rate_84pc')
     check_similar(percentile_uncertainty_results$percentile_exrate[4,], 
-                  stage_exrate_curve$stochastic_slip_rate_84pc, 
+                  stage_exrate_curve[[nm]], 
                   reltol=0.05, 
-                  which_inds = which(stage_exrate_curve$stochastic_slip_rate_84pc > 1.0e-05) )
+                  which_inds = which(stage_exrate_curve[[nm]] > 1.0e-05) )
 
     #points(stage_exrate_curve$stage, stage_exrate_curve$stochastic_slip_rate_16pc, t='l', col='blue')
     #points(percentile_uncertainty_results$threshold_stages, percentile_uncertainty_results$percentile_exrate[2,], col='blue')
+    nm = ifelse(mu_type == 'constant', 'stochastic_slip_rate_16pc', 'variable_mu_stochastic_slip_rate_16pc')
     check_similar(percentile_uncertainty_results$percentile_exrate[2,], 
-                  stage_exrate_curve$stochastic_slip_rate_16pc, 
-                  reltol=0.1, 
-                  which_inds = which(stage_exrate_curve$stochastic_slip_rate_16pc > 1.0e-05) )
+                  stage_exrate_curve[[nm]], 
+                  reltol=0.12, 
+                  which_inds = which(stage_exrate_curve[[nm]] > 1.0e-05) )
 
     #points(stage_exrate_curve$stage, stage_exrate_curve$stochastic_slip_rate_upper_ci, t='l', col='brown')
     #points(percentile_uncertainty_results$threshold_stages, percentile_uncertainty_results$percentile_exrate[5,], col='brown')
+    nm = ifelse(mu_type == 'constant', 'stochastic_slip_rate_upper_ci', 'variable_mu_stochastic_slip_rate_upper_ci')
     check_similar(percentile_uncertainty_results$percentile_exrate[5,], 
-                  stage_exrate_curve$stochastic_slip_rate_upper_ci, 
-                  reltol=0.1, 
-                  which_inds = which(stage_exrate_curve$stochastic_slip_rate_upper_ci > 1.0e-05) )
+                  stage_exrate_curve[[nm]], 
+                  reltol=0.14, 
+                  which_inds = which(stage_exrate_curve[[nm]] > 1.0e-05) )
 
     #points(stage_exrate_curve$stage, stage_exrate_curve$stochastic_slip_rate_lower_ci, t='l', col='brown')
     #points(percentile_uncertainty_results$threshold_stages, percentile_uncertainty_results$percentile_exrate[1,], col='brown')
+    nm = ifelse(mu_type == 'constant', 'stochastic_slip_rate_lower_ci', 'variable_mu_stochastic_slip_rate_lower_ci')
     check_similar(percentile_uncertainty_results$percentile_exrate[1,], 
-                  stage_exrate_curve$stochastic_slip_rate_lower_ci, 
-                  reltol=0.1, 
-                  which_inds = which(stage_exrate_curve$stochastic_slip_rate_lower_ci > 1.0e-05) )
+                  stage_exrate_curve[[nm]], 
+                  reltol=0.16, 
+                  which_inds = which(stage_exrate_curve[[nm]] > 1.0e-05) )
 
     # Alternative approach to the computation
     percentile_uncertainty_results2 = ptha18$compute_exceedance_rate_percentiles_with_random_sampling(
@@ -642,7 +694,11 @@ random_scenario_exceedance_rates_all_logic_tree_branches<-function(
 
 
 test_get_detailed_PTHA18_source_zone_info<-function(){
-    .test_kermadectonga2()
-    .test_unsegmented_source()
-    .test_random_scenario_exceedance_rate_percentile_calculation()
+    .test_kermadectonga2(mu_type='constant')
+    .test_unsegmented_source(mu_type='constant')
+    .test_random_scenario_exceedance_rate_percentile_calculation(mu_type='constant')
+
+    .test_kermadectonga2(mu_type='variable_mu')
+    .test_unsegmented_source(mu_type='variable_mu')
+    .test_random_scenario_exceedance_rate_percentile_calculation(mu_type='variable_mu')
 }

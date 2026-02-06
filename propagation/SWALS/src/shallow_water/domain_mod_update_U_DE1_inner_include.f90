@@ -12,21 +12,38 @@
     !    real(dp), intent(in):: dt !! Timestep to advance
 
         real(dp):: inv_cell_area_dt, depth, implicit_factor, dt_gravity, fs
-        integer(ip):: j, i, kk
+        integer(ip):: j, i, kk, jb(2), ib(2)
 
         domain%dt_last_update = dt
 
+        ! Loop bounds
+        if(domain%use_dispersion) then
+            ! Do not update the edge cells. The edge cell change can be erratic
+            ! (as we cannot evaluate some flux/pressure terms) and with dispersion 
+            ! this can negatively affect the implicit solution in the priority domain.
+            ! (e.g. the nested "potential_solution" develops NaN without this)
+            jb(1:2) = [2, domain%nx(2)-1]
+            ib(1:2) = [2, domain%nx(1)-1]
+        else
+            ! Different to dispersive models so as to keep exact backward compatability. The 
+            ! dispersive approach is likely fine for non-dispersive models too, 
+            ! but I have seen it change the last few digits (long term NSW model)
+            jb(1:2) = [1, domain%nx(2)]
+            ib(1:2) = [1, domain%nx(1)]
+        end if
 
-        !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain, dt)
+        !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain, dt, jb, ib)
         dt_gravity = dt * gravity
         !$OMP DO SCHEDULE(STATIC)
-        do j = 1, domain%nx(2)
+        do j = jb(1), jb(2)
+        !do j = 1, domain%nx(2)
             ! For spherical coordiantes, cell area changes with y.
             ! For cartesian coordinates this could be moved out of the loop
             inv_cell_area_dt = dt / domain%area_cell_y(j)
 
             !$OMP SIMD PRIVATE(kk)
-            do i = 1, domain%nx(1)
+            do i = ib(1), ib(2)
+            !do i = 1, domain%nx(1)
                 ! Fluxes
                 do kk = 1, 3
                     domain%U(i,j,kk) = domain%U(i,j,kk) - inv_cell_area_dt * ( &
@@ -36,7 +53,8 @@
             end do
 
             !$OMP SIMD PRIVATE(depth, fs, implicit_factor)
-            do i = 1, domain%nx(1)
+            do i = ib(1), ib(2)
+            !do i = 1, domain%nx(1)
 
                 ! Velocity clipping
                 depth = domain%depth(i,j)

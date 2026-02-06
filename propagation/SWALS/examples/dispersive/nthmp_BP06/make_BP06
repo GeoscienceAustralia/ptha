@@ -1,0 +1,26 @@
+# Source code location
+SWALS_SRC := ../../../src
+
+SWALS_PREPROCESSOR_FLAGS := -DTIMER
+
+include $(SWALS_SRC)/src_standard_compiler_var
+
+
+
+#
+# Application-specific compilation
+#
+# Name for the main model file is $(mymodel).f90
+mymodel := BP06
+# Clean up
+clean: $(mymodel)
+	rm *.o *.mod
+# Link everything
+$(mymodel): $(SWALS_LIBRARY) $(mymodel).o
+	$(SWALS_FORTRAN) $(mymodel).o -o $@ $(SWALS_LIBRARY) $(SWALS_FC_LIBS)
+# Compile the driver script
+$(mymodel).o: $(mymodel).f90
+	$(SWALS_FORTRAN) -c $^ 
+# Build main source
+include $(SWALS_SRC)/src_make_commands
+

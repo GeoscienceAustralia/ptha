@@ -430,6 +430,7 @@ kajiura_filter<-function(xyDef,
 #' deal with recentering in lon/lat rasters
 #' @param spherical_input TRUE/FALSE. Is input raster in lon/lat coordinates.
 #' If NULL, then use isLonLat to determine this
+#' @param ... further arguments to the function kajiura_filter
 #' @return a raster (source raster with kajiura filter applied)
 #' @import raster
 #' @export
@@ -443,7 +444,8 @@ kajiura_smooth_raster<-function(
     kj_cartesian_buffer = 10000,
     minimum_kj_depth = 10,
     elevation_extraction_x_offset=0,
-    spherical_input = NULL){
+    spherical_input = NULL,
+    ...){
 
     if(is.null(spherical_input)){
         spherical_input = isLonLat(source_raster)
@@ -487,7 +489,8 @@ kajiura_smooth_raster<-function(
     # Do the filtering
     smoothed_perturbation = kajiura_filter(
         xyz_cartesian[kajiura_inds,], xyz_depth[kajiura_inds],
-        grid_dx = kj_filter_grid_dxdy[1], grid_dy = kj_filter_grid_dxdy[2])
+        grid_dx = kj_filter_grid_dxdy[1], grid_dy = kj_filter_grid_dxdy[2], 
+        ...)
 
     xyz_spherical[kajiura_inds,3] = smoothed_perturbation[,3]
 

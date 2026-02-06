@@ -267,7 +267,6 @@ program Seaside_OSU
         dx_refinement_factor=4_ip, &
         timestepping_refinement_factor=4_ip)
     md%domains(2)%timestepping_method = default_nonlinear_timestepping_method
-    md%domains(2)%local_timestepping_scale = 0.9_dp
 
     ! Allocate domains and prepare comms
     call md%setup()

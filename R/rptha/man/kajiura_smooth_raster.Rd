@@ -13,7 +13,8 @@ kajiura_smooth_raster(
   kj_cartesian_buffer = 10000,
   minimum_kj_depth = 10,
   elevation_extraction_x_offset = 0,
-  spherical_input = NULL
+  spherical_input = NULL,
+  ...
 )
 }
 \arguments{
@@ -47,6 +48,8 @@ deal with recentering in lon/lat rasters}
 
 \item{spherical_input}{TRUE/FALSE. Is input raster in lon/lat coordinates.
 If NULL, then use isLonLat to determine this}
+
+\item{...}{further arguments to the function kajiura_filter}
 }
 \value{
 a raster (source raster with kajiura filter applied)

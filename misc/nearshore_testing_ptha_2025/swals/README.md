@@ -103,3 +103,8 @@ PROCESS_RANDOM_SCENARIOS = FALSE # TRUE for random scenarios, FALSE for validati
 ```
 
 7. At this point the processing moves to an analysis directory somewhere in `../`
+
+
+# Backup of the model runs
+
+The runs were backed up to the MDSS on NCI, using the script [copy_model_outputs_to_mdss.sh](copy_model_outputs_to_mdss.sh)

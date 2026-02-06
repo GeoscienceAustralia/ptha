@@ -15,6 +15,7 @@ The methodologies used in this study, and associated testing, are discussed in:
 * [The project report](http://dx.doi.org/10.11636/Record.2018.041)
 * [This GJI paper](https://doi.org/10.1093/gji/ggz260)
 * [This PAGEOPH paper](https://link.springer.com/article/10.1007/s00024-019-02299-w)
+* [This JGR paper](https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2025JB031949)
 * [This conference paper](https://www.researchgate.net/publication/337228680_A_New_Probabilistic_Tsunami_Hazard_Assessment_for_Australia)
 and [this talk](https://www.youtube.com/watch?v=brRy6YjwnlA&list=PL0jP_ahe-BFk3499UEvm-YdlOiE9HFbCg&index=4&t=0s).
 
@@ -23,6 +24,8 @@ For ideas on how to use the PTHA18 results for inundation hazard assessment, see
 * [Technical report covering both scenario-based and Monte Carlo approaches](https://repository.oceanbestpractices.org/handle/11329/2062)
 * [Conference paper on Monte Carlo methods with an application in Western Australia](http://dx.doi.org/10.9753/icce.v37.papers.18)
 * [Technical report on an inundation hazard assessment in Western Australia](http://dx.doi.org/10.26186/150015)
+* [Technical report on an inundation hazard assessment for NSW](https://dx.doi.org/10.26186/150281)
+* [Technical report on an inundation hazard assessment for Gladstone (QLD)](https://doi.org/10.26186/150488)
 
 Code used to conduct the analysis is available open-source
 in the [ptha package](https://github.com/GeoscienceAustralia/ptha). This includes
@@ -187,7 +190,8 @@ points well offshore in deep water**. If you can, use sites where wave heights o
 do not exceed a few percent of the water depth. For tsunami propagation modelling,
 it may be preferable to simulate the tsunami from source (using initial
 conditions [provided here](DETAILED_README.md)), which circumvents these
-issues. Modelling from source also also facilitates the use of alternative hydrodynamic
+issues and can show excellent performance ([highlighted in this paper](https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2025JB031949)). 
+Modelling from source also also facilitates the use of alternative hydrodynamic
 models (e.g. with dispersion and/or friction, which are important in some situations), and 
 using other bathymetric data when simulating these large scales. Nearshore
 points should **only** be used as a rough guide to possible tsunami wave

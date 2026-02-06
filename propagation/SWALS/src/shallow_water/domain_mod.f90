@@ -28,7 +28,6 @@ module domain_mod
         advection_beta, &
         minimum_allowed_depth, &
         default_nonlinear_timestepping_method, &
-        wall_elevation, &
         default_output_folder, &
         send_boundary_flux_data
     use timer_mod, only: timer_type
@@ -48,6 +47,7 @@ module domain_mod
     use file_io_mod, only: mkdir_p
     use cliffs_tolkova_mod, only: cliffs, setSSLim
     use extrapolation_limiting_mod, only: limited_gradient_dx_vectorized
+    use linear_dispersive_solver_mod, only: dispersive_solver_type
 
 #ifdef SPHERICAL
     ! Compile with -DSPHERICAL to get the code to run in spherical coordinates
@@ -159,6 +159,9 @@ module domain_mod
             !! Number of quantities in domain%U (stage, uh, vh, elevation)
         character(len=charlen):: timestepping_method = default_nonlinear_timestepping_method
             !! timestepping_method determines the choice of solver
+        integer(ip) :: timestepping_method_nesting_thickness_for_one_sw_timestep = -1
+            !! Holds "nesting_thickness_for_one_sw_timestep" for the shallow-water timestepping
+            !! method, as defined in timestepping_metadata_mod
         character(len=charlen) :: compute_fluxes_inner_method = 'DE1_low_fr_diffusion' ! 'DE1'
             !! Subroutine called inside domain%compute_fluxes, to allow variations on flux computation.
         real(dp) :: theta = -HUGE(1.0_dp) !
@@ -240,6 +243,15 @@ module domain_mod
             !! shiono/knight eddy-viscosity model.
 
         !
+        ! Dispersion
+        !
+        logical :: use_dispersion = .false. 
+            !! By default do not use dispersion
+        logical :: skip_flux_correction_of_momentum_if_use_dispersion = .true.
+            !! If true, and domain%use_dispersion is true, then do not flux correct momentum (imperfectly tracked and can cause instability)
+        type(dispersive_solver_type) :: ds
+
+        !
         ! Nesting-related
         !
         type(domain_nesting_type) :: nesting
@@ -253,12 +265,6 @@ module domain_mod
         integer(ip) :: timestepping_refinement_factor = 1_ip
             !! Number of timesteps taken by this domain inside each multidomain timestep.
             !! Only used in conjunction with the multidomain class
-        real(dp) :: local_timestepping_scale = 1.0_dp
-            !! If LOCAL_TIMESTEP_PARTITIONED_DOMAINS is used in a multidomain, then the partitioned domain's time-step
-            !! may be increased above that implied by its timestep_refinement_factor, up to
-            !! (local_timestepping_scale * domain%max_dt). The idea is that local_timestepping_scale
-            !! can be set to a value between [0-1], with smaller values making for a less aggressive
-            !! local-timestep increase. This can help with stability on some occasions.
         integer(ip) :: nest_layer_width = -1_ip
             !! The width of the nesting layer for this domain in the multidomain. This will depend
             !! on the dx value relative to the neighbouring domains, on the timestepping_method,
@@ -274,6 +280,32 @@ module domain_mod
             !! Flag to denote boundaries at which nesting occurs: order is N, E, S, W.
         real(dp) :: max_parent_dx_ratio = -1.0_dp
             !! Maximum value of (dx-from-domains-we-receive-from)/my-dx. Useful for nesting.
+        logical :: flux_correct_dry_cells_outside_priority_domain = .true.
+            !! Flux correction of dry areas could cause stage < bed, or non-zero flux despite dryness.
+            !! I had an experimental model (Java 2006 Steep Point) where if
+            !! domain%use_dispersion is .true., flux correction of dry areas in non-priority
+            !! domain regions caused instabilities.
+            !! (The instability was only triggered in 'high and dry' null regions using
+            !!  md%set_null_regions_to_dry).
+            !! That instability is resolved using 
+            !!      domain%flux_correct_dry_cells_outside_priority_domain = .false.
+            !! for dispersive domains. 
+            !!    - The change is restricted to (is_priority_domain_not_periodic==0) to retain
+            !!      more similarity with the original approach in priority domain areas.
+            !!    - This issue was never noticed as a problem with non-dispersive domains, so
+            !!      the default value .true. keeps backward compatibility.
+            !! If revisiting this, note some other implementation choices sound reasonable:
+            !!    - (More extensive restriction of flux correction) It may be reasonable to
+            !!      use .false. for both dispersive and non-dispersive. That would be a more
+            !!      extensive change, and warrant solid testing to check the effects on older
+            !!      models. One could also consider these restrictions within the priority domain.
+            !!    - (More limited restriction of flux correction) The issue I saw could be
+            !!      fixed by only restricting in 'high and dry' null regions. I didn't do this
+            !!      to avoid more coding/storage to reliably detect null regions. One could assume
+            !!      they are areas with elevation==elev_null, which is easy, but that won't work if
+            !!      the null regions are near a time-varying earthquake source (changing elevation)
+            !!      or if the user has set the elevation to elev_null in other areas for other
+            !!      reasons.
 
         !
         ! Boundary conditions.
@@ -351,6 +383,9 @@ module domain_mod
             !! It is not strictly related to the halo width for parallel computations. When using a multidomain, the
             !! mass conservation tracking is somewhat different (based around subroutines with names matching
             !! 'nesting_boundary_flux_*')
+        integer(ip) :: minimum_nesting_layer_thickness = 0_ip
+            !! There are situations where we might want to force the nesting layer thickness for parallel computations.
+            !! Set this to the desired thickness. The actual value will not be less than this.
 
         !
         ! Output file content -- bespoke binary format (that is no longer properly supported, consider removing)
@@ -399,6 +434,13 @@ module domain_mod
         real(dp) :: arrival_stage_threshold_above_msl_linear = 0.01_dp
             !! The "arrival time" is defined as the time at which the stage exceeds
             !! (msl_linear + arrival_stage_threshold_above_msl_linear) AND the cell is wet
+        logical :: stage_extrema_include_dry_cells = .true.
+            !! If .TRUE. then max stage can be a 'dry cell' value (i.e. where the stage is the elevation).
+            !! If .FALSE. then we only update the max stage if the cell has depth > minimum_allowed_depth.
+            !! The difference can be substantive in models which have time-varying elevation, e.g., if a cell
+            !! is always dry but is subsiding over time, then a value of .true. means the max-stage will be set
+            !! to the highest elevation obtained over time, while a value of .false. means the max-stage will be
+            !! a missing-data value (large negative)
         type(point_gauge_type) :: point_gauges
             !! Type to manage storing of tide gauges
 
@@ -492,6 +534,10 @@ module domain_mod
         ! Forcing term
         procedure, non_overridable :: apply_forcing => apply_forcing
         procedure, non_overridable :: store_forcing => store_forcing
+
+        ! Dispersive terms
+        procedure, non_overridable :: copy_U_to_dispersive_last_timestep => copy_U_to_dispersive_last_timestep
+        procedure, non_overridable :: solve_dispersive_terms => solve_dispersive_terms
 
         ! IO
         procedure, non_overridable :: create_output_folders => create_output_folders
@@ -823,14 +869,15 @@ TIMER_STOP("compute_statistics")
         ! Send domain print statements to the default log. Over-ridden later if we send the domain log to its own file.
         domain%logfile_unit = log_output_unit
 
-        create_output = .TRUE.
+        create_output = .true.
         if(present(create_output_files)) create_output = create_output_files
 
         verbose_ = .true.
         if(present(verbose)) verbose_ = verbose
 
         ! Set default parameters for different timestepping methods
-        ! First get the index corresponding to domain%timestepping_method in the timestepping_metadata
+        !
+        ! Find index corresponding to domain%timestepping_method in the timestepping_metadata
         tsi = timestepping_method_index(domain%timestepping_method)
         ! Set slope-limiter theta parameter
         if(domain%theta == -HUGE(1.0_dp)) domain%theta = timestepping_metadata(tsi)%default_theta
@@ -838,18 +885,28 @@ TIMER_STOP("compute_statistics")
         if(domain%cfl == -HUGE(1.0_dp)) domain%cfl = timestepping_metadata(tsi)%default_cfl
         ! Flag to note if the grid should be interpreted as staggered or cell-centred
         domain%is_staggered_grid = (timestepping_metadata(tsi)%is_staggered_grid == 1)
+        ! Does the timestepping method allow for adaptive timestepping?
         domain%adaptive_timestepping = timestepping_metadata(tsi)%adaptive_timestepping
+        ! Does the timestepping method allow for eddy viscosity?
         domain%eddy_viscosity_is_supported = timestepping_metadata(tsi)%eddy_viscosity_is_supported
+        ! ! Uncomment the following line to use eddy viscosity by default if supported (but beware this
+        ! ! will overwrite what the user specified)
+        !if(domain%eddy_viscosity_is_supported) domain%use_eddy_viscosity = .true.
+        if(domain%use_eddy_viscosity .and. (.not. domain%eddy_viscosity_is_supported)) then
+            write(log_output_unit, *) 'Error: Eddy viscosity is not supported for the numerical scheme ', &
+                trim(domain%timestepping_method)
+            call generic_stop
+        end if
 
-        ! Determine whether we allow domain%forcing_subroutine to update the elevation
+        ! Do we allow domain%forcing_subroutine to update the elevation? 
         if(timestepping_metadata(tsi)%forcing_elevation_is_allowed == 'always') then
+            ! For these schemes, elevation forcing is always possible
+            ! (without special treatment)
             domain%support_elevation_forcing=.TRUE.
         end if
-        ! Note that if:
-        !     timestepping_metadata(tsi)%forcing_elevation_is_allowed == 'optional'
-        ! then one can manually set domain%support_elevation_forcing=TRUE, prior to this function.
-        ! However, one cannot do that if:
-        !     timestepping_metadata(tsi)%forcing_elevation_is_allowed == 'never'
+        ! Note: if (timestepping_metadata(tsi)%forcing_elevation_is_allowed == 'optional') then
+        ! one can manually set domain%support_elevation_forcing=TRUE, prior to this function.
+        ! However, one cannot do that if (timestepping_metadata(tsi)%forcing_elevation_is_allowed == 'never')
         if(timestepping_metadata(tsi)%forcing_elevation_is_allowed == 'never' .and. &
             domain%support_elevation_forcing) then
             write(log_output_unit, *) 'Error: The numerical scheme ', trim(domain%timestepping_method)
@@ -857,30 +914,21 @@ TIMER_STOP("compute_statistics")
             call generic_stop
         end if
 
-        ! ! Uncomment the following line to use eddy viscosity by default if it is supported (but beware this
-        ! ! will overwrite what the user specified)
-        !if(domain%eddy_viscosity_is_supported) domain%use_eddy_viscosity = .true.
+        ! Grid geometry
+        domain%lw = global_lw ! Same units as coordinate system
+        domain%nx = global_nx ! Number of cells
+        domain%lower_left = global_ll ! Same units as coordinate system
 
-        if(domain%use_eddy_viscosity .and. (.not. domain%eddy_viscosity_is_supported)) then
-            write(log_output_unit, *) 'Error: Eddy viscosity is not supported for the numerical scheme ', &
-                trim(domain%timestepping_method)
-            call generic_stop
-        end if
+        ! Cell size (same units as coordinate system)
+        domain%dx = domain%lw/(domain%nx*ONE_dp)
 
-
-        domain%lw = global_lw
-        domain%nx = global_nx
-        domain%lower_left = global_ll
-
-        ! For the linear solver, these variables can be modified to evolve domain%U only in the region domain%U(xL:xU, yL:yU). This
-        ! can speed up some simulations (but the user must adaptively change the variables).
+        ! For the linear solver, these variables can be modified to evolve domain%U only in 
+        ! the region domain%U(xL:xU, yL:yU, ...). This has been used to speed up some single-grid 
+        ! simulations, but the user must adaptively change the variables.
         domain%xL = 1_ip
         domain%yL = 1_ip
         domain%xU = domain%nx(1)
         domain%yU = domain%nx(2)
-
-        ! Compute dx
-        domain%dx = domain%lw/(domain%nx*ONE_dp)
 
         ! Compute the x/y cell center coordinates. We assume a linear mapping between the x-index and the x-coordinate, and
         ! similarly for y. We support regular cartesian coordinates (m), and lon/lat spherical coordinates (degrees).
@@ -1261,6 +1309,27 @@ TIMER_STOP("compute_statistics")
             !$OMP END PARALLEL
         end if
 
+        ! Setup the dispersive solver type's data
+        if(domain%use_dispersion) then
+            ! Dispersive terms are not supported for all solvers
+            if(.not. any(domain%timestepping_method == [character(len=charlen):: &
+                'linear', 'leapfrog_linear_plus_nonlinear_friction', 'leapfrog_nonlinear', &
+                'rk2', 'euler', 'midpoint', 'cliffs']) ) then
+                write(log_output_unit, *) 'Dispersion not supported for timestepping_method: ', trim(domain%timestepping_method)
+                call generic_stop
+            end if
+            if(any(domain%timestepping_method == [character(len=charlen):: 'rk2', 'euler'])) then
+                write(log_output_unit, *) 'Using finite volume solver ', trim(domain%timestepping_method), &
+                    ' with dispersion. But the finite volume solver "midpoint" may be more accurate,', &
+                    ' as the other options involve some first-order (rather than second order) approximations ', &
+                    ' when including dispersion in the timestepping.'
+            end if
+            call domain%ds%setup(nx, ny, domain%is_staggered_grid)
+
+            ! For stability of dispersive domains
+            domain%flux_correct_dry_cells_outside_priority_domain = .false.
+        end if
+
         if(any(domain%nontemporal_grids_to_store == 'elevation_source_file_index')) then
             ! Include space to record which file was used to set the elevation at each site.
             ! The resulting array can be passed as an optional argument to 
@@ -1607,7 +1676,7 @@ EVOLVE_TIMER_STOP('backup')
 #include "domain_mod_timestepping_alternatives_include.f90"
 
 
-    subroutine evolve_one_step(domain, timestep)
+    subroutine evolve_one_step(domain, timestep, update_max_quantities_after_timestep)
         !
         ! Main 'high-level' evolve routine.
         ! The actual timestepping method used is determined by the value of
@@ -1617,12 +1686,20 @@ EVOLVE_TIMER_STOP('backup')
         real(dp), optional, intent(in):: timestep
             !! Optional for some domain%timestepping_method's, necessary for others.
             !! If provided it must satisfy the CFL condition.
+        logical, optional, intent(in) :: update_max_quantities_after_timestep
+            !! Default .TRUE.. If FALSE then do not call domain%update_max_quantities() after taking a timestep.
+            !! The option .FALSE. is useful if dispersive terms are included (after shallow water steps) since 
+            !! in that case we wait until after the dispersive terms are applied to update_max_quantities.
 
         real(dp):: time0
         character(len=charlen) :: timestepping_method
         real(dp):: static_before_time
+        logical :: update_maxq
 
 TIMER_START('evolve_one_step')
+
+        update_maxq = .true.
+        if(present(update_max_quantities_after_timestep)) update_maxq = update_max_quantities_after_timestep
 
         timestepping_method = domain%timestepping_method
         time0 = domain%time
@@ -1715,7 +1792,7 @@ TIMER_START('evolve_one_step')
         ! For some problems updating max U can take a significant fraction of the time,
         ! so we allow it to only be done occasionally
         if(timestepping_method /= 'static') then
-            if(mod(domain%nsteps_advanced, domain%max_U_update_frequency) == 0) then
+            if(update_maxq .and. (mod(domain%nsteps_advanced, domain%max_U_update_frequency) == 0)) then
                 call domain%update_max_quantities()
             end if
         end if
@@ -2191,7 +2268,9 @@ EVOLVE_TIMER_START('update_max_quantities')
                         !$OMP DO SCHEDULE(STATIC)
                         do j = domain%yL, domain%yU !1, domain%nx(2)
                             do i = domain%xL, domain%xU !1, domain%nx(1)
-                                if(domain%U(i,j,STG) > domain%max_U(i,j,k)) then
+                                if( (domain%U(i,j,STG) > domain%max_U(i,j,k)) .and. &
+                                    ( domain%stage_extrema_include_dry_cells .or. &
+                                      (domain%U(i,j,STG) > domain%U(i,j,ELV) + minimum_allowed_depth))) then
                                     domain%max_U(i,j,k) = domain%U(i,j,STG)
                                     domain%max_U(i,j,toms) = domain%time
                                 end if
@@ -2203,7 +2282,10 @@ EVOLVE_TIMER_START('update_max_quantities')
                         !$OMP DO SCHEDULE(STATIC)
                         do j = domain%yL, domain%yU !1, domain%nx(2)
                             do i = domain%xL, domain%xU !1, domain%nx(1)
-                                domain%max_U(i,j,k) = max(domain%max_U(i,j,k), domain%U(i,j,STG))
+                                if( domain%stage_extrema_include_dry_cells .or. &
+                                    (domain%U(i,j,STG) > domain%U(i,j,ELV) + minimum_allowed_depth)) then
+                                    domain%max_U(i,j,k) = max(domain%max_U(i,j,k), domain%U(i,j,STG))
+                                end if
                             end do
                         end do
                         !$OMP END DO NOWAIT
@@ -2299,7 +2381,10 @@ EVOLVE_TIMER_START('update_max_quantities')
                     !$OMP DO SCHEDULE(STATIC)
                     do j = domain%yL, domain%yU !1, domain%nx(2)
                         do i = domain%xL, domain%xU !1, domain%nx(1)
-                            domain%max_U(i,j,k) = min(domain%max_U(i,j,k), domain%U(i,j,STG))
+                            if( domain%stage_extrema_include_dry_cells .or. &
+                                (domain%U(i,j,STG) > domain%U(i,j,ELV) + minimum_allowed_depth)) then
+                                domain%max_U(i,j,k) = min(domain%max_U(i,j,k), domain%U(i,j,STG))
+                            end if
                         end do
                     end do
                     !$OMP END DO NOWAIT
@@ -2694,7 +2779,7 @@ EVOLVE_TIMER_STOP('nesting_boundary_flux_integral_tstep')
             !! Apply some fraction of the flux correction. By default apply completely (i.e. 1.0)
 
         integer(ip) :: i, j, k, n0, n1, m0, m1, dm, dn, dir, ni, mi
-        integer(ip) :: dx_ratio, p0, p1, ii, jj, ic, jc, jL, iL, i1, j1, ind
+        integer(ip) :: dx_ratio, p0, p1, pind, ii, jj, ic, jc, jL, iL, i1, j1, ind
         integer(ip) :: my_index, my_image, nbr_index, nbr_image
         integer(ip) :: out_index, out_image, sg, ic_last, jc_last
         integer(ip) :: var1, varN, dm_outside, dn_outside, inv_cell_ratios_ip(2), nip, nim, njp, njm
@@ -2797,13 +2882,41 @@ TIMER_START('nesting_flux_correction')
                                 end if
 
                                 area_scale = sum(domain%area_cell_y(p0:p1))
+
+#ifdef ALWAYS_FLUX_CORRECT_DRY_CELLS
+                                ! This bypasses some checks about flux-correcting dry areas that are important with dispersion.
+                                ! For non-dispersive domains the checks are always .TRUE. and the more complex code is equivalent,
+                                ! but compilers may produce floating-point level differences (likely this form is easier to optimise).
                                 do k = var1, varN
                                     domain%U(ni, p0:p1, k) = domain%U(ni, p0:p1, k) - &
                                         sg * &
                                         real(domain%nesting%recv_comms(i)%recv_box_flux_error(dir)%x(ni - n0 + 1, k)/&
                                             area_scale, dp) * fraction_of_local
                                 end do
+#else
+                                do pind = p0, p1
 
+                                    ! if flux_correct_dry_cells_outside_priority_domain is FALSE, then only flux correct
+                                    ! wet cells or cells in the priority domain.
+                                    if( domain%flux_correct_dry_cells_outside_priority_domain .or. &
+                                        (domain%U(ni, pind, STG) >= domain%U(ni, pind, ELV) + minimum_allowed_depth) .or.  &
+                                        (domain%nesting%is_priority_domain_not_periodic(ni, pind) == 1) &
+                                        ) then
+                                        ! NOTE: Before introducing the above 'if' condition, the code behaved as though it were always
+                                        !       true, and the calculation was implemented without looping on pind, like:
+                                        !           domain%U(ni, p0:p1, k) = domain%U(ni, p0:p1, k) - ...
+                                        !       This presumably allowed stronger compiler optimization, because
+                                        !       with gfortran I got tiny (floating point level) changes in BP09, even though 
+                                        !       the calculation logic is identical. A large NSW model showed no changes with ifort.
+                                        do k = var1, varN
+                                            domain%U(ni, pind, k) = domain%U(ni, pind, k) - &
+                                                sg * &
+                                                real(domain%nesting%recv_comms(i)%recv_box_flux_error(dir)%x(ni - n0 + 1, k)/&
+                                                    area_scale, dp) * fraction_of_local
+                                        end do
+                                    end if
+                                end do
+#endif
                             end if
                         end if
                     end do
@@ -2873,12 +2986,33 @@ TIMER_START('nesting_flux_correction')
                                 end if
 
                                 area_scale = sum(domain%area_cell_y(p0:p1))
+
+#ifdef ALWAYS_FLUX_CORRECT_DRY_CELLS
                                 do k = var1, varN
                                     domain%U(ni, p0:p1, k) = domain%U(ni, p0:p1, k) + &
                                         sg * &
                                         real(domain%nesting%recv_comms(i)%recv_box_flux_error(dir)%x(ni - n0 + 1, k)/&
                                             area_scale, dp) * fraction_of_local
                                 end do
+#else
+                                do pind = p0, p1
+
+                                    ! if flux_correct_dry_cells_outside_priority_domain is FALSE, then only flux correct
+                                    ! wet cells or cells in the priority domain.
+                                    if( domain%flux_correct_dry_cells_outside_priority_domain .or. &
+                                        (domain%U(ni, pind, STG) >= domain%U(ni, pind, ELV) + minimum_allowed_depth) .or.  &
+                                        (domain%nesting%is_priority_domain_not_periodic(ni, pind) == 1) &
+                                        ) then
+
+                                        do k = var1, varN
+                                            domain%U(ni, pind, k) = domain%U(ni, pind, k) + &
+                                                sg * &
+                                                real(domain%nesting%recv_comms(i)%recv_box_flux_error(dir)%x(ni - n0 + 1, k)/&
+                                                    area_scale, dp) * fraction_of_local
+                                        end do
+                                    end if
+                                end do
+#endif
                             end if
                         end if
                     end do
@@ -2960,12 +3094,33 @@ TIMER_START('nesting_flux_correction')
                                 end if
 
                                 area_scale = (domain%area_cell_y(mi)*dx_ratio)
+
+#ifdef ALWAYS_FLUX_CORRECT_DRY_CELLS
                                 do k = var1, varN
                                     domain%U(p0:p1, mi, k) = domain%U(p0:p1, mi, k) - &
                                         sg * &
                                         real(domain%nesting%recv_comms(i)%recv_box_flux_error(dir)%x(mi - m0 + 1, k)/&
                                              area_scale, dp) * fraction_of_local
                                 end do
+#else
+                                do pind = p0, p1
+
+                                    ! if flux_correct_dry_cells_outside_priority_domain is FALSE, then only flux correct
+                                    ! wet cells or cells in the priority domain.
+                                    if( domain%flux_correct_dry_cells_outside_priority_domain .or. &
+                                        (domain%U(pind, mi, STG) >= domain%U(pind, mi, ELV) + minimum_allowed_depth) .or.  &
+                                        (domain%nesting%is_priority_domain_not_periodic(pind, mi) == 1) &
+                                        ) then
+
+                                        do k = var1, varN
+                                            domain%U(pind, mi, k) = domain%U(pind, mi, k) - &
+                                                sg * &
+                                                real(domain%nesting%recv_comms(i)%recv_box_flux_error(dir)%x(mi - m0 + 1, k)/&
+                                                     area_scale, dp) * fraction_of_local
+                                        end do
+                                    end if
+                                end do
+#endif
                             end if
                         end if
                     end do
@@ -3032,12 +3187,33 @@ TIMER_START('nesting_flux_correction')
                                 end if
 
                                 area_scale = (domain%area_cell_y(mi)*dx_ratio)
+
+#ifdef ALWAYS_FLUX_CORRECT_DRY_CELLS
                                 do k = var1, varN
                                     domain%U(p0:p1, mi, k) = domain%U(p0:p1, mi, k) + &
                                         sg * &
                                         real(domain%nesting%recv_comms(i)%recv_box_flux_error(dir)%x(mi - m0 + 1, k)/&
                                             area_scale, dp) * fraction_of_local
                                 end do
+#else
+                                do pind = p0, p1
+
+                                    ! if flux_correct_dry_cells_outside_priority_domain is FALSE, then only flux correct
+                                    ! wet cells or cells in the priority domain.
+                                    if( domain%flux_correct_dry_cells_outside_priority_domain .or. &
+                                        (domain%U(pind, mi, STG) >= domain%U(pind, mi, ELV) + minimum_allowed_depth) .or.  &
+                                        (domain%nesting%is_priority_domain_not_periodic(pind, mi) == 1) &
+                                        ) then
+
+                                        do k = var1, varN
+                                            domain%U(pind, mi, k) = domain%U(pind, mi, k) + &
+                                                sg * &
+                                                real(domain%nesting%recv_comms(i)%recv_box_flux_error(dir)%x(mi - m0 + 1, k)/&
+                                                    area_scale, dp) * fraction_of_local
+                                        end do
+                                    end if
+                                end do
+#endif
                             end if
                         end if
                     end do
@@ -3414,9 +3590,11 @@ TIMER_STOP('nesting_flux_correction')
                    varN = -2
                 else
                     ! Some flux correction should be applied
-                    if(timestepping_metadata(cor_tsi)%flux_correction_of_mass_only) then
+                    !if(timestepping_metadata(cor_tsi)%flux_correction_of_mass_only) then
+                    if(timestepping_metadata(cor_tsi)%flux_correction_of_mass_only .or. &
+                       (domain%use_dispersion .and. domain%skip_flux_correction_of_momentum_if_use_dispersion)) then
                         ! Treat solvers that can only do mass-flux correction, not advective momentum fluxes.
-                        ! (e.g. linear solvers where the momentum advection terms are ignored)
+                        ! (e.g. linear solvers where the momentum advection terms are ignored, or dispersive solvers where it causes instability)
                         var1 = STG
                         varN = STG
                     else
@@ -3531,25 +3709,35 @@ TIMER_STOP('nesting_flux_correction')
 
     end subroutine
 
-    subroutine receive_halos(domain, p2p)
+    subroutine receive_halos(domain, p2p, skip_if_time_before_this_time, skip_if_time_after_this_time, &
+        skip_if_unequal_cell_ratios, skip_if_my_domain_is_coarser)
         !!
         !! Loop over domain%nesting%receive_comms, and receive the halo data
         !!
         class(domain_type), intent(inout) :: domain
         type(p2p_comms_type), intent(in) :: p2p
+        real(dp), optional, intent(in) :: skip_if_time_before_this_time
+        real(dp), optional, intent(in) :: skip_if_time_after_this_time
+        logical, optional, intent(in) :: skip_if_unequal_cell_ratios, skip_if_my_domain_is_coarser
 
         integer(ip) :: i, j, ii, jj, iL, iU, jL, jU, ip1, jp1, nbr_j, nbr_ti
         real(dp) :: elev_lim
 
 TIMER_START('receive_halos')
 
-        !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain, p2p)
+        !$OMP PARALLEL DEFAULT(PRIVATE) &
+        !$OMP SHARED(domain, p2p, skip_if_time_before_this_time, skip_if_time_after_this_time) &
+        !$OMP SHARED(skip_if_unequal_cell_ratios, skip_if_my_domain_is_coarser)
         !$OMP DO SCHEDULE(DYNAMIC)
         do i = 1, size(domain%nesting%recv_comms, kind=ip)
 
             !! Avoid use of type-bound-procedure in openmp region
             !call domain%nesting%recv_comms(i)%process_received_data(domain%U)
-            call process_received_data(domain%nesting%recv_comms(i), p2p, domain%U)
+            call process_received_data(domain%nesting%recv_comms(i), p2p, domain%U, &
+                skip_if_time_before_this_time = skip_if_time_before_this_time, &
+                skip_if_time_after_this_time  = skip_if_time_after_this_time, &
+                skip_if_unequal_cell_ratios = skip_if_unequal_cell_ratios, &
+                skip_if_my_domain_is_coarser = skip_if_my_domain_is_coarser)
         end do
         !$OMP END DO
 
@@ -3674,6 +3862,24 @@ TIMER_START('receive_halos')
                             (domain%U(ii,jp1,STG) - domain%U(ii,jp1,ELV) <= minimum_allowed_depth) .and. &
                             (domain%U(ii,jj,VH) < 0.0_dp ) ) domain%U(ii,jj,VH) = 0.0_dp
 
+                        !
+                        ! Additional wet/dry constraints
+                        !
+
+                        ! Only allow outflow from wet cell into neighbouring dry cell 
+                        ! if the stage in the wet cell exceeds the elevation in the
+                        ! dry cell. The leapfrog_nonlinear solver has similar constraints in the
+                        ! definition of h_iph_wet and h_jph_wet
+                        if( (ip1 == ii+1) .and. &
+                            (domain%U(ii,jj,UH) > 0.0_dp) .and. &
+                            (domain%U(ip1, jj, STG) - domain%U(ip1, jj, ELV) <= minimum_allowed_depth) .and. &
+                            (domain%U(ii, jj, STG) <= domain%U(ip1, jj, ELV) + minimum_allowed_depth)) domain%U(ii,jj,UH) = 0.0_dp
+
+                        if( (jp1 == jj+1) .and. &
+                            (domain%U(ii, jj, VH) > 0.0_dp) .and. &
+                            (domain%U(ii, jp1, STG) - domain%U(ii, jp1, ELV) <= minimum_allowed_depth) .and. &
+                            (domain%U(ii,jj, STG) <= domain%U(ii, jp1, ELV) + minimum_allowed_depth) ) domain%U(ii,jj,VH) = 0.0_dp
+
                     end do
                 end do
             end if
@@ -3685,7 +3891,7 @@ TIMER_STOP('receive_halos')
 
     end subroutine
 
-    subroutine send_halos(domain, p2p, send_to_recv_buffer)
+    subroutine send_halos(domain, p2p, send_to_recv_buffer, time, use_dispersive_send)
         !!
         !! Loop over domain%nesting%send_comms, and send the halo data
         !!
@@ -3696,21 +3902,27 @@ TIMER_STOP('receive_halos')
             !! to the send buffer (in that case, one can later call "communicate_p2p"
             !! to do all communications at once, which can be faster as it enables
             !! multiple sends between the same images to be collapsed into a single send).
+        real(dp), intent(in), optional :: time
+        logical, intent(in), optional :: use_dispersive_send !! FIXME Defunct
 
         integer(ip) :: i
+        logical :: dispersive_send
+        
+        !dispersive_send = .FALSE.
+        !if(present(use_dispersive_send)) dispersive_send = use_dispersive_send
 
 TIMER_START('send_halos')
-            !! Seems faster to do the openmp inside "process_data_to_send"?
-            !! So comment out openmp here. Also, ifort19 seg-faulted when I used openmp here.
-            !!$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain, send_to_recv_buffer_local)
-            !!$OMP DO SCHEDULE(DYNAMIC)
-            do i = 1, size(domain%nesting%send_comms, kind=ip)
+        !! Seems faster to do the openmp inside "process_data_to_send"?
+        !! So comment out openmp here. Also, ifort19 seg-faulted when I used openmp here.
+        !!$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain, send_to_recv_buffer_local, time)
+        !!$OMP DO SCHEDULE(DYNAMIC)
+        do i = 1, size(domain%nesting%send_comms, kind=ip)
 
-                call domain%nesting%send_comms(i)%process_data_to_send(domain%U)
-                call domain%nesting%send_comms(i)%send_data(p2p, send_to_recv_buffer=send_to_recv_buffer)
-            end do
-            !!$OMP END DO
-            !!$OMP END PARALLEL
+            call domain%nesting%send_comms(i)%process_data_to_send(domain%U, time=time)
+            call domain%nesting%send_comms(i)%send_data(p2p, send_to_recv_buffer=send_to_recv_buffer)
+        end do
+        !!$OMP END DO
+        !!$OMP END PARALLEL
 TIMER_STOP('send_halos')
 
     end subroutine
@@ -3948,6 +4160,7 @@ TIMER_STOP('send_halos')
         smooth_footprint = 3 + (nsmooth-1)
 
         ! Store the non-smooth elevation
+        allocate(temp_elev(domain%nx(1), domain%nx(2)))
         temp_elev = domain%U(:,:,ELV)
 
         ! Smooth elevation everywhere.
@@ -4089,6 +4302,45 @@ TIMER_STOP('send_halos')
 
     end subroutine
 
+    subroutine copy_U_to_dispersive_last_timestep(domain)
+        !! Copy domain%U to the variable domain%ds%last_U, and record timing info.
+        !!
+        !! See documentation blurb in domain%solve_dispersive_terms for more info. 
+        !!
+        class(domain_type), intent(inout) :: domain
+
+        if(domain%use_dispersion) then
+TIMER_START('dispersive_store')
+            call domain%ds%store_last_U(domain%U)
+TIMER_STOP('dispersive_store')
+        end if
+    end subroutine
+
+    subroutine solve_dispersive_terms(domain, rhs_is_up_to_date, estimate_solution_forward_in_time, forward_time)
+        !! Solve the dispersive terms.
+        !!
+        class(domain_type), intent(inout) :: domain
+        logical, intent(in) :: rhs_is_up_to_date
+            !! Are the RHS terms in the dispersive solve already up to date? This is useful in the multidomain
+            !! context when using iteration, if the RHS does not change between iterations.
+        logical, intent(in) :: estimate_solution_forward_in_time
+            !! Should we use extrapolation in time to guess the solution before iteration (.true.). If .false. then
+            !! use the existing value of domain%U as the guess.
+        real(dp), intent(in) :: forward_time
+            !! Time for the guessed solution (only used if estimate_solution_forward_in_time=.true.)
+
+        if(domain%use_dispersion .and. (domain%time >= domain%static_before_time)) then
+TIMER_START('dispersive_solve')
+            call domain%ds%solve_tridiag(domain%is_staggered_grid, &
+                domain%U, domain%dx(1), domain%dx(2), &
+                domain%distance_bottom_edge, domain%distance_left_edge, &
+                domain%msl_linear, &
+                rhs_is_up_to_date = rhs_is_up_to_date, &
+                estimate_solution_forward_in_time = estimate_solution_forward_in_time, &
+                forward_time = forward_time)
+TIMER_STOP('dispersive_solve')
+        end if
+    end subroutine
 
     subroutine test_domain_mod
         ! Unit-tests (basic stuff only -- the solver quality is checked by the validation tests)

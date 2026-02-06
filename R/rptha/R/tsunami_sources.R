@@ -271,7 +271,7 @@ tsunami_unit_source_2_raster<-function(tsunami_unit_source, filename=NULL,
     if(field_to_output != 'smoothed_vertical_displacement'){
         # If the tsunami_source component is NA, then we didn't store the full
         # Okada output, so cannot provide vertical/easting/northing
-        if(is.na(tsunami_unit_source$tsunami_source)){
+        if(any(is.na(tsunami_unit_source$tsunami_source)) | (length(tsunami_unit_source$tsunami_source) == 0)){
             msg = paste0(
                 'tsunami_unit_source does not contain the vertical/easting/northing displacements \n (',
                 'this typically reflects an effort to conserve memory, by passing the \n',
@@ -284,7 +284,7 @@ tsunami_unit_source_2_raster<-function(tsunami_unit_source, filename=NULL,
 
     # Get the xy output coordinates, depending on whether they were provided to
     # the function
-    if(is.null(tsunami_surface_points_lonlat)){
+    if(all(is.null(tsunami_surface_points_lonlat))){
 
         stopifnot(
             length(tsunami_unit_source$tsunami_surface_points_lonlat[,1]) == 

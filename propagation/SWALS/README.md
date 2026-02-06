@@ -2,36 +2,33 @@
 -----
 
 Shallow WAter Like Solvers (SWALS) computes solutions to several [variants of
-the 2D shallow-water equations](./SOLVERS.md) (linear/nonlinear) in Cartesian
+the 2D shallow-water equations](./SOLVERS.md) (linear/nonlinear/dispersive) in Cartesian
 and Spherical coordinates, on "multidomains" represented as a set of connected and/or
-nested rectangular grid domains.
+nested rectangular grid domains. 
 
 A number of [different numerical methods](./SOLVERS.md) are implemented,
 suitable for a range of flow regimes, with particular emphasis on tsunami-like
 problems. This includes: 
 * [shock-capturing finite volume schemes](https://github.com/GeoscienceAustralia/ptha/blob/master/propagation/SWALS/SOLVERS.md#the-finite-volume-solvers)
-* [classical leapfrog schemes](https://github.com/GeoscienceAustralia/ptha/blob/master/propagation/SWALS/SOLVERS.md#the-leapfrog-schemes ),
+* [classical leapfrog schemes](https://github.com/GeoscienceAustralia/ptha/blob/master/propagation/SWALS/SOLVERS.md#the-leapfrog-solvers),
 * The [CLIFFS scheme](https://github.com/GeoscienceAustralia/ptha/blob/master/propagation/SWALS/SOLVERS.md#the-cliffs-solver)
 which was [developed by Elena Tolkova](https://github.com/Delta-function/cliffs-src). CLIFFS is similar to the well-known MOST tsunami solver, but uses a different wetting and drying scheme. 
 
-Two-way nesting allows for the use of higher-resolution domains in specified
-areas. Nested domains may use different numerical solvers, take different
-timesteps, and have grid sizes that are any integer divisor of the coarser
-domain(s) they communicate with. There are no hard limits on the number of
-domains or the depth of refinement. In models with multiple domains, the
-finest-resolution domain at any particular point is the "priority domain" and
-is interpreted as containing the SWALS numerical solution. Information on the
-priority domain solution is communicated between domains as required to enable
-seamless evolution of the flow. 
+The figure below shows an example SWALS model, which uses several levels of  nested grids to simulate tsunamis at tide gauges in southeast and west Australia (see [here](https://doi.org/10.1029/2025JB031949)). 
 
-Flux correction is used to enforce the conservation of mass and advected
-momentum through nested domain interfaces, for schemes that would conserve
-these quantities on a single grid. In practice we obtain excellent
-mass conservation in complex multidomains when using a combination of leapfrog
-and finite-volume schemes. This can be checked using the SWALS mass
-conservation tracking routine, which reports any unexplained mass change (i.e.
-differences between the time-integrated boundary fluxes and the volume change
-in the multidomain). 
+![SWALS model used to simulate tsunamis at tide gauges in southeast and west Australia.](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/Davies2025_Australia_wide_model_structure.png)
+
+A SWALS model with a more complex nesting structure is shown below. This was used to simulate tsunami inundation throughout NSW in Australia ([see here](https://www.researchgate.net/publication/396141903_NSW-wide_probabilistic_tsunami_inundation_hazards_from_subduction_earthquakes)).
+
+![SWALS model used to simulate tsunami inundation throughout NSW in Australia.](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/Structure-of-the-NSW-wide-inundation-model-A-The-global-extent-with-large-boxes_W640.jpg)
+
+Two-way nesting allows for the use of higher-resolution domains in specified
+areas, without hard limits on the number of domains or depth of refinement.
+Nested domains may use different numerical solvers, take different timesteps,
+and have grid sizes that are any integer divisor of the coarser domain(s) they
+communicate with. 
+* The finest-resolution domain at any particular point is the "priority domain" and contains the SWALS numerical solution. This is communicated to "halo regions" in neighbouring domains to enable seamless evolution of the flow.
+* Flux correction is used to enforce the conservation of mass and advected momentum through nested domain interfaces (for schemes that would conserve these quantities on a single grid). In practice we obtain excellent mass conservation in complex multidomains when using a combination of leapfrog and finite-volume schemes. 
 
 Parallel computation (shared and distributed memory CPU) is supported with a
 mixture of MPI (or Fortran coarrays) and openmp. Domains can be automatically split
@@ -43,28 +40,26 @@ The code includes various test suits that [can be run automatically](#compiling-
 [unit test suite](./tests/unit_tests), a [parallel unit test suite](./tests/parallel_tests),
  and a [validation test suite](./tests/validation_tests). The latter focusses 
 on tsunami type problems; see [here for various NTHMP tests](./examples/nthmp) 
-(which are well known in the tsunami community) and [here](./examples) for other problems.
+(which are well known in the tsunami community), [here](./examples) for other problems, and [here](./examples/dispersive/) for tests using dispersion. 
 
-A paper using SWALS to model historic tsunamis in Australia is [available
-here](https://www.frontiersin.org/articles/10.3389/feart.2020.598235/full) -
-this includes discussion of the range of equations that are solved, and the energy
-conservation properties of different solvers. It has been used to 
-model historic tsunamis and inundation hazards [in Tongatapu](https://doi.org/10.1093/gji/ggac140),
-and [in Western Australia](https://icce-ojs-tamu.tdl.org/icce/article/view/12657/11930) and in a [more
-detailed report on the Western Australian work](http://dx.doi.org/10.26186/150015). The
-linear solver in SWALS was also used extensively for the 
-[2018 Australian Probabilistic Tsunami Hazard Assessment](http://dx.doi.org/10.11636/Record.2018.041)
-and two associated papers: [this one in GJI](https://doi.org/10.1093/gji/ggz260) and 
-[this one in PAGEOPH](https://link.springer.com/article/10.1007/s00024-019-02299-w). 
+Publications using SWALS include:
+* [A paper](https://www.frontiersin.org/articles/10.3389/feart.2020.598235/full) using SWALS to model 5 historic tsunamis in Australia.
+It includes discussion of the range of equations that are solved, the energy conservation properties of different solvers, and their degree of agreement with observations. 
+* [A paper](https://doi.org/10.1029/2025JB031949) using SWALS to model 14 historical tsunamis at 32 tide gauges in southeast and west Australia. Observed tsunamis are compared with models using both published source inversions and random PTHA18 scenarios.
+* [A paper](https://doi.org/10.1093/gji/ggac140) using SWALS model inundation hazards in Tongatapu. It includes comparison with observations of 5 historical tsunamis at Nuku'alofa tide gauge (using PTHA18 scenarios as the source models).
+* [A technical report](http://dx.doi.org/10.26186/150015) and [conference paper](https://icce-ojs-tamu.tdl.org/icce/article/view/12657/11930) using SWALS to model tsunamis hazards in Western Australia (Geraldton to Dunsborough). The technical report includes a comparison of models with observations of the 2004 and 2005 tsunamis at many tide gauges, and some model intercomparisons.
+* The linear solver in SWALS was used extensively for the [2018 Australian Probabilistic Tsunami Hazard Assessment](http://dx.doi.org/10.11636/Record.2018.041) and two associated papers: [this one in GJI](https://doi.org/10.1093/gji/ggz260) and  [this one in PAGEOPH](https://link.springer.com/article/10.1007/s00024-019-02299-w). This includes modelling of 18 tsunamis at measured at DART buoys in the deep ocean.
+* [A technical report](http://dx.doi.org/10.26186/150281) and [conference paper](https://www.researchgate.net/publication/396141903_NSW-wide_probabilistic_tsunami_inundation_hazards_from_subduction_earthquakes) using SWALS to model tsunami hazards in NSW. The report includes a comparison of the model with 9 historical 9 historical tsunamis at many tide gauges.
+* [A technical report](https://doi.org/10.26186/150488) and [conference paper](https://www.researchgate.net/publication/396142067_Accommodating_Spatially_Varying_Tidal_Planes_in_Tsunami_Hazard_Assessments) using SWALS to model tsunami hazards near Gladstone in QLD. The report includes a comparison of the model with 4 historical tsunamis at tide gauges. See also some [animations from the model](https://doi.org/10.26186/150797).
 
 ## Installation prerequisites
 --------------------------
 
 ## Fortran compiler
 Compilation requires a version of GNU-Fortran or ifort, although the test-suite
-is setup for gfortran by default. The author hasn't comprehensively tested various
-compiler versions, but it is likely that gfortran versions 5 or greater will
-work (without coarrays), and ifort versions 19 and greater. 
+is setup for gfortran by default. The author hasn't comprehensively tested
+various compiler versions, but as of 2025 it is being used with versions of
+`gfortran`, `ifort` and `ifx` released between 2021-2025. 
 
 The code can run in parallel with both shared memory (openmp) and distributed
 memory approaches. Distributed parallel support requires that MPI is installed,
@@ -244,7 +239,7 @@ A number of preprocessor variables can be defined to control features of the cod
 - `-DTIMER` Time sections of the code and report on how long they take, generally in the multidomain log file. This is useful for understanding run-times. It is also used for static load-balancing calculations - see the function `make_load_balance_partition` in [./plot.R](./plot.R) which uses multidomain log-files to compute a more balanced distribution of work for multi-image MPI/coarray runs.
 - `-DSPHERICAL` Assume spherical coordinates. Otherwise cartesian coordinates are used
 - `-DREALFLOAT` Use single precision for all reals. Otherwise double-precision is used. This generally makes the code run faster, but beware - the nonlinear solvers generally need double-precision for accuracy, as do nested-grid models. If in doubt, test!
-- `-DNOCORIOLIS` Do not include Coriolis terms in spherical coordinates. By default, Coriolis terms are used when `-DSPHERICAL` is defined. They can ONLY be used in conjunction with spherical coordinates. But even in this case, sometimes it is useful to turn them off, hence this variable.
+- `-DNOCORIOLIS` Do not include Coriolis terms in spherical coordinates. By default, Coriolis terms are used when `-DSPHERICAL` is defined (except in the CLIFFS solver). They can ONLY be used in conjunction with spherical coordinates. But even in this case, sometimes it is useful to turn them off, hence this variable.
 - `-DCOARRAY` Build with distributed memory parallel support (in addition to shared memory support with openmp - which is enabled by default in any case). If ONLY this flag is provided then coarrays are used - alternatively, the coarray calls may be replaced with MPI by ALSO using flags below.
 - `-DCOARRAY_USE_MPI_FOR_INTENSIVE_COMMS` This uses MPI instead of coarrays for communication, which is useful because compiler support for coarrays is quite variable, while MPI is very mature. If using this option you MUST also use `-DCOARRAY` (even though MPI replaces coarrays). 
 - `-DCOARRAY_PROVIDE_CO_ROUTINES` Provide implementations of coarray collectives using MPI. This is required for compilers that do not support Fortran coarray collectives such as `co_min`, `co_max`, `co_sum`, etc. If using this option you MUST also use `-DCOARRAY`, and `-DCOARRAY_USE_MPI_FOR_INTENSIVE_COMMS` if using MPI. To be clear; **if this option and the previous 2 are provided**, then the compiler does NOT need to support coarrays (i.e. **all distributed-memory communication is done with MPI**).
@@ -252,6 +247,7 @@ A number of preprocessor variables can be defined to control features of the cod
 - `-DNETCDF4_GRIDS` Use the HDF5-based netcdf4 format for grid-file output. This requires that the netcdf library is compiled with netcdf4 support -- if not it will cause compilation to fail.
 - `-DTRACK_MULTIDOMAIN_STABILITY` Insert calls to `check_multidomain_stability` into the multidomain evolve loop. This checks every domain in the multidomain for `NaNs` or unusually small/large values, repeatedly during each time-step. If issues are detected then the multidomain writes various output and calls `error-stop`. In practice this is useful to identify the root-cause of stability problems in complex models. Note that if instability is detected on one multidomain in a distributed parallel model, then the call to `error-stop` can cause stability issues to be detected on other images right after the call to the communication routines (tagged with `step-after-comms`). In this case, the multidomain that "really" caused the issue can be identified because its instability is not triggered right after the communication step; it is more likely to have a tag like `inner` or `innerB`. See `evolve_multidomain_one_step` for the tags that are used.
 - `-DDEBUG_ARRAY` Add an array `domain%debug_array(nx, ny)` to every domain, which is written to netcdf at every output timestep. This can provide a scratch space for debugging.
+- `-DDISPERSIVE_PEREGRINE_IN_FLUX_FORM` If any domain uses dispersion (`domain%use_dispersion = .true.`) then this will cause the code to use a two-term dispersive model (like Peregrine's dispersion but written in terms of the flux rather than the speed). Otherwise we use the simplest 1-term dispersive model written in terms of the flux (like JAGURS and many other tsunami codes), which is the faster option. These two options give similar results in many test problems. When they differ the simpler model is sometimes better.
 
 Other options that are less often useful include:
 
@@ -262,6 +258,7 @@ Other options that are less often useful include:
 - `-DLEGACY_CORIOLIS_PARAMETER` Previously SWALS use a value for the earth's angular frequency assuming one rotation per day. Although this matches several other tsunami codes, it is slightly incorrect so was updated (the previous value was about 0.3% too small, because the earth rotates once in a sidereal day, which is slightly less than 24 hours). This flag makes SWALS use the slightly-too-small value. In principle this might help to compare with a previous run, or another model that uses the same treatment, although in practice I haven't seen a case where it matters. 
 - `-DEVOLVE_TIMER` This adds an addition timer to every domain object, which times different parts of code within its time-stepping routine. This level of timing granularity isn't needed in general, but may be useful in understanding the performance of the code. The timer results are written to a domain-specific file within the domain output directory, named `Evolve_timer_details.txt`.
 - `-DOLD_PROCESS_DATA_TO_SEND_B4FEB22` Use an older version of nesting, implemented prior to Feb 2022 (changes `two_way_nesting_comms_mod::process_data_to_send`). The newer version seems better for communication when a fine staggered-grid solver receives from a coarser solver, and similar in other cases.
+- `-DALWAYS_FLUX_CORRECT_DRY_CELLS` Try to obtain bitwise reproducibility of old flux correction behaviour. Only use this with purely non-dispersive models (it will make some dispersive models unstable). After dispersion was added to the code (Oct 2025), the flux correction calculations became more involved, albeit for non-dispersive domains the older approach is logically equivalent. Despite this, some compilers give floating-point level differences using the older and newer flux correction code, even in the non-dispersive case (e.g. `gfortran` with [BP09](examples/nthmp/BP09)). This is presumably because the older code is easier to optimise. This preprocessor variable applies the old flux correction logic, and can eliminate those floating-point level differences.
 
 ## Source-code html documentation
 -------------------------

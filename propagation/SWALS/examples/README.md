@@ -11,6 +11,8 @@ The problems are:
 
 * dambreak -- This compares the model with analytical solutions to the dam-break problem with various initial depths.
 
+* dispersive -- Folder with multiple tests using dispersion
+
 * generic_example -- This is useful for modelling single-grid global-scale tsunami propagation. It is also set up as a regression test; we simulate a PTHA scenario that is loosely similar to the Tohoku tsunami, compare a range of flow algorithms with observations, and check that the results are the same as when we first set up the problem (to within some tolerance that will likely catch changes in the model behaviour, but should allow for differences between compilers). We also check that adding a uniform rise-time to the earthquake source is equivalent to smoothing time (as is mathematically true for linear equations).
 
 * isolated_building -- This compares the model with a well-know dam-break type experiment.
@@ -20,6 +22,8 @@ The problems are:
 * merewether -- This compares the model with a flooding scenario for merewether, similar to [the ANUGA test](https://github.com/GeoscienceAustralia/anuga_core/tree/master/validation_tests/case_studies/merewether), which is based on field observations and laboratory experiments.
 
 * nesting_plane_wave -- This is a simple 1D plane wave propagation test problem which includes a nested grid. 
+
+* nthmp -- Folder with multiple NTHMP tests.
 
 * overbank_flow -- This computes steady, overbank flow in a channel with floodplains, and compares the model with an analytical solution for the cross-channel distribution of velocity, including the effect of eddy-viscosity.
 
