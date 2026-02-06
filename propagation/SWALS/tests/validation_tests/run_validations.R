@@ -6,6 +6,7 @@
 library(parallel)
 basedir = getwd()
 test_files = c(Sys.glob('../../examples/*/run_model.sh'), Sys.glob('../../examples/*/*/run_model.sh'))
+#test_files = c(Sys.glob('../../examples/dispersive/*/run_model.sh'))
 
 test_example<-function(test_file){
 

@@ -20,7 +20,7 @@ Figure 4 compares the model and observations at gauges WG3 and WG4. They are in 
 
 # Model performance at the urban gauges
 
-Below we compare the modeled and observed depths, cross-shore speeds, and cross-shore momentum fluxes. The model is in general agreement with the data. There are a few cases where the model does less well (e.g. the momentum fluxes for gauges B1 and C1). Here the literature suggests that a non-hydrostatic model may be required to better match the results.
+Below we compare the modeled and observed depths, cross-shore speeds, and cross-shore momentum fluxes. The model is in general agreement with the data. There are a few cases where the model does less well (e.g. the momentum fluxes for gauges B1 and C1), similar to reports in other studies. 
 
 ![Figure 5: Modelled and observed depths at gauges A1-A9](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/nthmp/Seaside_OSU_model/urban_gauge_group_A_depth.png)
 ![Figure 6: Modelled and observed cross-shore speed at gauges A1-A9](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/nthmp/Seaside_OSU_model/urban_gauge_group_A_speed.png)

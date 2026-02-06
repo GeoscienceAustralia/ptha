@@ -18,6 +18,7 @@ program unit_tests
     use date_to_numeric_mod, only: test_date_to_numeric_mod
     use forcing_mod, only: test_forcing_mod
     use domain_mod, only: test_domain_mod
+    use quadratic_extrapolation_mod, only: test_quadratic_extrapolation_mod
     implicit none
 
     print*, 'Testing read raster'
@@ -31,6 +32,9 @@ program unit_tests
 
     print*, 'Testing points_in_poly'
     call test_points_in_poly_mod()
+
+    print*, 'Testing quadratic_extrapolation_mod'
+    call test_quadratic_extrapolation_mod()
 
     print*, 'Testing qsort'
     call test_qsort_mod()

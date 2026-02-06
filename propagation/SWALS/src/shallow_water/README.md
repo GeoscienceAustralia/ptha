@@ -16,6 +16,8 @@ The key codes in this folder are:
 
 * [timestepping_metadata_mod.f90](timestepping_metadata_mod.f90) defines several key constants for each of the timestepping methods -- for instance, their allowed CFL number, and the "halo thickness" that they require to evolve one step. 
 
+* [linear_dispersive_mod.f90](linear_dispersive_mod.f90) to include dispersive terms in some solvers.
+
 * [nested_grid_comms_mod.f90](nested_grid_comms_mod.f90) defines a couple of classes that are useful for communicating between nested domains.
 
 * [point_gauge_mod.f90](point_gauge_mod.f90) defines a class to take care of writing gauges (i.e. point time-series) to a netcdf file.

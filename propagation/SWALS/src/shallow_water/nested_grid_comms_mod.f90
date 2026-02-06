@@ -21,6 +21,7 @@ module nested_grid_comms_mod
     use reshape_array_mod, only: repack_rank1_array
     use logging_mod, only: log_output_unit
     use coarray_intrinsic_alternatives, only: this_image2, num_images2
+    use extrapolation_limiting_mod, only: minmod
     !use mpi
 
     !use iso_c_binding, only: C_DOUBLE
@@ -36,6 +37,7 @@ module nested_grid_comms_mod
     !
     real(dp), parameter :: ONE_dp = 1.0_dp, ZERO_dp = 0.0_dp, HALF_dp = 0.5_dp
     real(dp), parameter :: EPS = 1.0e-06_dp
+    real(dp), parameter :: missing_time_value = -HUGE(1.0_dp)
 
     integer(ip), parameter, public :: SPATIAL_DIM = 2
         !! Spatial dimensions of the problem -- we solve the 2D shallow water equations
@@ -91,7 +93,13 @@ module nested_grid_comms_mod
         integer(ip) :: nsend 
             !! We only need to send send_buffer(1:nsend)
         integer(ip) :: nsend_interior 
-            !! Number of send values that are not edge fluxes
+            !! Number of send values that are not edge flux info or time
+        integer(ip) :: send_interior_start = -HUGE(1_ip), send_interior_end = -HUGE(1_ip)
+            !! Range of indices in which we store data in send_buffer about the solution (and perhaps its gradients)
+        integer(ip) :: send_flux_start = -HUGE(1_ip), send_flux_end = -HUGE(1_ip)
+            !! Range of indices in which we store data in send_buffer about boundary fluxes for mass conservation tracking
+        integer(ip) :: send_timeind = -HUGE(1_ip)
+            !! Index in which we store data in send_data about the domain%time
         logical :: send_active = .true. 
             !! Can use to switch off 'send' (so only receives occur)
         type(array_rank2_dp_type) :: send_box_flux_integral(4)
@@ -109,7 +117,13 @@ module nested_grid_comms_mod
         integer(ip) :: nrecv 
             !! We only need to use recv_buffer(1:nrecv)
         integer(ip) :: nrecv_interior
-            !! Like nrecv, if we don't need to send boundary flux data
+            !! Number of receive values that are not edge flux info or time
+        integer(ip) :: recv_interior_start = -HUGE(1_ip), recv_interior_end = -HUGE(1_ip)
+            !! Range of indices in which we store data in recv_buffer about the solution (and perhaps its gradients)
+        integer(ip) :: recv_flux_start = -HUGE(1_ip), recv_flux_end = -HUGE(1_ip)
+            !! Range of indices in which we store data in recv_buffer about boundary fluxes for mass conservation tracking
+        integer(ip) :: recv_timeind = -HUGE(1_ip)
+            !! Index in which we store data in recv_buffer about the domain%time
         logical :: recv_active = .true. 
             !! Can use to switch off 'recv' (so only sends occur)
         type(array_rank2_force_double_type) :: recv_box_flux_integral(4)
@@ -159,8 +173,9 @@ module nested_grid_comms_mod
 #if defined(OLD_PROCESS_DATA_TO_SEND_B4FEB22)
         procedure, non_overridable :: process_data_to_send => process_data_to_send_ORIGINAL
 #else
-        procedure, non_overridable :: process_data_to_send => process_data_to_send_NEW
+        procedure, non_overridable :: process_data_to_send => process_data_to_send_2022Feb
 #endif
+
         procedure, non_overridable :: send_data => send_data
         procedure, non_overridable :: process_received_data => process_received_data
         ! Routines to allow time-stepping of boundary flux integral terms
@@ -509,6 +524,7 @@ module nested_grid_comms_mod
 
             ! Figure out how much data we need to send
             ! Make this the same length as the region we will send to
+            ! Firstly account for flow variables and their gradients
             if(two_way_nesting_comms%my_domain_is_finer .or. equal_cell_ratios) then
                 sbs = (iU - iL + 1) * (jU - jL + 1) * (kU - kL + 1) / &
                     nint(product(ONE_dp/cell_ratios))
@@ -520,10 +536,23 @@ module nested_grid_comms_mod
                 sbs = (iU - iL + 1) * (jU - jL + 1) * (kU - kL + 1) * &
                     (1_ip + number_of_gradients_coarse_to_fine)
             end if
-            sbs = sbs + flux_integral_size
+            two_way_nesting_comms%send_interior_start = 1 ! First stored index for interior flow variables
+            two_way_nesting_comms%send_interior_end = sbs ! Last stored index for interior flow variables
+            two_way_nesting_comms%nsend_interior = sbs ! Initial size of stored data
 
+            ! Increase the length based on the boundary flux information
+            if(send_boundary_flux_data) then
+                two_way_nesting_comms%send_flux_start = sbs + 1 ! First stored index for boundary variables
+                two_way_nesting_comms%send_flux_end = sbs + flux_integral_size ! Last stored index for boundary variables
+                sbs = sbs + flux_integral_size ! Increment the overall stored size
+            end if
+
+            ! Increase the length so we can send the time as well
+            sbs = sbs+1
+            two_way_nesting_comms%send_timeind = sbs
+
+            ! Overall number of values we send
             two_way_nesting_comms%nsend = sbs
-            two_way_nesting_comms%nsend_interior = sbs - flux_integral_size
 
         else
             ! Don't send anything
@@ -552,6 +581,7 @@ module nested_grid_comms_mod
             ! Number of values to add to recv array
             flux_integral_size = sum(four_ip*bd)*count([send_boundary_flux_data])
 
+            ! Count the size of the recv buffer, starting with space for flow variables and their gradients
             if(two_way_nesting_comms%my_domain_is_finer .and. (.not. equal_cell_ratios)) then
                 ! Receive one value and a number of gradients for every coarse cell
                 rbs = nint(&
@@ -560,17 +590,31 @@ module nested_grid_comms_mod
             else
                 rbs = product(ijk_to_recv(2,:) - ijk_to_recv(1,:) + 1)
             endif
+            two_way_nesting_comms%recv_interior_start = 1 ! First stored index for interior flow variables
+            two_way_nesting_comms%recv_interior_end = rbs ! Last stored index for interior flow variables
+            two_way_nesting_comms%nrecv_interior = rbs ! Initial size of stored data
 
-            ! The full recv buffer also includes the flux integral
-            rbs = rbs + flux_integral_size
+            if(send_boundary_flux_data) then
+                ! The full recv buffer also includes the flux integral
+                two_way_nesting_comms%recv_flux_start = rbs + 1 ! First stored index of boundary variables
+                two_way_nesting_comms%recv_flux_end = rbs + flux_integral_size ! Last stored index of boundary variables
+                rbs = rbs + flux_integral_size ! Increment the overall stored size
+            end if
+
+            ! Increase the length so we can send the time as well
+            rbs = rbs + 1
+            two_way_nesting_comms%recv_timeind = rbs
+    
+            ! Overall number of values we receive
+            two_way_nesting_comms%nrecv = rbs
         else
             ! Don't recv anything
             rbs = 0
             flux_integral_size = 0
+            two_way_nesting_comms%nrecv = 0
+            two_way_nesting_comms%nrecv_interior = 0
         end if
 
-        two_way_nesting_comms%nrecv = rbs
-        two_way_nesting_comms%nrecv_interior = rbs - flux_integral_size
 
         ! Allocate buffers
         allocate(two_way_nesting_comms%send_buffer(sbs))
@@ -650,12 +694,15 @@ module nested_grid_comms_mod
     end subroutine
 
 
-    subroutine process_data_to_send_ORIGINAL(two_way_nesting_comms, U)
-        !! Copy data to the send buffer, with appropriate averaging or interpolation. This was subsequently updated.
+    subroutine process_data_to_send_ORIGINAL(two_way_nesting_comms, U, time)
+        !! Copy data to the send buffer, with different treatments for
+        !! 'coarse-to-fine', 'fine-to-coarse', or 'same-size' sends.
         class(two_way_nesting_comms_type), intent(inout) :: two_way_nesting_comms
-            !! The two way nesting communicator which manages communication on a rectangular patch of the domain.
+            !! The two way nesting commuinicator that manages sends on a rectangular patch of the domain
         real(dp), intent(in) :: U(:,:,:)
-            !! real rank 3 array that we send some subset of
+            !! Array of flow variables, typically domain%U
+        real(dp), optional, intent(in) :: time
+            !! Time corresponding to domain%U
 
         ! Local variables
         integer(ip) :: i,j,k, nb, nvar, ii, jj
@@ -1237,7 +1284,8 @@ module nested_grid_comms_mod
                 !
                 ! Optimized treatment of this special case
                 !
-                already_sent = iR * kR * jR
+                !already_sent = iR * kR * jR ! == -1 + two_way_nesting_comms%send_flux_start
+                already_sent = two_way_nesting_comms%send_flux_start - 1_ip
 
                 ! Loop over send_box_flux_integral sides
                 dir_ip = [NORTH, SOUTH, EAST, WEST]
@@ -1262,7 +1310,8 @@ module nested_grid_comms_mod
                     ! Fine-to-coarse
                     ! Pack each boundary flux into the send_buffer, by columns,
                     ! aggregating to the coarse recv grid
-                    already_sent = iR * kR * jR
+                    !already_sent = iR * kR * jR ! == -1 + two_way_nesting_comms%send_flux_start
+                    already_sent = two_way_nesting_comms%send_flux_start - 1_ip
 
                     ! Loop over send_box_flux_integral sides
                     dir_ip = [NORTH, SOUTH, EAST, WEST]
@@ -1290,8 +1339,9 @@ module nested_grid_comms_mod
 
                 else
                     ! Coarse-to-fine
-                    already_sent = (iU - iL + 1) * (jU - jL + 1) * (kU - kL + 1) * &
-                        (1_ip + number_of_gradients_coarse_to_fine)
+                    !already_sent = (iU - iL + 1) * (jU - jL + 1) * (kU - kL + 1) * &
+                    !    (1_ip + number_of_gradients_coarse_to_fine) ! == -1 + two_way_nesting_comms%send_flux_start
+                    already_sent = two_way_nesting_comms%send_flux_start - 1_ip
 
                     ! Pack each boundary flux into the send_buffer, by columns,
                     ! with redundancy to match the finer recv grid
@@ -1325,17 +1375,26 @@ module nested_grid_comms_mod
             end if ! equal_cel_sizes
         end if !send_boundary_flux_data
 
+        if(present(time)) then
+            ! Send time
+            two_way_nesting_comms%send_buffer(two_way_nesting_comms%send_timeind) = time
+        else
+            ! Send a number that clearly isn't the time
+            two_way_nesting_comms%send_buffer(two_way_nesting_comms%send_timeind) = missing_time_value
+        end if
     end subroutine
 
-    subroutine process_data_to_send_NEW(two_way_nesting_comms, U)
-        !! Copy data to the send buffer, with appropriate averaging or interpolation.
+    subroutine process_data_to_send_2022Feb(two_way_nesting_comms, U, time)
+        !! Copy data to the send buffer, with different treatments for
+        !! 'coarse-to-fine', 'fine-to-coarse', or 'same-size' sends.
         !! This is revised from process_data_to_send_ORIGINAL, with the intention of giving better performance for nesting that
-        !! involves a "finer" staggered-grid. The latter case has been unusual to date, as usually we setup models where the
-        !! staggered-grid is the coarser domain, with finer-domains being non-staggered.
+        !! involves a "finer" staggered-grid, and similar performance otherwise.
         class(two_way_nesting_comms_type), intent(inout) :: two_way_nesting_comms
             !! The two way nesting communicator which manages communication on a rectangular patch of the domain.
         real(dp), intent(in) :: U(:,:,:)
             !! real rank 3 array that we send some subset of
+        real(dp), optional, intent(in) :: time
+            !! time corresponding to domain%U
 
         ! Local variables
         integer(ip) :: i,j,k, nb, nvar, ii, jj
@@ -1557,34 +1616,36 @@ module nested_grid_comms_mod
                                     if( (central_i == inv_cell_ratios_ip(1)/2) .and. &
                                         (central_j == inv_cell_ratios_ip(2)/2) ) then
                                         two_way_nesting_comms%send_buffer(ijkCounter) = U(i,j,k)
+                                        !two_way_nesting_comms%send_buffer(ijkCounter) = 1.0_dp/81.0_dp * sum(U(i-4:i+4,j-4:j+4,k))
                                     end if
                                 else if(k == UH) then
-                                    ! ! East point.
+                                    !! East point.
                                     !if( (central_i == inv_cell_ratios_ip(1)-1) ) then
                                     !    ! Average value of UH along 'y' direction inside cell
                                     !    ip1 = min(i+1, size(U, 1)) ! valid so long as (md%extra_cells_in_halo > 0)
                                     !    two_way_nesting_comms%send_buffer(ijkCounter) = &
                                     !        two_way_nesting_comms%send_buffer(ijkCounter) + &
                                     !        0.5_dp * (U(i,j,k) + U(ip1,j,k)) * cell_ratios(2)
+                                    !        !(1.0_dp/9.0_dp) * sum(U(i-4:i+4,j,k)) * cell_ratios(2)
                                     !end if
 
                                     ! Pointwise
                                     if( (central_i == inv_cell_ratios_ip(1)-1) .and. &
                                         (central_j == inv_cell_ratios_ip(2)/2) ) then
-                                        ! Average value of UH along 'y' direction inside cell
                                         ip1 = min(i+1, size(U, 1)) ! valid so long as (md%extra_cells_in_halo > 0)
                                         two_way_nesting_comms%send_buffer(ijkCounter) = &
                                             0.5_dp * (U(i,j,k) + U(ip1,j,k))
                                     end if
 
                                 else if(k == VH) then
-                                    ! ! North point.
+                                    !! North point.
                                     !if( (central_j == inv_cell_ratios_ip(2)-1) ) then
                                     !    ! Average value of VH along 'x' direction inside cell
                                     !    jp1 = min(j+1, size(U, 2))! valid so long as (md%extra_cells_in_halo > 0)
                                     !    two_way_nesting_comms%send_buffer(ijkCounter) = &
                                     !        two_way_nesting_comms%send_buffer(ijkCounter) + &
                                     !        0.5_dp * (U(i,j,k) + U(i,jp1,k)) * cell_ratios(1)
+                                    !        !(1.0_dp/9.0_dp) * sum(U(i,j-4:j+4,k)) * cell_ratios(1)
                                     !end if
 
                                     ! Pointwise
@@ -1883,7 +1944,8 @@ module nested_grid_comms_mod
                 !
                 ! Optimized treatment of this special case
                 !
-                already_sent = iR * kR * jR
+                !already_sent = iR * kR * jR ! == -1 + two_way_nesting_comms%send_flux_start
+                already_sent = two_way_nesting_comms%send_flux_start - 1_ip
 
                 ! Loop over send_box_flux_integral sides
                 dir_ip = [NORTH, SOUTH, EAST, WEST]
@@ -1908,7 +1970,8 @@ module nested_grid_comms_mod
                     ! Fine-to-coarse
                     ! Pack each boundary flux into the send_buffer, by columns,
                     ! aggregating to the coarse recv grid
-                    already_sent = iR * kR * jR
+                    !already_sent = iR * kR * jR ! == -1 + two_way_nesting_comms%send_flux_start
+                    already_sent = two_way_nesting_comms%send_flux_start - 1_ip
 
                     ! Loop over send_box_flux_integral sides
                     dir_ip = [NORTH, SOUTH, EAST, WEST]
@@ -1936,8 +1999,9 @@ module nested_grid_comms_mod
 
                 else
                     ! Coarse-to-fine
-                    already_sent = (iU - iL + 1) * (jU - jL + 1) * (kU - kL + 1) * &
-                        (1_ip + number_of_gradients_coarse_to_fine)
+                    !already_sent = (iU - iL + 1) * (jU - jL + 1) * (kU - kL + 1) * &
+                    !    (1_ip + number_of_gradients_coarse_to_fine) ! == -1 + two_way_nesting_comms%send_flux_start
+                    already_sent = two_way_nesting_comms%send_flux_start - 1_ip
 
                     ! Pack each boundary flux into the send_buffer, by columns,
                     ! with redundancy to match the finer recv grid
@@ -1971,27 +2035,43 @@ module nested_grid_comms_mod
             end if ! equal_cel_sizes
         end if !send_boundary_flux_data
 
+        if(present(time)) then
+            ! Send time
+            two_way_nesting_comms%send_buffer(two_way_nesting_comms%send_timeind) = time
+        else
+            ! Send a number that clearly isn't the time
+            two_way_nesting_comms%send_buffer(two_way_nesting_comms%send_timeind) = missing_time_value
+        end if
+
     end subroutine
 
-
-    subroutine process_received_data(two_way_nesting_comms, p2p, U)
-        !! Routine to copy the recv buffer into the main computational array, once
+    subroutine process_received_data(two_way_nesting_comms, p2p, U, time_received, &
+        skip_if_time_before_this_time, skip_if_time_after_this_time, skip_if_unequal_cell_ratios, &
+        skip_if_my_domain_is_coarser)
+        !! Copy the recv buffer into the main computational array, once
         !! it has been filled by the neighbour.
         !!
-        !! We keep this separate from the routine which copies the data, so that
-        !! in parallel we can do a sync between the two steps. This also gives us the flexibility
-        !! to use the sync for other parallel comms processes.
-        !!
+        !! We keep this separate from the routine which communicates the data, so that
+        !! in parallel we can do a sync between the two steps (which can also cover other processes/images). 
         class(two_way_nesting_comms_type), intent(inout) :: two_way_nesting_comms
-            !! The two way nesting communicator which manages communication on a rectangular patch of the domain.
+            !! The nesting communication type that receives data in a particular sub-rectangle of the domain
         type(p2p_comms_type), intent(in) :: p2p
-            !! The point-2-point communication type that will manage this two-way communication,
-            !! (typically associated with the multidomain)
+            !! The parallel communication type
         real(dp), intent(inout) :: U(:,:,:)
-            !! main computational array that we copy the received data to.
+            !! The domain%U to be updated with received data
+        real(dp), optional, intent(out) :: time_received
+            !! Record the domain%time associated with the data to be received. Note the time will be updated even
+            !! if we skip the U update (due to skip_if_time_before_this_time or skip_if_time_after_this_time)
+        real(dp), optional, intent(in) :: skip_if_time_before_this_time
+            !! If the time associated with the received data is BEFORE this time, then do not update U
+        real(dp), optional, intent(in) :: skip_if_time_after_this_time
+            !! If the time associated with the received data is AFTER this time, then do not update U
+        logical, optional, intent(in) :: skip_if_unequal_cell_ratios
+            !! If (.not. two_way_nesting_comms%equal_cell_ratios) then do not update U
+        logical, optional, intent(in) :: skip_if_my_domain_is_coarser
+            !! If the current domain is coarser than where it receives from, then do not update U
 
         integer(ip) :: iL, iU, jL, jU, kL, kU, n0, n1, dir_ip(4), i, j, nvar, s1
-        !real(dp) :: stage_mean_before, stage_mean_after
         real(dp) :: uc, dU_di_p, dU_di_m, dU_dj_p, dU_dj_m
         integer(ip), parameter :: coarse_factor = (1_ip + number_of_gradients_coarse_to_fine)
         integer(ip) :: iL_1, iU_1, jL_1, jU_1, i1, j1, k1
@@ -1999,9 +2079,14 @@ module nested_grid_comms_mod
         integer(ip) :: coarse_cell_i, coarse_cell_j, coarse_cell_k, coarse_cell_count
         real(dp) :: middle_index(2), dU_di, dU_dj, dUj, dUi
         integer(ip), parameter :: STG=1, UH=2, VH=3, ELV=4
+        real(dp) :: time_recv
 
         ! Quick exit if the type is purely used to send data
         if(.not. two_way_nesting_comms%recv_active) return
+
+        ! Copy data from the p2p data structure to the recv_buffer
+        call recv_from_p2p_comms(p2p, two_way_nesting_comms%recv_buffer(:), &
+            buffer_label = two_way_nesting_comms%recv_ID)
 
         ! Shorthand
         iL = two_way_nesting_comms%recv_inds(1,1)
@@ -2011,9 +2096,38 @@ module nested_grid_comms_mod
         kL = two_way_nesting_comms%recv_inds(1,3)
         kU = two_way_nesting_comms%recv_inds(2,3)
 
-        call recv_from_p2p_comms(p2p, two_way_nesting_comms%recv_buffer(:), &
-            buffer_label = two_way_nesting_comms%recv_ID)
+        ! Get the domain%time corresponding to the data that was sent
+        time_recv = two_way_nesting_comms%recv_buffer(two_way_nesting_comms%recv_timeind)
+        if(present(time_received)) time_received = time_recv
 
+        ! Possible quick exits if the time doesn't satisfy our criteria.
+        if(present(skip_if_time_before_this_time)) then
+            !if(time_recv /= missing_time_value .and. time_recv < skip_if_time_before_this_time) return
+            if(time_recv < skip_if_time_before_this_time) then
+                !write(log_output_unit, *) 'skip receive from earlier time'
+                return
+            end if
+        end if
+        if(present(skip_if_time_after_this_time)) then
+            !if(time_recv /= missing_time_value .and. time_recv > skip_if_time_after_this_time) return
+            if(time_recv > skip_if_time_after_this_time) then
+                !write(log_output_unit, *) 'skip receive from later time'
+                return
+            end if
+        end if
+        if(present(skip_if_unequal_cell_ratios)) then
+            if(skip_if_unequal_cell_ratios .and. (.not. two_way_nesting_comms%equal_cell_ratios)) then
+                !write(log_output_unit, *) 'skip receive from unequal cellsize'
+                return
+            end if
+        end if
+
+        if(present(skip_if_my_domain_is_coarser)) then
+            if(skip_if_my_domain_is_coarser .and. (.not. two_way_nesting_comms%equal_cell_ratios) .and. &
+                (.not. two_way_nesting_comms%my_domain_is_finer)) then
+                return
+            end if
+        end if
 
         if(two_way_nesting_comms%my_domain_is_finer) then
 
@@ -2622,7 +2736,7 @@ module nested_grid_comms_mod
         ! Local variables
         integer(ip) :: i, j, k, xi, yi, this_image_local, num_images_local !, ierr
         integer(ip) :: parent_image_index, child_image_index
-        real(dp) :: x, y, z, err_tol, test_max, test_min
+        real(dp) :: x, y, z, err_tol, test_max, test_min, t1out, t1in, t2out, t2in
         integer(ip), parameter :: strd = 1_ip + number_of_gradients_coarse_to_fine
 
 #ifdef COARRAY
@@ -2802,14 +2916,10 @@ module nested_grid_comms_mod
         call Us(2)%two_way_nesting_comms(child_comms_index)%process_data_to_send(Us(2)%U)
 
         ! Check for errors in send buffer
-        if(dp == force_double) then
-            err_tol = 1.0e-14_dp
-        else
-            err_tol = 1.0e-5_dp
-        end if
+        err_tol = merge(1.0e-14_dp, 1.0e-05_dp, (dp == force_double))
 
-        ! The tests below were written before we increased the send buffer to store flux data
-        ! Fix that by only checking the data 'before the flux data'
+        ! The tests below were written before we increased the send buffer to store flux data or time
+        ! So only check the data 'before the flux data and time'
         b4_flux_data_p = Us(1)%two_way_nesting_comms(parent_comms_index)%nsend_interior
         b4_flux_data_c = Us(2)%two_way_nesting_comms(child_comms_index)%nsend_interior
 
@@ -2883,6 +2993,38 @@ module nested_grid_comms_mod
                     write(log_output_unit,*) 'PASS'
                 end if
             end do
+        end if
+
+        !
+        ! Test that we can communicate time
+        !
+        t1out = 2.0_dp
+        t2out = 3.0_dp
+        call Us(1)%two_way_nesting_comms(parent_comms_index)%process_data_to_send(Us(1)%U, time=t1out)
+        call Us(2)%two_way_nesting_comms(child_comms_index)%process_data_to_send(Us(2)%U, time=t2out)
+#if defined(COARRAY_USE_MPI_FOR_INTENSIVE_COMMS)
+        call Us(1)%two_way_nesting_comms(parent_comms_index)%send_data(p2p, send_to_recv_buffer=.FALSE.)
+        call Us(2)%two_way_nesting_comms(child_comms_index)%send_data(p2p, send_to_recv_buffer=.FALSE.)
+        call communicate_p2p(p2p)
+#else
+        ! Communicate
+        call Us(1)%two_way_nesting_comms(parent_comms_index)%send_data(p2p)
+        call Us(2)%two_way_nesting_comms(child_comms_index)%send_data(p2p)
+#endif
+#if defined(COARRAY) && !defined(COARRAY_USE_MPI_FOR_INTENSIVE_COMMS)
+        sync images(p2p%linked_p2p_images)
+#endif
+
+        ! Copy the recv buffer to the main array
+        call Us(1)%two_way_nesting_comms(parent_comms_index)%process_received_data(p2p, Us(1)%U, time_received=t1in)
+        call Us(2)%two_way_nesting_comms(child_comms_index)%process_received_data(p2p, Us(2)%U, time_received=t2in)
+
+        if( (t1in == t2out) .and. (t2in == t1out) ) then
+            write(log_output_unit,*) 'PASS'
+        else
+            write(log_output_unit,*) 'FAIL: problem with communicating time', __LINE__, &
+                __FILE__
+            call generic_stop()
         end if
 
         call deallocate_p2p_comms(p2p)

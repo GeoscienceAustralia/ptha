@@ -11,7 +11,7 @@ SWALS_SRC_GIT_VERSION := $(shell git log -n1 | head -n1 | tail -c41)
 
 
 # REGULAR OBJECTS
-SWALS_OBJECTS :=global_mod.o $(SWALS_DEVICE_OBJECTS) coarray_intrinsic_alternatives_mod.o logging_mod.o qsort_mod.o stop_mod.o reshape_array_mod.o which_mod.o date_to_numeric_mod.o linear_interpolator_mod.o grid_spacetime_interpolator_mod.o ragged_array_mod.o spherical_mod.o points_in_poly_mod.o file_io_mod.o timestepping_metadata_mod.o extrapolation_limiting_mod.o cliffs_tolkova_mod.o burn_into_grid_mod.o netcdf_util_mod.o point_gauge_mod.o timer_mod.o coarray_point2point_comms_mod.o nested_grid_comms_mod.o domain_mod.o forcing_mod.o boundary_mod.o multidomain_mod.o read_raster_c.o read_raster_mod.o
+SWALS_OBJECTS :=global_mod.o $(SWALS_DEVICE_OBJECTS) lapack_tridiagonal_solves.o coarray_intrinsic_alternatives_mod.o logging_mod.o qsort_mod.o stop_mod.o quadratic_extrapolation_mod.o reshape_array_mod.o which_mod.o date_to_numeric_mod.o linear_interpolator_mod.o grid_spacetime_interpolator_mod.o ragged_array_mod.o spherical_mod.o points_in_poly_mod.o file_io_mod.o timestepping_metadata_mod.o extrapolation_limiting_mod.o cliffs_tolkova_mod.o burn_into_grid_mod.o netcdf_util_mod.o point_gauge_mod.o timer_mod.o coarray_point2point_comms_mod.o nested_grid_comms_mod.o linear_dispersive_solver_mod.o domain_mod.o forcing_mod.o boundary_mod.o multidomain_mod.o read_raster_c.o read_raster_mod.o
 
 
 # Make the library
@@ -39,6 +39,10 @@ read_raster_c.o: $(SWALS_SRC)/raster/read_raster_c.c
 # Heavy optimization of the read_raster_mod.f90 can cause issues
 read_raster_mod.o: $(SWALS_SRC)/raster/read_raster_mod.f90
 	$(SWALS_FORTRAN) -O2 $(NO_LTO) -c $^ $(SWALS_GDAL_CFLAGS)
+
+# Lapack routines (in F77)
+lapack_tridiagonal_solves.o: $(SWALS_SRC)/util/lapack_tridiagonal_solves.f
+	$(SWALS_FORTRAN) -c $^
 
 #
 # These rely on NETCDF, unless compiled with -DNONETCDF,

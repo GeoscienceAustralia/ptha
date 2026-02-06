@@ -855,6 +855,11 @@ EVOLVE_TIMER_START('LF_nonlinear_update')
         !$OMP END PARALLEL
         domain%time = domain%time + HALF_dp*dt
 
+        !! TODO: This should work for tracking momentum fluxes due to advection
+        !call domain%nesting_boundary_flux_integral_tstep(dt, &
+        !   flux_NS=domain%flux_NS(:,:,UH:VH), flux_NS_lower_index=2_ip, &
+        !   flux_EW=domain%flux_EW(:,:,UH:VH), flux_EW_lower_index=2_ip, &
+        !   var_indices=[UH, VH], flux_already_multiplied_by_dx=.true.)
 EVOLVE_TIMER_STOP('LF_nonlinear_update')
 
 contains

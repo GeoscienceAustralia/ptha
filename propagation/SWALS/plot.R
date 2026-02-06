@@ -1386,25 +1386,38 @@ partition_into_k_with_grouping_WORK<-function(vals, k, vals_groups,
         tmp[[counter]] = local_split
     }
 
-    # Now loop over each group, ordered according to which has the largest value
+    # Now loop over each group, ordered according to which has the largest "range of values".
+    # If these are runtimes, then large "range of values" --> uneven runtimes. If we assign
+    # the most uneven group first, then later we have a chance to correct it by distributing
+    # other groups.
     if(random_ties){
         between_group_order = 
-            rank(unlist(lapply(tmp, function(x) max(x[[2]]))), ties='random')
+            #rank(unlist(lapply(tmp, function(x) max(x[[2]]))), ties='random')
+            rank(unlist(lapply(tmp, function(x) diff(range(x[[2]])))), ties='random')
     }else{
         between_group_order = 
-            rank(unlist(lapply(tmp, function(x) max(x[[2]]))), ties='first')
+            #rank(unlist(lapply(tmp, function(x) max(x[[2]]))), ties='first')
+            rank(unlist(lapply(tmp, function(x) diff(range(x[[2]])))), ties='first')
     }
-    # Flip
+    # Flip ranks (so now the largest has between_group_order=1)
     between_group_order = max(between_group_order) + 1 - between_group_order
 
-    for(g in between_group_order){
+    #for(g in between_group_order){
+    # Loop over groups, in order of the max runtime they would add to any domain
+    for(j in 1:length(between_group_order)){
+        g = which(between_group_order == j); stopifnot(length(g) == 1)
         # Within the groups, the 'vals' are already ordered into k groups,
-        # longest-time first
         within_group_inds = tmp[[g]][[1]]
         within_group_vals = tmp[[g]][[2]]
-        # Here "ties='first'" would cause the test to fail
-        # Experiments suggest it isn't useful to add extra randomness
-        assign_to_order = rank(cumulative_sum_vals_in_group, ties='last')  
+    
+        # Reorder the above, with shorter_time before longer_time
+        o1 = order(within_group_vals, decreasing=FALSE)
+        within_group_vals = within_group_vals[o1]
+        within_group_inds = within_group_inds[o1]
+
+        # Loop over the partitions, in order of their cumulative sums (larger = first)
+        # and assign them the next group of values (smallest = first)
+        assign_to_order = order(cumulative_sum_vals_in_group, decreasing=TRUE)
         for(i in 1:length(assign_to_order)){
             partition_ind = assign_to_order[i]
             inds_in_group[[partition_ind]] = 
@@ -1477,8 +1490,8 @@ test_partition_into_k_with_grouping<-function(){
 
     # Test 1 -- this should partition perfectly
     test = partition_into_k_with_grouping(vals, k=nsplit, vals_groups=group_inds)
-    max_val = max(test[[2]])
-    if(sum(test[[2]] == max_val) == nsplit){
+    test1_max_val = max(test[[2]])
+    if(sum(test[[2]] == test1_max_val) == nsplit){
         print('PASS')
     }else{
         print('FAIL')
@@ -1498,14 +1511,22 @@ test_partition_into_k_with_grouping<-function(){
     }
 
     # Test 3 -- break it even more
-    # Ideally we would have 2 values that differ from 1 by their optimal value.
-    # But this naive algorithm does not achieve that.
+    # Ideally we would have 2 values that are 1 larger than the target_value.
     vals[145] = vals[145] + 1 
     testA = partition_into_k_with_grouping(vals, k=nsplit, vals_groups=group_inds)
+    max_val = max(testA[[2]])
+    # There should be two values with max_val, and all others being max_val - 1
+    if(sum(testA[[2]] == (max_val-1)) == (nsplit-2)){
+        print('PASS')
+    }else{
+        print('FAIL')
+    }
+
+
+    # Check that the random tries does not decrease the performance 
     test = partition_into_k_with_grouping(vals, k=nsplit, vals_groups=group_inds, 
                                           ntries=1000)
-    # Check that the random tries led to improvement
-    if(max(test[[2]]) < max(testA[[2]])){
+    if(max(test[[2]]) <= max(testA[[2]])){
         print('PASS')
     }else{
         print('FAIL')
@@ -1524,11 +1545,15 @@ test_partition_into_k_with_grouping<-function(){
 #' @param multidomain_dir directory containing the multidomain outputs
 #' @param verbose if FALSE, suppress printing
 #' @param domain_index_groups either an empty list, or a list with 2 or more
-#' vectors, each defining a group of domain indices.  In the latter case, the
-#' partition tries to be approximately equal WITHIN each group first, and then
-#' to combine the results in a good way. This will generally be less efficient
-#' than not using groups, unless you have some other information that tells you
-#' that the partition should be done in this way.
+#' entries. Each entry is either a vector of integers (defining a group of
+#' domain indices) or a 2-column matrix (domain index, domain local_index) where
+#' the latter is necessary to distinguish domains that share an index (as
+#' happens if the domain was partitioned in the course of load balancing). If
+#' domain_index_groups is non-empty, the partition tries to be approximately
+#' equal WITHIN each group first, and then to combine the results in a good way.
+#' This will generally be less efficient than not using groups, unless you have
+#' some other information that tells you that the partition should be done in
+#' this way.
 #' @return the function environment invisibly (so you have to use assignment to
 #' capture it).
 #'
@@ -1598,14 +1623,49 @@ make_load_balance_partition<-function(multidomain_dir=NA, verbose=TRUE,
         # equal sums. Further, ensure the sums are also rougly equal for images
         # within the same domain_index_group. 
         stopifnot(is.list(domain_index_groups))
-        # Ensure there are no repeated domain indices
-        tmp = unlist(domain_index_groups)
-        stopifnot(length(tmp) == length(unique(tmp)))
 
-        groups = md_domain_indices_vec * NA
-        for(j in 1:length(domain_index_groups)){
-            k = which(md_domain_indices_vec %in% domain_index_groups[[j]])
-            groups[k] = j
+        # Determine whether the domain_index_groups is a list of vectors, or a list of matrices
+        dig_has_2_columns = unlist(lapply(domain_index_groups, function(x){length(dim(x))==2}))
+        if(!all(dig_has_2_columns == dig_has_2_columns[1])){
+            stop('domain_index_groups must EITHER have all entries being a vector, OR all entries being a 2 column matrix, but cannot contain a mixture of both')
+        }
+        dig_has_2_columns = dig_has_2_columns[1]
+
+        if(!dig_has_2_columns){
+            #
+            # domain_index_groups is a list of vectors (sets of domain indices)
+            #
+        
+            # Ensure there are no repeated domain indices
+            tmp = unlist(domain_index_groups)
+            stopifnot(length(tmp) == length(unique(tmp)))
+
+            groups = md_domain_indices_vec * NA
+            for(j in 1:length(domain_index_groups)){
+                k = which(md_domain_indices_vec %in% domain_index_groups[[j]])
+                groups[k] = j
+            }
+
+        }else{
+            #
+            # domain_index_groups is a list of 2 column matrices
+            #    domain_index, domain_local_index
+            #
+
+            # Convert 2 columns to a vector of strings by pasting "domain_index"_"domain_local_index"
+            dig_as_char = lapply(domain_index_groups, function(x) paste0(x[,1], '_', x[,2]))
+
+            # Ensure there are no repeated domain_index,domain_image pairs
+            tmp = unlist(dig_as_char)
+            stopifnot(length(tmp) == length(unique(tmp)))
+
+            groups = md_domain_indices_vec * NA
+            md_domain_index_and_local_index = paste0(md_domain_indices_vec, '_', md_local_indices_vec)
+            for(j in 1:length(dig_as_char)){
+                k = which(md_domain_index_and_local_index %in% dig_as_char[[j]])
+                groups[k] = j
+            }
+
         }
 
         new_times_and_grouping = partition_into_k_with_grouping(md_times_vec, 
@@ -1913,12 +1973,17 @@ get_domain_wallclock_times_in_log<-function(md_log_file, include_incremental_tim
     }else{
         i1 = length(x)
     }
-    local_wallclock_time_line_spacing = grep('Total WALLCLOCK time: ', 
-        x[inds[1]:i1])[1] - 1
-
+    #local_wallclock_time_line_spacing = grep('Total WALLCLOCK time: ', 
+    #    x[inds[1]:i1])[1] - 1
     # Get the time
-    times = as.numeric(gsub('Total WALLCLOCK time: ', '', 
-                            x[inds+local_wallclock_time_line_spacing]))
+    #times = as.numeric(gsub('Total WALLCLOCK time: ', '', 
+    #                        x[inds+local_wallclock_time_line_spacing]))
+
+    # Find the line following the output directory line for each domain
+    twt_match = grep('Total WALLCLOCK time: ', x)
+    twt = sapply(inds, function(x) min(twt_match[twt_match > x]))
+    times = as.numeric(gsub('Total WALLCLOCK time: ', '', x[twt]))
+
 
     output = data.frame(domains=domains, times=times, index=domain_number)
     if(include_incremental_time){
