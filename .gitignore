@@ -13,7 +13,7 @@ ptha_access/compute_rates_all_sources_session.RData
 # Example outputs
 # NB: a/**/b matches a/b, a/x/b, a/x/y/b, ...
 propagation/SWALS/examples/**/OUTPUTS
-propagation/SWALS/examples/**/*.png
+#propagation/SWALS/examples/**/*.png
 propagation/SWALS/examples/**/*.log
 #propagation/SWALS/examples/**/*.csv
 
