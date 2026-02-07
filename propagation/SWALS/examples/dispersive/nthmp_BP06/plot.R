@@ -199,7 +199,7 @@ for(model_run in 1:length(forcing_cases)){
 
     legend(legend_loc, 
            c('Observed by Briggs (NTHMP repo)', 'Observed by Briggs (Liu95, Ma19)', 
-            'SWALS dispersive (analytical forcing)', 'FUNWAVE NON-DISPERSIVE (analytical forcing, 2.5cm grid)',
+            'SWALS dispersive (analytical forcing)', 'FUNWAVE DISPERSIVE (analytical forcing, 2.5cm grid)',
              'Liu et al 1995 model'),
            col=c('black', 'orange', 'red', 'purple', 'green'), 
            pch=c(1, 19, NA, 19, 15), 
