@@ -22,7 +22,7 @@ But even when this problem is approached with more complicated physics (i.e. dis
 
 ## Reference FUNWAVE model, without dispersion, using analytical forcing
 
-We also compare the SWALS runup results with a high-resolution FUNWAVE simulation. FUNWAVE was run __without dispersion__ on a 2.5cm uniform grid, and initialised with an analytical solitary wave. [See here for FUNWAVE model setup files](funwave_comparison). 
+We also compare the SWALS runup results with a high-resolution FUNWAVE simulation. FUNWAVE was run __without dispersion__ on a 2.5cm uniform grid, and initialised with an analytical solitary wave. [See here for FUNWAVE model setup files](../../nthmp/BP06/funwave_comparison). 
 
 This serves as a high-order reference solution to the nondispersive shallow water equations. It is not intended to test the FUNWAVE model itself, for which better results might be obtained using dispersion.
 
