@@ -1,0 +1,255 @@
+!INPUT FILE FOR BOUSS_TVD
+  ! NOTE: all input parameter are capital sensitive
+  ! --------------------TITLE-------------------------------------
+  ! title only for log file
+TITLE = TEST RUN
+  ! -------------------HOT START---------------------------------
+HOT_START = F
+FileNumber_HOTSTART = 1
+  ! -------------------PARALLEL INFO-----------------------------
+  ! 
+  !    PX,PY - processor numbers in X and Y
+  !    NOTE: make sure consistency with mpirun -np n (px*py)
+  !    
+PX = 1
+!PX = 4
+PY = 2
+  ! --------------------DEPTH-------------------------------------
+  ! Depth types, DEPTH_TYPE=DATA: from depth file
+  !              DEPTH_TYPE=FLAT: idealized flat, need depth_flat
+  !              DEPTH_TYPE=SLOPE: idealized slope, 
+  !                                 need slope,SLP starting point, Xslp
+  !                                 and depth_flat
+DEPTH_TYPE = DATA
+  ! Depth file
+  ! depth format NOD: depth at node (M1xN1), ELE: depth at ele (MxN) 
+  ! where (M1,N1)=(M+1,N+1)  
+DEPTH_FILE = ../input/depth.txt_refined_2.txt
+DepthFormat = ELE
+  ! if depth is flat and slope, specify flat_depth
+DEPTH_FLAT = 0.47
+  if depth is slope, specify slope and starting point
+SLP = 0.05
+Xslp = 10.0
+
+  ! -------------------PRINT---------------------------------
+  ! PRINT*,
+  ! result folder
+!RESULT_FOLDER = ./results/ !/Users/fengyanshi/tmp/
+RESULT_FOLDER = ./results_higher_res/ !/Users/fengyanshi/tmp/
+
+  ! ------------------DIMENSION-----------------------------
+  ! global grid dimension
+!Mglob = 702
+!Nglob = 602
+Mglob = 1404
+Nglob = 1204
+
+  ! ----------------- TIME----------------------------------
+  ! time: total computational time/ plot time / screen interval 
+  ! all in seconds
+TOTAL_TIME = 15.0 !25.0
+PLOT_INTV = 0.5
+PLOT_INTV_STATION = 0.05
+SCREEN_INTV = 1.0
+HOTSTART_INTV = 360000000000.0
+
+  ! -----------------GRID----------------------------------
+  ! if use spherical grid, in decimal degrees
+StretchGrid = F
+Lon_West = 120.0
+Lat_South = 0.0
+Dphi = 0.0042
+Dtheta = 0.0042 
+!DX_FILE = ../input/dx_str.txt
+!DY_FILE = ../input/dy_str.txt
+CORIOLIS_FILE = ../input/cori_str.txt
+  ! cartesian grid sizes
+!DX = 0.05
+!DY = 0.05
+DX = 0.025
+DY = 0.025
+  ! --------------- INITIAL UVZ ---------------------------
+  ! INI_UVZ - initial UVZ e.g., initial deformation
+  !         must provide three (3) files 
+INI_UVZ = F
+  ! if true, input eta u and v file names
+ETA_FILE = z.txt
+U_FILE = u.txt
+V_FILE = v.txt
+  ! ----------------WAVEMAKER------------------------------
+  !  wave makeer
+  ! LEF_SOL- left boundary solitary, need AMP,DEP, LAGTIME
+  ! INI_SOL- initial solitary wave, WKN B solution, 
+  ! need AMP, DEP, XWAVEMAKER 
+  ! INI_REC - rectangular hump, need to specify Xc,Yc and WID
+  ! WK_REG - Wei and Kirby 1999 internal wave maker, Xc_WK,Tperiod
+  !          AMP_WK,DEP_WK,Theta_WK, Time_ramp (factor of period)
+  ! WK_IRR - Wei and Kirby 1999 TMA spectrum wavemaker, Xc_WK,
+  !          DEP_WK,Time_ramp, Delta_WK, FreqPeak, FreqMin,FreqMax,
+  !          Hmo,GammaTMA,ThetaPeak
+  ! WK_TIME_SERIES - fft time series to get each wave component
+  !                 and then use Wei and Kirby 1999 
+  !          need input WaveCompFile (including 3 columns: per,amp,pha)
+  !          NumWaveComp,PeakPeriod,DEP_WK,Xc_WK,Ywidth_WK
+WAVEMAKER = INI_SOL
+  ! wave components based on fft time series
+NumWaveComp = 1505
+PeakPeriod = 1.0
+WaveCompFile = ../fft/wavemk_per_amp_pha.txt
+  ! solitary wave
+AMP = 0.0144
+DEP = 0.32
+LAGTIME = 5.0
+XWAVEMAKER = 8.0
+  ! Xc, Yc and WID (degrees) are for rectangular hump with AMP
+Xc = 501.00
+Yc = 501.00
+WID = 100.0
+  ! Wei and Kirby 1999
+Time_ramp = 1.0 
+Delta_WK = 0.5    ! width parameter 0.3-0.6
+DEP_WK = 0.45
+Xc_WK = 3.0
+Ywidth_WK = 10000.0
+  ! Wei and Kirby regular wave
+Tperiod = 1.0
+AMP_WK = 0.0232
+Theta_WK = 0.0
+  ! Wei and Kirby irregular wave
+FreqPeak = 0.2
+FreqMin = 0.1
+FreqMax = 0.4
+Hmo = 1.0
+GammaTMA = 5.0
+ThetaPeak = 10.0
+Sigma_Theta = 15.0
+  ! ---------------- PERIODIC BOUNDARY CONDITION ---------
+  ! South-North periodic boundary condition
+  !
+PERIODIC = F
+  ! ---------------- SPONGE LAYER ------------------------
+  ! DHI type sponge layer
+  ! need to specify widths of four boundaries and parameters
+  ! set width=0.0 if no sponge
+  ! R_sponge: decay rate
+  ! A_sponge: maximum decay rate
+  ! e.g., sharp: R=0.85
+  !       mild:  R=0.90, A=5.0
+  !       very mild, R=0.95, A=5.0
+SPONGE_ON = F
+Sponge_west_width =  2.0
+Sponge_east_width =  2.0
+Sponge_south_width = 0.0
+Sponge_north_width = 0.0
+R_sponge = 0.90
+A_sponge = 5.0
+  ! ----------------OBSTACLES-----------------------------
+  ! obstacle structures using mask_struc file
+  ! mask_struc =0 means structure element
+  ! give a file contains a mask array with Mloc X Nloc
+!OBSTACLE_FILE= struc2m4m.txt
+
+  ! ----------------PHYSICS------------------------------
+  ! parameters to control type of equations
+  ! dispersion: all dispersive terms
+  ! gamma1=1.0,gamma2=0.0: NG's equations
+  ! gamma1=1.0,gamma2=1.0: Fully nonlinear equations
+DISPERSION = T
+!DISPERSION = F
+Gamma1 = 1.0
+Gamma2 = 1.0
+Gamma3 = 1.0
+Beta_ref=-0.531
+SWE_ETA_DEP = 0.80
+  !----------------Friction-----------------------------
+Friction_Matrix= F
+Cd_file= btrad.txt
+Cd = 0.01
+
+
+  ! ----------------NUMERICS----------------------------
+  ! time scheme: runge_kutta for all types of equations
+  !              predictor-corrector for NSWE
+  ! space scheme: second-order
+  !               fourth-order
+  ! construction: HLLC
+  ! cfl condition: CFL
+  ! froude number cap: FroudeCap
+
+Time_Scheme = Runge_Kutta
+!Time_Scheme = Predictor_Corrector
+  ! spacial differencing
+HIGH_ORDER = FOURTH
+!HIGH_ORDER = THIRD
+CONSTRUCTION = HLLC
+  ! CFL
+CFL = 0.5
+  ! Froude Number Cap (to avoid jumping drop, set 10)
+FroudeCap = 10.0
+
+  ! --------------WET-DRY-------------------------------
+  ! MinDepth for wetting-drying
+!MinDepth=0.001
+MinDepth=0.00001
+  ! -----------------
+  ! MinDepthfrc to limit bottom friction
+!MinDepthFrc = 0.001
+MinDepthFrc = 0.00001
+
+  ! -------------- SHOW BREAKING -----------------------
+  ! breaking is calculated using shock wave capturing scheme
+  ! the criteria is only for demonstration or bubble calculation
+  ! Cbrk1=0.65,Cbrk2=0.35, for irregular waves, there are much small!
+SHOW_BREAKING = F
+Cbrk1 = 0.1
+Cbrk2 = 0.075
+  ! ----------------- MIXING ---------------------------
+  ! if use smagorinsky mixing, have to set -DMIXING in Makefile
+  ! and set averaging time interval, T_INTV_mean, default: 20s
+T_INTV_mean = 25.0
+C_smg = 0.25
+  ! ----------------- COUPLING -------------------------
+  ! if do coupling, have to set -DCOUPLING in Makefile
+COUPLING_FILE = coupling.txt
+  ! -----------------OUTPUT-----------------------------
+  ! stations 
+  ! if NumberStations>0, need input i,j in STATION_FILE
+NumberStations = 16
+!STATIONS_FILE = gauges.txt
+STATIONS_FILE = gauge_high_res.txt
+  ! output variables, T=.TRUE, F = .FALSE.
+DEPTH_OUT = T
+U = F
+V = F
+ETA = T
+Hmax = T
+Hmin = F
+MFmax = F
+Umax = F
+VORmax = F
+Umean = F
+Vmean =F
+ETAmean = F
+MASK = T
+MASK9 = F
+SXL = F
+SXR = F
+SYL = F
+SYR = F
+SourceX = F
+SourceY = F
+P = F
+Q = F
+Fx = F
+Fy = F
+Gx = F
+Gy = F
+AGE = F
+TMP = F
+WaveHeight = F
+
+
+
+
+
