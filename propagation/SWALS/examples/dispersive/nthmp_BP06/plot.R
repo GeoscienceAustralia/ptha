@@ -46,19 +46,19 @@ for(model_run in 1:length(forcing_cases)){
         gauges_data_files = '../../nthmp/test_repository/BP06-FrankG-Solitary_wave_on_a_conical_island/ts2a.txt'
         gauge_plot_ylim = c(-1, 1)*0.03
         runup_data_file = '../../nthmp/test_repository/BP06-FrankG-Solitary_wave_on_a_conical_island/run2a.txt'
-        funwave_runup_file = '../../nthmp/BP06/funwave_comparison/caseA/max_island_runup.csv'
+        funwave_runup_file = './funwave_comparison/caseA/max_island_runup.csv'
         alternate_runup_data_file = '../../nthmp/BP06/alternate_runup_data/caseA.csv'
     }else if(forcing_case_name == 'B'){
         gauges_data_files = '../../nthmp/test_repository/BP06-FrankG-Solitary_wave_on_a_conical_island/ts2b.txt'
         gauge_plot_ylim = c(-1, 1)*0.06
         runup_data_file = '../../nthmp/test_repository/BP06-FrankG-Solitary_wave_on_a_conical_island/run2b.txt'
-        funwave_runup_file = '../../nthmp/BP06/funwave_comparison/caseB/max_island_runup.csv'
+        funwave_runup_file = './funwave_comparison/caseB/max_island_runup.csv'
         alternate_runup_data_file = '../../nthmp/BP06/alternate_runup_data/caseB.csv'
     }else if(forcing_case_name == 'C'){
         gauges_data_files = '../../nthmp/test_repository/BP06-FrankG-Solitary_wave_on_a_conical_island/ts2cnew1.txt'
         gauge_plot_ylim = c(-1, 1)*0.1
         runup_data_file = '../../nthmp/test_repository/BP06-FrankG-Solitary_wave_on_a_conical_island/run2c.txt'
-        funwave_runup_file = '../../nthmp/BP06/funwave_comparison/caseC/max_island_runup.csv'
+        funwave_runup_file = './funwave_comparison/caseC/max_island_runup.csv'
         alternate_runup_data_file = '../../nthmp/BP06/alternate_runup_data/caseC.csv'
     }else{
         stop('unrecognized forcing case')
@@ -199,7 +199,7 @@ for(model_run in 1:length(forcing_cases)){
 
     legend(legend_loc, 
            c('Observed by Briggs (NTHMP repo)', 'Observed by Briggs (Liu95, Ma19)', 
-            'SWALS dispersive (analytical forcing)', 'FUNWAVE NON-DISPERSIVE (analytical forcing, 2.5cm grid)',
+            'SWALS dispersive (analytical forcing)', 'FUNWAVE DISPERSIVE (analytical forcing, 2.5cm grid)',
              'Liu et al 1995 model'),
            col=c('black', 'orange', 'red', 'purple', 'green'), 
            pch=c(1, 19, NA, 19, 15), 

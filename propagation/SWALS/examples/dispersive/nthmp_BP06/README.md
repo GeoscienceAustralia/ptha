@@ -22,9 +22,9 @@ But even when this problem is approached with more complicated physics (i.e. dis
 
 ## Reference FUNWAVE model, without dispersion, using analytical forcing
 
-We also compare the SWALS runup results with a high-resolution FUNWAVE simulation. FUNWAVE was run __without dispersion__ on a 2.5cm uniform grid, and initialised with an analytical solitary wave. [See here for FUNWAVE model setup files](../../nthmp/BP06/funwave_comparison). 
+We also compare the SWALS runup results with a high-resolution FUNWAVE simulation. FUNWAVE was run __with dispersion__ on a 2.5cm uniform grid, and initialised with an analytical solitary wave. [See here for FUNWAVE model setup files](./funwave_comparison). 
 
-This serves as a high-order reference solution to the nondispersive shallow water equations. It is not intended to test the FUNWAVE model itself, for which better results might be obtained using dispersion.
+This serves as a high-order reference solution with a more complex dispersive model.
 
 # Results for Case A
 
@@ -32,9 +32,7 @@ Figure 1 compares the SWALS model with the gauge time-series. For early times th
 
 ![Figure 1: Modelled and observed time-series at offshore gauges, Case A](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/dispersive/nthmp_BP06/Gauges_plot_A_default.png)
 
-Figure 2 compares the modelled and observed runups around the island. Note the large difference between the two runup datasets. With dispersion, the SWALS runups are slightly smaller than the reference FUNWAVE shallow water simulation and the "alternative" runup data. Both modelled runups are significantly larger than the NTHMP runup data.
-
-* If dispersion is included in the FUNWAVE simulation then the modelled runup reduces also slightly (in between the two datasets).
+Figure 2 compares the modelled and observed runups around the island. Note the large difference between the two runup datasets. With dispersion, the SWALS runups are similar to FUNWAVE and slightly smaller than the the "alternative" runup data. Both modelled runups are significantly larger than the NTHMP runup data.
 
 ![Figure 2: Modelled and observed runup maxima around the island, Case A](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/dispersive/nthmp_BP06/Runup_plot_A_default.png)
 
