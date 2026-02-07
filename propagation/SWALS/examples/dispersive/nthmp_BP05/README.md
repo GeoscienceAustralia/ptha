@@ -7,7 +7,7 @@ and a problem description is available in
 Three different solitary waves (cases A, B, C) are propagated over a 1D
 composite beach and compared with experiments.
 
-![Figure 1: Beach profile and gauge locations](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/dispersive/nthmp_BP05/solution_geometry_caseA_linear.png)
+![Figure 1: Beach profile and gauge locations](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/dispersive/nthmp_BP05/solution_geometry_caseA_midpoint.png)
 
 Physically, nonlinearity is significant because the wave amplitudes are not
 negligible compared to the depth (especially for cases B and C). Dispersion
