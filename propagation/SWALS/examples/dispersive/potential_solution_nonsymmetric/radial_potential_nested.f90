@@ -74,7 +74,7 @@ program nonsymmetric_radial_potential
     integer(ip), parameter, dimension(2):: global_nx = nint([100, 50]*mesh_refine + 1) ! Deliberately uneven
 
     integer(ip), parameter :: timestepping_refinement_factor = 1_ip, dx_refinement_factor = 3_ip
-    real(dp) :: global_dt = 401.0_dp/(global_nx(1) * timestepping_refinement_factor) * (4.0_dp/mesh_refine) !* (1.0_dp/3.0_dp)
+    real(dp) :: global_dt = 1.2_dp * 401.0_dp/(global_nx(1) * timestepping_refinement_factor)
     integer(ip), parameter :: nested_timestepping_refinement_factor = dx_refinement_factor * timestepping_refinement_factor
 
     !integer(ip), parameter :: mnlt = 40 ! Min nesting layer thickness:
