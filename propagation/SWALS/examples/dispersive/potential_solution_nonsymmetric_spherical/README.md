@@ -1,10 +1,12 @@
-# Non-symmetric potential flow: analytical solution vs dispersive solver
+# Non-symmetric potential flow: analytical solution vs dispersive solver in spherical coordinates
 
 Compares the dispersive solver with a **non-symmetric** potential flow
-solution. This is a variation of the radially symmetric case in
-[../potential_solution](../potential_solution). Here the initial displacement
-has different scales in the x and y directions (elliptical Gaussian plus
-asymmetric oscillations). 
+solution using spherical coordinates. This is a variation of the radially symmetric case in
+[../potential_solution_spherical](../potential_solution_spherical). 
+
+The initial displacement has different scales in the x and y directions
+(elliptical Gaussian plus asymmetric oscillations). The domain extent is small
+enough that the sphere is well approximated by the Cartesian solution.
 
 One of the tests uses a single grid, and the other uses a nested grid with
 non-symmetric placement.
