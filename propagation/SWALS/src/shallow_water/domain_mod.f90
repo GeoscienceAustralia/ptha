@@ -37,7 +37,7 @@ module domain_mod
     use nested_grid_comms_mod, only: domain_nesting_type, process_received_data
     use coarray_point2point_comms_mod, only: p2p_comms_type
     use stop_mod, only: generic_stop
-    use iso_fortran_env, only: output_unit, int32, int64
+    use iso_fortran_env, only: output_unit, int64
     use iso_c_binding, only: c_ptr, c_null_ptr
     use netcdf_util, only: nc_grid_output_type, &
         gridded_output_variables_time, & ! Names of time-varying grids that SWALS can output
@@ -76,7 +76,7 @@ module domain_mod
     private
     public:: domain_type, STG, UH, VH, ELV, test_domain_mod
 
-    integer(int32), parameter :: STG=1, UH=2, VH=3, ELV=4
+    integer(ip), parameter :: STG=1, UH=2, VH=3, ELV=4
         ! Indices for arrays: Stage, depth-integrated-x-velocity, depth-integrated-y-velocity, elevation. So e.g. stage is in
         ! domain%U(:,:,STG), and elevation is in domain%U(:,:,ELV)
 
