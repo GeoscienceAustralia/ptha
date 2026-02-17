@@ -3,7 +3,7 @@
 All the test problems here use dispersive solvers. 
 * Folders beginning with `nthmp_` contain dispersive versions of some NTHMP test problems, which are adapted from the nonlinear shallow water variants [here](../../nthmp/). 
 * [nesting_stability](nesting_stability) checks for long-time instabilities in dispersive nesting over deep highly resolved topography.
-* [potential_solution](potential_solution) and [potential_solution_spherical](potential_solution_spherical) compare the model with potential flow solution, using both Cartesian and spherical coordinates, while [potential_solution_nonsymmetric](potential_solution_nonsymmetric) uses a more complex initial condition.
+* [potential_solution](potential_solution) and [potential_solution_spherical](potential_solution_spherical) compare the model with potential flow solution, using both Cartesian and spherical coordinates. A similar test problem using a less symmetric initial condition is provided in [potential_solution_nonsymmetric](potential_solution_nonsymmetric) and [potential_solution_nonsymmetric_spherical](potential_solution_nonsymmetric_spherical).
 * [shoaling_variable_seabed](shoaling_variable_seabed) models a highly dispersive/nonlinear wave and compares with published results for a 3D model.
 * [solitary_shoaling_grilli](solitary_shoaling_grilli) models the shoaling of a solitary wave on a linear slope and compares with experimental results from [Gilli et al (1994)](http://dx.doi.org/10.1061/(ASCE)0733-950X(1994)120:6(609)).
 * [undular_bore](undular_bore) models the formation of an undular bore and compares the results with a more complex dispersive model.
