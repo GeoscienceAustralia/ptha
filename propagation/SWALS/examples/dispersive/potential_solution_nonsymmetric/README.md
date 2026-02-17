@@ -1,9 +1,10 @@
 # Non-symmetric potential flow: analytical solution vs dispersive solver
 
-Compares the dispersive solver with a **non-symmetric** (elliptical) potential flow
-solution. This is a variation of the radially symmetric case in [../potential_solution](../potential_solution). 
-Here the initial displacement has different scales in the x and y directions
-(elliptical Gaussian plus asymmetric oscillations). 
+Compares the dispersive solver with a **non-symmetric** potential flow
+solution. This is a variation of the radially symmetric case in
+[../potential_solution](../potential_solution). Here the initial displacement
+has different scales in the x and y directions (elliptical Gaussian plus
+asymmetric oscillations). 
 
 One of the tests uses a single grid, and the other uses a nested grid with
 non-symmetric placement.
