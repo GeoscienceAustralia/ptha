@@ -29,6 +29,6 @@ Comparison of numerical solution (SWALS with dispersion using nested grids) vers
 ![Numerical vs potential solution transects with nested grids](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/dispersive/potential_solution_nonsymmetric/numerical_vs_potential_solution_nested_with_MPI.png)
 
 ### Final water surface comparison
-Spatial distribution of the water surface at the final time with nested grids, showing the numerical solution (left) and analytical solution (right).
+Spatial distribution of the water surface at the final time with nested grids, showing the numerical solution (left) and analytical solution (right). The priority domain of the inner nested grid is inside the dotted rectangle.
 
 ![Final water surface with nested grids](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/dispersive/potential_solution_nonsymmetric/numerical_free_surface_nested_with_MPI.png)
