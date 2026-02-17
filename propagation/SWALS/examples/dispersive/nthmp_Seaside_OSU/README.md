@@ -16,7 +16,7 @@ The model is forced using a provided synthetic stage time-series at x=5m, which 
 
 ![Figure 3: Boundary time-series](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/dispersive/nthmp_Seaside_OSU/boundary_check.png)
 
-Figure 4 compares the model and observations at gauges WG3 and WG4. They are in general agreement once the model is time-shifted to the left by 0.7s, which previous studies also found to be needed (Macais et al., 2020) and attributed to an error in the forcing. 
+Figure 4 compares the model and observations at gauges WG3 and WG4. They are in general agreement once the model is time-shifted to the left by 0.7s, which previous studies also found to be needed (Macias et al., 2020) and attributed to an error in the forcing. The later waves show a time offset between the model and data that was also reported by Macias et al (2020) for both dispersive and NLSW models.
 
 ![Figure 4: Time-series at gauges WG3 and WG4](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/dispersive/nthmp_Seaside_OSU/gauges_wg3_wg4.png)
 

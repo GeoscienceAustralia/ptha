@@ -35,4 +35,4 @@ Comparison of numerical and analytical solutions along east-west and north-south
 ### Free surface comparison
 ![Numerical vs analytical free surface (nested)](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/dispersive/potential_solution_spherical/numerical_free_surface_nested_with_MPI.png)
 
-Comparison of the full water surface elevation for the nested grid configuration, showing the numerical model (left) with visible nesting and the analytical solution (right).
+Comparison of the full water surface elevation for the nested grid configuration, showing the numerical model (left) and the analytical solution (right). A dotted line shows the high-resolution priority domain region.

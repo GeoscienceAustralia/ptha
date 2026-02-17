@@ -14,7 +14,7 @@ The model is forced using a provided synthetic stage time-series at x=5m, which 
 
 ![Figure 3: Boundary time-series](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/nthmp/Seaside_OSU_model/boundary_check.png)
 
-Figure 4 compares the model and observations at gauges WG3 and WG4. They are in general agreement once the model is time-shifted to the left by 0.7s, which previous studies also found to be needed (Macais et al., 2020) and attributed to an error in the forcing. We do not expect perfect agreement because the flow is physically affected by non-hydrostatic physics, which is not represented with the nonlinear shallow water equations. This can be seen most clearly in the latter part of Figure 4, where the shallow water model predicts a shock wave that arrives earlier than the observed dispersive (short period) waves.
+Figure 4 compares the model and observations at gauges WG3 and WG4. They are in general agreement once the model is time-shifted to the left by 0.7s, which previous studies also found to be needed (Macias et al., 2020) and attributed to an error in the forcing. We do not expect perfect agreement because the flow is physically affected by non-hydrostatic physics, which is not represented with the nonlinear shallow water equations. This can be seen most clearly in the latter part of Figure 4, where the shallow water model predicts a shock wave, whereas dispersive (short period) waves are observed. The time offset in the later waves is also noted in Macias et al. (2020) and not purely due to neglect of dispersion. 
 
 ![Figure 4: Time-series at gauges WG3 and WG4](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/nthmp/Seaside_OSU_model/gauges_wg3_wg4.png)
 
