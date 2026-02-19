@@ -1,0 +1,30 @@
+#!/bin/bash
+#PBS -P w85
+#PBS -q normalsr
+#PBS -l walltime=12:00:00
+#PBS -lmem=500GB
+#PBS -lncpus=104
+#PBS -l wd
+#PBS -l storage=scratch/w85+gdata/w85
+
+# Run this script from the swals directory
+path_swals=.
+source modules_SWALS_ifx_2024.sh
+
+# Initial stage test scenario
+stage_file=./../sources/test/large_kermadectonga2_43783/kermadectonga2_row_0043783_Mw_95_HS.tif
+# Default res and load balance
+multidomain_design_namelists=$path_swals/multidomain_design_control/NNL4_defaultRes_singleTide.nml
+ambient_sea_level=2.42
+location=south_trees
+event=large_kermadec
+model_name=tides_${location}_${event}
+
+# Run the model
+mpiexec -n 8 -map-by numa:SPAN -bind-to numa -x OMP_NUM_THREADS=13 -x OMP_PROC_BIND=TRUE \
+    $path_swals/model_build \
+    $stage_file \
+    $multidomain_design_namelists \
+    $model_name \
+    full \
+    $ambient_sea_level > $path_swals/test-tides/log/$model_name.log 
