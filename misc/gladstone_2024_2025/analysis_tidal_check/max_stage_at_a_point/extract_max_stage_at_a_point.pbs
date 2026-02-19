@@ -1,0 +1,31 @@
+#!/bin/bash
+#PBS -P w85
+#PBS -q normal
+#PBS -l walltime=00:10:00
+#PBS -lmem=48GB
+#PBS -lncpus=12
+#PBS -ljobfs=2GB
+#PBS -l wd
+#PBS -l storage=scratch/w85+gdata/w85+gdata/fj6
+
+# With 50 scenarios in the Gladstone model (tidal_check):
+# Allow 7.5GB per input location. Here that's 5 locations, so 37.5GB.
+# Allow 10% leeway so 41GB
+# That will need at least 11 CPUs.
+
+module load R
+module load nci-parallel/1.0.0a
+
+# line count of locations.in.sh
+n_tasks=$(wc -l < locations_tidal_check_all.in.sh)
+
+mpirun -np $n_tasks \
+    nci-parallel --input-file locations_tidal_check_all.in.sh \
+    --timeout 4000 \
+    --output-dir log
+
+# Previously did in sequence
+# for each line in locations.in, extract the max stage at that point
+# while read lon lat comment; do
+#     Rscript extract_max_stage_at_a_point.R $lon $lat;
+# done <locations.in
