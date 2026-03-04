@@ -1,4 +1,4 @@
-# Edited JATWC-Style land-warning polygons
+# Edited JATWC-Style land-warning and marine-warning polygons
 
 The JATWC-style inundation polygons made for the NSW study included all areas
 within the 1/2500 84% inundation zone. Some of these areas have negligably
@@ -9,9 +9,10 @@ zones elsewhere for ease of communication, to treat model shortcomings due to
 the 1/54 arcminute grid size, to give site specific consideration of risk
 tradeoffs for sites such as hospitals and nursing homes, etc).
 
-Here we edited the land-warning zones to remove sites where the 1/2500 84%
-max-stage does not exceed 1 cm above the 1.1m background sea level  (i.e.
-max-stage less than 1.11 m). This was done with the included R script.
+Here we edited the land-warning and marine warning zones to remove sites where
+the 1/2500 84% max-stage does not exceed 1 cm above the 1.1m background sea
+level  (i.e.  max-stage less than 1.11 m). This was done with the included R
+script.
 
 The approach used here is not aiming to replace manual editing of the
 evacuation zones. Rather, the aim is to provide a quick-and-dirty adjustement
