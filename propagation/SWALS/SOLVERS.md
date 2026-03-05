@@ -61,7 +61,7 @@ By default the dispersive term $\mathbf{\Upsilon}=0$. However if `md%domains(j)%
     * If domains with the shortest timesteps do not use dispersion then communication is significantly reduced. Think twice about using dispersion in highly resolved domains if it isn't physically important there. 
 * Numerical solution method (all numerical schemes)
     * The time-derivatives are represented as the difference between terms involving purely spatial derivatives at the current time level and the next time level. There is one discretisation for the finite-volume and CLIFFS solvers, and another for the leapfrog solvers.
-    * To solve the resulting implicit equations, the multidomain global timestep $dt$ is split into a $N_{t}$ substeps of size $\delta t$, where $\delta t$ is the smallest timestep required by any *dispersive* domain. 
+    * To solve the resulting implicit equations, the multidomain global timestep $dt$ is split into $N_{t}$ substeps of size $\delta t$, where $\delta t$ is the smallest timestep required by any *dispersive* domain. 
         * Thus $dt = N_{t}\delta t$ and the substeps can be indexed as $1, 2, 3, \ldots, N_{t}$. 
         * At the beginning of a global timestep the time is $t_{start}$ on all domains.
         * Domain $j$ has its own timestep (`alpha_j`$\delta t$), usually determined by its CFL condition. 
