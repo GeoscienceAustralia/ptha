@@ -59,33 +59,6 @@ By default the dispersive term $\mathbf{\Upsilon}=0$. However if `md%domains(j)%
 * If using finite volume methods with dispersion, it is suggested to use `midpoint`, which is more accurate than the other finite volume solvers because the dispersive terms are included in both the predictor and the main timestep.
 * If any domain uses dispersion, SWALS must use a different subroutine to advance the solution on all domains (whether or not they use dispersion). This requires substantially more communication and computation, places more restrictions on the allowed timestepping, and tends to reduce the stability of nesting 
     * If domains with the shortest timesteps do not use dispersion then communication is significantly reduced. Think twice about using dispersion in highly resolved domains if it isn't physically important there. 
-* Numerical solution method (all numerical schemes)
-    * The time-derivatives are represented as the difference between terms involving purely spatial derivatives at the current time level and the next time level. There is one discretisation for the finite-volume and CLIFFS solvers, and another for the leapfrog solvers.
-    * To solve the resulting implicit equations, the multidomain global timestep $dt$ is split into $N_{t}$ substeps of size $\delta t$, where $\delta t$ is the smallest timestep required by any *dispersive* domain. 
-        * Thus $dt = N_{t}\delta t$ and the substeps can be indexed as $1, 2, 3, \ldots, N_{t}$. 
-        * At the beginning of a global timestep the time is $t_{start}$ on all domains.
-        * Domain $j$ has its own timestep (`alpha_j`$\delta t$), usually determined by its CFL condition. 
-            * SWALS requires dispersive domains to have `alpha_j` being an integer that EXACTLY divides $N_{t}$ (e.g. if $N_{t} = 8$ then dispersive domains could have `alpha_j = 1, 2, 4, 8`). 
-            * Non-dispersive domains have the same constraint unless they take a timestep smaller than $\delta t$ (in which case we could have `alpha_j = 1./2, 1./3, 1./4, ...`). 
-    * For each substep `s=`$1, 2, \ldots, N_{t}$, we loop over domains
-        * Let $t_{end} = t_{start} + s\delta t$.
-        * If the domain has a timestep $\ge \delta t$, then skip it unless a single timestep will cause it to reach time $t_{end}$.
-        * For domains that remain
-            * Backup the solution for dispersive domains. 
-            * Take one shallow water step using the domain specific timestep (`alpha_j`$\delta t$), unless `alpha_j < 1` (non-dispersive domains only) in which case we take enough steps to advance time by $\delta t$. 
-            * Communicate halo data, but do not immediately update the solution.
-            * Implicit solve
-                * First *outer iteration*: Loop over domains, skipping those that are non-dispersive or were skipped on this substep
-                    1. Receive halos from domains that have advanced to the same time, and have the same cell size.
-                    2. Compute the right-hand-side for the implicit solve.
-                    3. Guess the solution at the end of the substep using quadratic-in-time extrapolation from solutions at the start of the last 3 global timesteps.
-                    4. Iteratively update the solution with implicit solves applied sequentially in the x-and-y directions (tridiagonal solves). These *inner iterations* are performed twice by default (corresponding to `md%domains(j)%tridiagonal_inner_iter=2`).
-                * Communicate halo data (among all domains) and receive halos from domains that have advanced to the same time (whether dispersive or not).
-                * By default this completes the dispersive solve. 
-                    * But if `md%dispersive_outer_iterations_count > 1` then repeat the iterative update step of the *outer iteration*, and subsequent communication, until that many outer iterations are complete.
-                * The default number of inner (2) and outer (1) iterations are adequate for problems tried so far, but can be adjusted if needed.
-        * Advance to the next substep
-    * After the final substep (`s=`$N_{t}$), apply flux-correction and communicate once more. At this point all domains will have advanced one global timestep $dt = N_{t}\delta t$.
 * Compared to models without dispersion, models using dispersion thus require much more communication (factor of $2N_t + 1$) and computation (about 2-3x for `midpoint` if not dominated by communication). 
 * In nested grid models, the implicit method may need halos to be thicker than SWALS provides by default, particularly on domains that only take 1 timestep for every global timestep (which are less likely to have thick halos by default). To address this one can increase the halo thickness by setting the integer `md%domains(j)%minimum_nesting_layer_thickness` (e.g. a value of 30 is used on the coarsest grids for some test problems).
 
@@ -185,3 +158,33 @@ The CLIFFS solver requires sufficiently smooth bathymetry for stability; see the
 By default our CLIFFS solver uses `md%domains(j)%friction_type = "manning"`. Thus far we have not implemented Chezy friction in the CLIFFS solver (although that would not be difficult). We have implemented the linear-friction model associated with `md%domains(j)%linear_drag_coef` (discussed above), which is zero by default. In practice this model is unlikely to be desirable for use with CLIFFS, which is numerically dissipative in any case.
 
 The CLIFFS solver is not mass conservative; see Tolkova papers for discussion of this, especially in relation to wetting and drying. For this reason in SWALS's nesting framework, no flux correction is applied between neighbouring domains if one uses CLIFFS, and mass conservation errors are expected.
+
+## Treatment of dispersive terms (for all shallow water solvers)
+
+Models with dispersive terms use the following numerical solution method. 
+* The time-derivatives are represented as the difference between terms involving purely spatial derivatives at the current time level and the next time level. There is one discretisation for the finite-volume and CLIFFS solvers, and another for the leapfrog solvers.
+* To solve the resulting implicit equations, the multidomain global timestep $dt$ is split into $N_{t}$ substeps of size $\delta t$, where $\delta t$ is the smallest timestep required by any *dispersive* domain. 
+    * Thus $dt = N_{t}\delta t$ and the substeps can be indexed as $1, 2, 3, \ldots, N_{t}$. 
+    * At the beginning of a global timestep the time is $t_{start}$ on all domains.
+    * Domain $j$ has its own timestep (`alpha_j`$\delta t$), usually determined by its CFL condition. 
+        * SWALS requires dispersive domains to have `alpha_j` being an integer that EXACTLY divides $N_{t}$ (e.g. if $N_{t} = 8$ then dispersive domains could have `alpha_j = 1, 2, 4, 8`). 
+        * Non-dispersive domains have the same constraint unless they take a timestep smaller than $\delta t$ (in which case we could have `alpha_j = 1./2, 1./3, 1./4, ...`). 
+* For each substep `s=`$1, 2, \ldots, N_{t}$, we loop over domains
+    * Let $t_{end} = t_{start} + s\delta t$.
+    * If the domain has a timestep $\ge \delta t$, then skip it unless a single timestep will cause it to reach time $t_{end}$.
+    * For domains that remain
+        * Backup the solution for dispersive domains. 
+        * Take one shallow water step using the domain specific timestep (`alpha_j`$\delta t$), unless `alpha_j < 1` (non-dispersive domains only) in which case we take enough steps to advance time by $\delta t$. 
+        * Communicate halo data, but do not immediately update the solution.
+        * Implicit solve
+            * First *outer iteration*: Loop over domains, skipping those that are non-dispersive or were skipped on this substep
+                1. Receive halos from domains that have advanced to the same time, and have the same cell size.
+                2. Compute the right-hand-side for the implicit solve.
+                3. Guess the solution at the end of the substep using quadratic-in-time extrapolation from solutions at the start of the last 3 global timesteps.
+                4. Iteratively update the solution with implicit solves applied sequentially in the x-and-y directions (tridiagonal solves). These *inner iterations* are performed twice by default (corresponding to `md%domains(j)%tridiagonal_inner_iter=2`).
+            * Communicate halo data (among all domains) and receive halos from domains that have advanced to the same time (whether dispersive or not).
+            * By default this completes the dispersive solve. 
+                * But if `md%dispersive_outer_iterations_count > 1` then repeat the iterative update step of the *outer iteration*, and subsequent communication, until that many outer iterations are complete.
+            * The default number of inner (2) and outer (1) iterations are adequate for problems tried so far, but can be adjusted if needed.
+    * Advance to the next substep
+* After the final substep (`s=`$N_{t}$), apply flux-correction and communicate once more. At this point all domains will have advanced one global timestep $dt = N_{t}\delta t$.
