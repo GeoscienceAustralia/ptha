@@ -66,11 +66,7 @@ Rscript map_threat_levels_in_zone.R 'Pilbara Coast West'
 ## Step 3
 Finally we limit the onshore zone to a rare PTHA exceedance-rate, and then export to shapefile. The script [convert_raster_zones_to_polygons_with_PTHA_limits.R](convert_raster_zones_to_polygons_with_PTHA_limits.R) does this. It can be run for all warning types with:
 ```
-#!/bin/bash
-for warning_type in 'no_threat' 'marine_warning' 'land_warning' 'minor_land_warning' \
-    'major_land_warning'; do
-    Rscript convert_raster_zones_to_polygons_with_PTHA_limits.R 'Geraldton Coast' $warning_type;
-    done;
+qsub run_all_zones.sh
 ```
 
 This includes a special treatment of areas where the initial sea level was set lower than normal.
