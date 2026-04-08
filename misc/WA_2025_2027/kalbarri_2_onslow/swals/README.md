@@ -1,6 +1,6 @@
 # Exploratory model covering the full Kalbarri to Onslow region
 
-This is not as up-to-date as some subsequent models in the region, but was used to de-risk the analysis and to test the tidal adjustment technique.
+This is not as up-to-date as some subsequent models in the region, and lacks some key details (breakwalls / inverts). It was the first run, used to de-risk the analysis and to test the tidal adjustment technique.
 
 
 1. Make the model with `make build`
