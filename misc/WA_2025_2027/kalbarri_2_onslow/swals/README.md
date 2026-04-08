@@ -2,7 +2,7 @@
 
 This was the first model setup in this region. It was not used for "production" but allowed us to to de-risk the analysis, and test the tidal adjustment technique and the effect of including horizontal components on the results.
 
-It is not as up-to-date as some subsequent models in the region, and lacks some key details (breakwalls / inverts). The hazard runs on NCI also inconsistently masked the initial sea level on land, due to a mistaken update of the [multidomain_design_control](multidomain_design_control) inputs.
+It is not as up-to-date as some subsequent models in the region, and lacks some key details (breakwalls / inverts). The hazard runs on NCI also inconsistently masked the initial sea level on land, due to a mistaken update of the [multidomain_design_control](multidomain_design_control) input namelists (not including masking here, although it is desirable).
 
 # Workflow
 
