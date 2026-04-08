@@ -2,6 +2,8 @@ This folder contains:
 
 * [SW_WA_2021_2024](SW_WA_2021_2024) - Code for some models in south-west Western Australia. Parts of this were used in [this ICCE 2022 conference paper](https://doi.org/10.9753/icce.v37.papers.18) and [this paper in the Australian Journal of Emergency Management](https://knowledge.aidr.org.au/resources/ajem-october-2024-science-informed-risk-reduction-for-earthquake-generated-tsunamis-in-western-australia/). The work is comprehensively described in [this technical report](https://dx.doi.org/10.26186/150015).
 
+* [WA_2025_2027](WA_2025_2027) - Code for some models in the region around Kalbarri - Onslow in Western Australia.
+
 * [./hunga_tonga_data_paper](./hunga_tonga_data_paper) - Code for a paper presenting [observations of the Hunga-Tonga tsunami and pressure wave in Australia](https://doi.org/10.1038/s41597-024-02949-2).
 
 * [./monte_carlo_paper_2021](./monte_carlo_paper_2021) - Code and links to data for a [paper on Monte-Carlo techniques for PTHA](https://doi.org/10.1093/gji/ggac140). While the Monte-Carlo techniques used in this study are general, they are illustrated via a probabilistic inundation hazard analysis for Tongatapu. 
