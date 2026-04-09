@@ -1,13 +1,15 @@
 # ptha
-Codes for probabilistic tsunami hazard assessment. 
+Codes for Probabilistic Tsunami Hazard Assessment (PTHA). 
 
 The folder [ptha_access](ptha_access) contains scripts/tutorials to access the
-2018 Australian PTHA results - or typically subsets thereof, since the full
-analysis is several TB in size.
+[2018 Australian PTHA database](http://dx.doi.org/10.11636/Record.2018.041).
 
-The folder [misc](misc) contains data and code for related work, as detailed therein.
+The folder [misc](misc) contains data and code from GA's related tsunami
+projects, with links to the associated papers and technical reports.
 
-The folder [propagation](propagation) contains the nested grid shallow water equations solver [SWALS](./propagation/SWALS/).
+The folder [propagation](propagation) contains the nested grid shallow water
+equations solver [SWALS](./propagation/SWALS/), used to model tsunamis in
+many of our studies.
 
 The folder [R](R) includes the R package [rptha](R/rptha) along with
 [installation instructions](R/README.md). It also contains various 

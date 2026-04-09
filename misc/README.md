@@ -1,4 +1,8 @@
-This folder contains:
+# Miscellaneous project code
+
+This folder contains code used for various tsunami projects, which are described in our papers and technical reports. 
+
+The code structure usually reflects the computational environment in which our calculations were implemented. For instance, many scripts include hard-coded file paths and assume that particular software is already installed. We are not aiming to make the calculations trivial to rerun on other machines. 
 
 * [SW_WA_2021_2024](SW_WA_2021_2024) - Code for some models in south-west Western Australia. Parts of this were used in [this ICCE 2022 conference paper](https://doi.org/10.9753/icce.v37.papers.18) and [this paper in the Australian Journal of Emergency Management](https://knowledge.aidr.org.au/resources/ajem-october-2024-science-informed-risk-reduction-for-earthquake-generated-tsunamis-in-western-australia/). The work is comprehensively described in [this technical report](https://dx.doi.org/10.26186/150015).
 
