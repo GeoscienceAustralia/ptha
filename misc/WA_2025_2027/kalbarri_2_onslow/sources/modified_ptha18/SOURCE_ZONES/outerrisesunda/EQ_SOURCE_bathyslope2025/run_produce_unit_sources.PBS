@@ -1,0 +1,14 @@
+#!/bin/bash
+#PBS -P w85
+#PBS -q normalsr
+#PBS -l walltime=3:00:00
+#PBS -lmem=500GB
+#PBS -ljobfs=20GB
+#PBS -lncpus=104
+#PBS -l wd
+#PBS -l storage=scratch/w85+gdata/w85+gdata/fj6
+
+# Source key R modules -- not that you will need the right packages installed
+# as well (see comments in the script that is sourced)
+source R_431_NCI_modules.sh
+Rscript produce_okada3d_unit_sources.R 1

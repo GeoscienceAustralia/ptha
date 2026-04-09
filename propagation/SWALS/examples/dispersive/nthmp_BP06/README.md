@@ -20,7 +20,7 @@ Comparisons with models and data in the literature do not consistently show bett
 
 But even when this problem is approached with more complicated physics (i.e. dispersive or 3D models), we see reports of good agreement for some models using the NTHMP dataset (e.g. SELFE in the [NTHMP 2011 workshop report](https://nws.weather.gov/nthmp/documents/nthmpWorkshopProcMerged.pdf)), and for other models using the alternative runup dataset (e.g. [Choi et al., 2007](https://doi.org/10.1016/j.coastaleng.2007.02.001), [Ma et al., 2019](https://doi.org/10.1080/19942060.2019.1642960)). Because it is unclear which dataset should be used, both are included below. 
 
-## Reference FUNWAVE model, without dispersion, using analytical forcing
+## Reference FUNWAVE model, with dispersion, using analytical forcing
 
 We also compare the SWALS runup results with a high-resolution FUNWAVE simulation. FUNWAVE was run __with dispersion__ on a 2.5cm uniform grid, and initialised with an analytical solitary wave. [See here for FUNWAVE model setup files](./funwave_comparison). 
 

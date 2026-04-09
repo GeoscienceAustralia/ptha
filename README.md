@@ -1,19 +1,18 @@
 # ptha
-Codes for probabilistic tsunami hazard assessment. 
+Codes for Probabilistic Tsunami Hazard Assessment (PTHA). 
 
-The folder [ptha_access](ptha_access) contains scripts/tutorials to access the
-2018 Australian PTHA results - or typically subsets thereof, since the full
-analysis is several TB in size.
+The main purpose is to enable use of the [2018 Australian PTHA database](http://dx.doi.org/10.11636/Record.2018.041), and also to show how calculations were implemented in some related papers and reports. 
 
-The folder [misc](misc) contains data and code for related work, as detailed therein.
+For more information see documentation in the sub-folders.
 
-The folder [propagation](propagation) contains the nested grid shallow water equations solver [SWALS](./propagation/SWALS/).
+* [ptha_access](ptha_access) contains scripts/tutorials to access the [2018 Australian PTHA database](http://dx.doi.org/10.11636/Record.2018.041).
 
-The folder [R](R) includes the R package [rptha](R/rptha) along with
-[installation instructions](R/README.md). It also contains various 
-[tutorials and template scripts](R/examples) that use
-rptha, (including 
-[project-specific scripts used for the 2018 Australian PTHA](R/examples/austptha_template/) ).
+* [misc](misc) contains data and code from GA's related tsunami projects, with links to the associated papers and technical reports.
+
+* [propagation](propagation) contains the nested grid shallow water equations solver [SWALS](./propagation/SWALS/), used to model tsunamis in many of our studies. 
+  * There are also many [documented test problems](propagation/SWALS/examples/), including from the well-known [National Tsunami Hazard Mitigation Program test suite](propagation/SWALS/examples/nthmp/) and others [specific to dispersion](propagation/SWALS/examples/dispersive/).
+
+* [R](R) includes the R package [rptha](R/rptha) along with [installation instructions](R/README.md) and various [tutorials and template scripts](R/examples) that use rptha (including [project-specific scripts used for the 2018 Australian PTHA](R/examples/austptha_template/) ).
 
 *Please use the most up-to-date source code, not the "releases".  In this
 repository, "releases" are only used to snapshot the code at some point in time
