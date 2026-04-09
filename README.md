@@ -1,6 +1,8 @@
 # ptha
 Codes for Probabilistic Tsunami Hazard Assessment (PTHA). 
 
+The main purpose is to enable use of the [2018 Australian PTHA database](http://dx.doi.org/10.11636/Record.2018.041), and also to show how calculations were implemented in some related papers and reports. For more information see documentation in the sub-folders.
+
 * [ptha_access](ptha_access) contains scripts/tutorials to access the [2018 Australian PTHA database](http://dx.doi.org/10.11636/Record.2018.041).
 
 * [misc](misc) contains data and code from GA's related tsunami projects, with links to the associated papers and technical reports.
