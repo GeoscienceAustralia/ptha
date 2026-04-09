@@ -8,6 +8,8 @@ The code structure usually reflects the computational environment in which our c
 
 * [WA_2025_2027](WA_2025_2027) - Code for some models in the region around Kalbarri - Onslow in Western Australia.
 
+* [./gladstone_2024_2025](./gladstone_2024_2025) - Code for the Gladstone, Queensland model, described [here](https://doi.org/10.26186/150488) and [here](https://www.researchgate.net/publication/396142067_Accommodating_Spatially_Varying_Tidal_Planes_in_Tsunami_Hazard_Assessments).
+
 * [./hunga_tonga_data_paper](./hunga_tonga_data_paper) - Code for a paper presenting [observations of the Hunga-Tonga tsunami and pressure wave in Australia](https://doi.org/10.1038/s41597-024-02949-2).
 
 * [./monte_carlo_paper_2021](./monte_carlo_paper_2021) - Code and links to data for a [paper on Monte-Carlo techniques for PTHA](https://doi.org/10.1093/gji/ggac140). While the Monte-Carlo techniques used in this study are general, they are illustrated via a probabilistic inundation hazard analysis for Tongatapu. 
@@ -20,4 +22,3 @@ The code structure usually reflects the computational environment in which our c
 
 * [./probabilistic_inundation_tonga2020](./probabilistic_inundation_tonga2020) - A probabilistic inundation hazard analysis for Tongatapu. I suggest to use an improved variant of this analysis which is available in [./monte_carlo_paper_2021](./monte_carlo_paper_2021)
 
-* [./gladstone_2024_2025](./gladstone_2024_2025) - Code for the Gladstone, Queensland model, described [here](https://doi.org/10.26186/150488) and [here](https://www.researchgate.net/publication/396142067_Accommodating_Spatially_Varying_Tidal_Planes_in_Tsunami_Hazard_Assessments).
