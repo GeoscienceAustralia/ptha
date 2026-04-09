@@ -9,14 +9,14 @@
 #PBS -l storage=scratch/w85+gdata/w85
 
 source R_431_NCI_modules.sh
-#all_warning_zones=('Geraldton Coast' 'Gascoyne Coast' 'Ningaloo Coast' 'Pilbara Coast West')
+all_warning_zones=('Geraldton Coast' 'Gascoyne Coast' 'Ningaloo Coast' 'Pilbara Coast West')
 
 ## Geraldton already run
 #all_warning_zones=('Gascoyne Coast' 'Ningaloo Coast' 'Pilbara Coast West')
 
 #Rscript copy_elevation_rasters_locally.R
 
-all_warning_zones=('Ningaloo Coast')
+#all_warning_zones=('Ningaloo Coast')
 
 for warning_zone in "${all_warning_zones[@]}"; do 
     # Get JATWC H parameters
