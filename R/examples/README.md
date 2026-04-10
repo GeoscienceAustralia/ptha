@@ -64,6 +64,12 @@ in the Australian PTHA
 necessary because the latter only stored the Kajiura-smoothed vertical
 displacement.
 
+ptha18_unit_sources_including_horizontal_components
+---------------------------------------------------
+
+Include the effect of sloping bathymetry in PTHA18 unit sources. This was not done 
+in PTHA18, but it is interesting to see how much effect it has.
+
 source_contours_2_unit_sources
 ------------------------------
 

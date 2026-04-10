@@ -9,6 +9,7 @@ You might also want to review [../doc/general_guidance_on_model_setup.md](../doc
 The key folders are:
 - [test](test) -- test cases
 - [test-full](test-full) -- full duration tests and validation cases like historic events
+- [test-tide-scenarios](test-tide-scenarios) -- test spatially varying HAT against static HAT at 3 sites for 4 scenarios
 - [run_ptha](run_ptha) -- run all scenarios for PTHA
 - [post_process](post_process) -- post-processing of model outputs
 - [movies](movies) -- runs with frequent stage saving to make movies 

@@ -1,0 +1,38 @@
+#!/bin/bash
+#PBS -P w85
+#PBS -q normal
+#PBS -l walltime=08:00:00
+#PBS -lmem=190GB
+#PBS -lncpus=48
+#PBS -ljobfs=20GB
+#PBS -l wd
+#PBS -l storage=scratch/w85+gdata/w85
+
+source ../../modules_R_431.sh
+
+# Array with SWALS output directory, underneath ../../../swals/OUTPUTS, where we check rasters from
+all_runnames=(\
+"../../../swals/OUTPUTS/ptha18_tidal_check/sea_level_vary/random_kermadectonga2/" \
+"../../../swals/OUTPUTS/ptha18_tidal_check/sea_level_vary/random_newhebrides2/" \
+"../../../swals/OUTPUTS/ptha18_tidal_check/sea_level_vary/random_southamerica/" \
+"../../../swals/OUTPUTS/ptha18_tidal_check/sea_level_vary/random_solomon2/")
+
+first_run=${all_runnames[0]}
+
+# Find the raster outputs from one run (we assume all model runs have the same number of domains).
+testfile=$(ls $first_run'ptha18_random_scenarios'_*/raster*.tar | head -n1)
+# Count the rasters in the multidomain outputs
+maxrasts=$(tar --list -f $testfile | grep "depth_" | wc -w)
+
+# Do the calculations for each source
+for runname in ${all_runnames[@]}; do
+  echo 'RUNNAME:' $runname $maxrasts;
+  Rscript compute_exceedance_rates_at_logic_tree_mean.R $runname $maxrasts depth 0.001;
+  # NOTE: If you want to do calculations with multiple depth thresholds, just
+  # append them to the above command, e.g.
+  #     Rscript compute_exceedance_rates_at_logic_tree_mean.R $runname $maxrasts depth 0.001 0.01 0.1 1 10;
+  # would compute results for the five different depth thresholds 0.001 0.01
+  # 0.1 1 10 (and is much more computationally efficient than running them all
+  # separately)
+
+done

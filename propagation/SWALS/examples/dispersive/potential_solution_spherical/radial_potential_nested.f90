@@ -75,8 +75,6 @@ program radial_potential
 
     ! length/width in cartesian coordinates
     real(dp), parameter, dimension(2):: global_lw_cartesian = 200000.0_dp * [1.0_dp, 1.0_dp]
-    ! lower-left corner coordinate in cartesian coordinate
-    real(dp), parameter, dimension(2):: global_ll_cartesian = -global_lw_cartesian/2.0_dp
     ! grid size (number of x/y cells)
     integer(ip), parameter, dimension(2):: global_nx = nint([100, 50]*mesh_refine + 1) ! Deliberately uneven
 
