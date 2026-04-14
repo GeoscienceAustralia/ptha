@@ -9,14 +9,15 @@
     * `Rscript plot_gauges_java2006.R ../OUTPUTS/path-to-model-multidomain-dir-for-java2006/gauges_plot_XXXXX.RDS 0.5 1 6` which plots the model and observations, here with y-axes covering +- 0.5m and x-axes (time) covering 1 to 6 hours post-earthquake.
   * Use [./post_process/make_rasters.R](./post_process/make_rasters) to make rasters with max-quantities of interest, then visualise in GIS and check for anything unexpected
 
-2. Run the extreme test cases
+2. Run the extreme and small test cases
 * Qsub scripts in [./run_scripts](./run_scripts) from within the current directory **(FIXME clean this up, be specific)**
   * `qsub run_scripts/run_extremeTestCase_kalbarri2onslow_20251218.sh`
   * `qsub run_scripts/run_smallTestCase_kalbarri2onslow_20251218.sh`
 * After they have completed
   * Check mass conservation/energy decay with [./post_process/check_log_files.R](./post_process/check_log_files.R)  
-    * **(FIXME: The `dry-runs` had a later time growth in max-speed that warrents investigation before doing the final runs)**
+    * These show a few sites with velocity growth over time that were investigated using the rasters (below).
   * Use [./post_process/make_rasters.R](./post_process/make_rasters) to make rasters with max-quantities of interest (as well as the last timestep UH or VH), then visualise in GIS and check for anything unexpected.
+    * These were used to check a few sites with velocity growth over time, which occur in very localised spots at a couple of nesting boundaries, but did not appear to be having an important effect. 
 
 3. Create the PBS scripts to run relevant scenarios in [../sources/](../sources/), and then submit them
   * e.g. `Rscript create_random_ptha_qsub_scripts_hazard.R` to make scripts to run the hazard scenarios. 
