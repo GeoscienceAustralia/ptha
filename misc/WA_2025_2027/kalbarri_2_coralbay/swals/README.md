@@ -1,7 +1,17 @@
-0. Make the model with `make build`
+0. Make the model (after `source R_431_NCI_modules.sh`)
+* There are a few versions
+  * Regular version: `make build`
+  * Debug version: `make debug`
+  * Debug version with alternative nesting: `make both_debug_and_old_nesting_target`
+* Run a short test case (such as `run_tests/run_smallTestCase_TESTONLY.sh`) and use the results to make a load balance file (using `post_process/load_balance_script.R`).
 
 1. Run the realistic test cases
-* Qsub scripts in [./run_tests](./run_tests) 
+* Qsub scripts in [./run_tests](./run_tests)
+  * `qsub run_tests/run_sumatra2004_kalbarri2coralbay_fujisatake07.sh`
+  * `qsub run_tests/run_sumatra2004_kalbarri2coralbay_fujii21.sh`
+  * `qsub run_tests/run_sumatra2005_kalbarri2coralbay_Fujii20.sh`
+  * `qsub run_tests/run_sumatra2007_kalbarri2coralbay_FujiiSatake08.sh`
+  * `qsub run_tests/run_java2006_kalbarri2coralbay_fujiisatake2006_1kms_time_varying_with_horiz.sh`
 * After they have completed
   * Check mass conservation/energy decay with [./post_process/check_log_files.R](./post_process/check_log_files.R)
   * Check tide gauges with the `process_gauges_XXX.R` and `plot_gauges_XXX.R` scripts in the [./plots](./plots) directory. From inside that directory, use comments like below to create PNG files with model-vs-observed at tide gauges (here assuming the Java 2006 scenario)
@@ -10,14 +20,15 @@
   * Use [./post_process/make_rasters.R](./post_process/make_rasters) to make rasters with max-quantities of interest, then visualise in GIS and check for anything unexpected
 
 2. Run the extreme and small test cases
-* Qsub scripts in [./run_scripts](./run_scripts) from within the current directory **(FIXME clean this up, be specific)**
-  * `qsub run_scripts/run_extremeTestCase_kalbarri2onslow_20251218.sh`
-  * `qsub run_scripts/run_smallTestCase_kalbarri2onslow_20251218.sh`
+* Qsub scripts in [./run_scripts](./run_scripts) from within the current directory
+  * `qsub run_scripts/run_extremeTestCase.sh`
+  * `qsub run_scripts/run_extremeTestCase2.sh`
+  * `qsub run_scripts/run_smallTestCase.sh`
 * After they have completed
   * Check mass conservation/energy decay with [./post_process/check_log_files.R](./post_process/check_log_files.R)  
     * These show a few sites with velocity growth over time that were investigated using the rasters (below).
   * Use [./post_process/make_rasters.R](./post_process/make_rasters) to make rasters with max-quantities of interest (as well as the last timestep UH or VH), then visualise in GIS and check for anything unexpected.
-    * These were used to check a few sites with velocity growth over time, which occur in very localised spots at a couple of nesting boundaries, but did not appear to be having an important effect. 
+    * These were used to check a few sites with velocity growth over time. They occur in very localised spots at a couple of nesting boundaries, but did not appear to be having an important effect. 
 
 3. Create the PBS scripts to run relevant scenarios in [../sources/](../sources/), and then submit them
   * e.g. `Rscript create_random_ptha_qsub_scripts_hazard.R` to make scripts to run the hazard scenarios. 
