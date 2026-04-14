@@ -7,7 +7,7 @@ For more information see documentation in the sub-folders.
 
 * [ptha_access](ptha_access) contains scripts/tutorials to access the [2018 Australian PTHA database](http://dx.doi.org/10.11636/Record.2018.041).
 
-* [misc](misc) contains data and code from GA's related tsunami projects, with links to the associated papers and technical reports.
+* [misc](misc) contains data and code from Geoscience Australia's related tsunami projects, with links to the associated papers and technical reports.
 
 * [propagation](propagation) contains the nested grid shallow water equations solver [SWALS](./propagation/SWALS/), used to model tsunamis in many of our studies. 
   * There are also many [documented test problems](propagation/SWALS/examples/), including from the well-known [National Tsunami Hazard Mitigation Program test suite](propagation/SWALS/examples/nthmp/) and others [specific to dispersion](propagation/SWALS/examples/dispersive/).
