@@ -50,6 +50,7 @@ The steps to run are outlined below.
       * Although a single timestep reduction is hard-coded in the latter file, in practice we tried a sequence of timestep reductions (3, then 5 for those that still failed, then 7). A number of initially failing scenarios worked using a 3x timestep reduction. For those that still failed, some worked with 5x. One needed 7x. 
   * Before re-running the model, you must delete its multidomain directory
   * After the new runs complete, repeat step 4 to check all the runs are OK, and if needed continue debugging.
+  * Scripts to make qsub scripts for the particular models that failed are in [post_process/make_jobs_failed_runs_using_lowts.R](post_process/make_jobs_failed_runs_using_lowts.R) and [post_process/make_jobs_failed_runs_using_alternative_nesting](post_process/make_jobs_failed_runs_using_alternative_nesting). 
 
 6. Create rasters by going inside the `post_process` directory and doing `qsub create_tarred_rasters_from_tarred_multidomains.pbs`
 
