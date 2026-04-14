@@ -1,8 +1,7 @@
 0. Make the model with `make build`
 
 1. Run the realistic test cases
-* Qsub scripts in [./run_scripts](./run_scripts) 
-   * **(FIXME clean this up, there are many experiments here too. Also, as of Jan 2026 the validation tests were not made for the most up-to-date models, I ran them with earlier versions (will be fine, but update))**
+* Qsub scripts in [./run_tests](./run_tests) 
 * After they have completed
   * Check mass conservation/energy decay with [./post_process/check_log_files.R](./post_process/check_log_files.R)
   * Check tide gauges with the `process_gauges_XXX.R` and `plot_gauges_XXX.R` scripts in the [./plots](./plots) directory. From inside that directory, use comments like below to create PNG files with model-vs-observed at tide gauges (here assuming the Java 2006 scenario)
