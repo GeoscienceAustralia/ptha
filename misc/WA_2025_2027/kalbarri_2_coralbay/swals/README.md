@@ -35,8 +35,7 @@ The steps to run are outlined below.
     * These were used to check a few sites with velocity growth over time. They occur in very localised spots at a couple of nesting boundaries, but did not appear to be having an important effect. 
 
 3. Create the PBS scripts to run relevant scenarios in [../sources/](../sources/), and then submit them
-  * e.g. `Rscript create_random_ptha_qsub_scripts_hazard.R` to make scripts to run the hazard scenarios. 
-  * An alternative set of scenarios which include the effect of sloping bathymetry (horizontal components) in the PTHA18 source models are made with `Rscript create_random_ptha_qsub_scripts_hazard_bathyslope.R`. 
+  * Use `Rscript create_random_ptha_qsub_scripts_hazard.R` to make scripts to run the hazard scenarios. 
 
 4. After the submitted scripts have run
   * Check they finished and that the mass/energy/etc are OK
@@ -48,10 +47,12 @@ The steps to run are outlined below.
     * A few scenarios failed due to intense inundation around NW Cape, but could be made to run stably by reducing the timestep. 
       * This can be achieved using multidomain_kalbarri2onslow_20251218_hazard_lowts.nml (instead of multidomain_kalbarri2onslow_20251218_hazard.nml) as the configuration file. 
       * Although a single timestep reduction is hard-coded in the latter file, in practice we tried a sequence of timestep reductions (3, then 5 for those that still failed, then 7). A number of initially failing scenarios worked using a 3x timestep reduction. For those that still failed, some worked with 5x. One needed 7x. 
-  * Before re-running the model, you must delete its multidomain directory
-  * After the new runs complete, repeat step 4 to check all the runs are OK, and if needed continue debugging.
-  * Scripts to make qsub scripts for the particular models that failed are in [post_process/make_jobs_failed_runs_using_lowts.R](post_process/make_jobs_failed_runs_using_lowts.R) and [post_process/make_jobs_failed_runs_using_alternative_nesting](post_process/make_jobs_failed_runs_using_alternative_nesting). 
+  * Tips for rerunning models
+    * Before re-running the model, you must delete its multidomain directory
+    * After the new runs complete, repeat step 4 to check all the runs are OK, and if needed continue debugging.
+  * Scripts to make qsub scripts for the particular models that failed for me are in [post_process/make_jobs_failed_runs_using_lowts.R](post_process/make_jobs_failed_runs_using_lowts.R) and [post_process/make_jobs_failed_runs_using_alternative_nesting](post_process/make_jobs_failed_runs_using_alternative_nesting). 
 
 6. Create rasters by going inside the `post_process` directory and doing `qsub create_tarred_rasters_from_tarred_multidomains.pbs`
 
-7. Compress the model output tar files (basename like `RUN_(DATETIME_STAMP).tar`) 
+7. Compress the model output tar files (basename like `RUN_(DATETIME_STAMP).tar`).
+  * I did this by editing `post_process/bzip2_some_files.R` and running it with the PBS run script in the same directory.
