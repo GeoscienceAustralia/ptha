@@ -2,10 +2,11 @@
 
 The steps to run are outlined below.
 
-0. Make the model (after `source R_431_NCI_modules.sh`)
-* There are a few versions
+0. Make the model 
+* Use `source R_431_NCI_modules.sh` to load modules needed to compile SWALS
+* There are a few variants of the model to be compiled
   * Regular version: `make build`
-  * Debug version: `make debug`
+  * Debug version - if models go unstable then this one will provide more information on the problematic location: `make debug`
   * Debug version with alternative nesting: `make both_debug_and_old_nesting_target`
 * Run a short test case (e.g. `qsub run_tests/run_smallTestCase_TESTONLY.sh`) and use the results to make a load balance file, using `post_process/load_balance_script.R`.
 
