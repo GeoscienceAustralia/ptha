@@ -7,7 +7,7 @@ The steps to run are outlined below.
   * Regular version: `make build`
   * Debug version: `make debug`
   * Debug version with alternative nesting: `make both_debug_and_old_nesting_target`
-* Run a short test case (such as `run_tests/run_smallTestCase_TESTONLY.sh`) and use the results to make a load balance file (using `post_process/load_balance_script.R`).
+* Run a short test case (e.g. `qsub run_tests/run_smallTestCase_TESTONLY.sh`) and use the results to make a load balance file, using `post_process/load_balance_script.R`.
 
 1. Run the realistic test cases
 * Qsub scripts in [./run_tests](./run_tests)
