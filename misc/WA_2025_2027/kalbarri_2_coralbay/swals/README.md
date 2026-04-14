@@ -1,3 +1,7 @@
+# Kalbarri to Coral Bay tsunami model
+
+The steps to run are outlined below.
+
 0. Make the model (after `source R_431_NCI_modules.sh`)
 * There are a few versions
   * Regular version: `make build`
