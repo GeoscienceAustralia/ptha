@@ -1,5 +1,9 @@
 # WA tsunami modelling (Kalbarri to Onslow region) 2025-2027
 
+The codes here were mostly derived by modifying code from previous projects, including:
+* [../SW_WA_2021_2024](../SW_WA_2021_2024) provided a starting point for the scenario sampling
+* [../gladstone_2024_2025](../gladstone_2024_2025) and [../nsw_2023_2024](nsw_2023_2024) for the tsunami hydrodynamics among other things.
+
 Key subfolders:
 
 * [kalbarri_2_coralbay](kalbarri_2_coralbay) - Model covering the region from (somewhat south of) Kalbarri to Coral Bay, with high resolution in towns.
