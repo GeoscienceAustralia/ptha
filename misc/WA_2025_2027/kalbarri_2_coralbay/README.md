@@ -1,6 +1,6 @@
 # Kalbarri to Coral Bay hazard calculations
 
-This model includes a areas from south of Kalbarri to Coral Bay, with high resolution in most towns (exceptions where preliminary runs showed the tsunami to be small).
+This model includes a areas from south of Kalbarri to Coral Bay, with high resolution in most towns (with exceptions where preliminary runs showed the tsunami to be small).
 
 See [doc](doc) for general guidance on using the code, along with further documentation and code in the subfolders.
 
