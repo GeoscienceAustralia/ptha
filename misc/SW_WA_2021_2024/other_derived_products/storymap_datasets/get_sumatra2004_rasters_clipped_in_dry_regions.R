@@ -1,6 +1,9 @@
 #
 # Get the max-stage rasts from a Greater Perth model run
-# - clip them in areas that were never wet (having zero max-flux). Nowadays we can use the SWALS option
+# - clip them in areas that were never wet (having zero max-flux). 
+# Nowadays we can bypass this issue with the SWALS option
+# md%domains(:)%stage_extrema_include_dry_cells=.FALSE.  but it didn't exist at
+# the time.
 #
 
 # Store the adjusted tifs here
