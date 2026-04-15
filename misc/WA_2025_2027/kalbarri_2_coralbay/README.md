@@ -1,6 +1,7 @@
 # Kalbarri to Coral Bay hazard calculations
 
 Key folders are
+* [elevation](elevation) - specify location of elevation files used by the model
 * [gauges](gauges) - locations where the model stores time-series.
 * [initial_stage](initial_stage) - Used to make the initial stage lower than the default value, typically to eliminate ponds on land.
 * [inverts](inverts) - Used to enforce elevation low points in the model grid
