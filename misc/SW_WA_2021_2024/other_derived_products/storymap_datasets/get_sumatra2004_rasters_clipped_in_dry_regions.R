@@ -8,6 +8,7 @@
 
 # Store the adjusted tifs here
 output_dir = './Sumatra2004_max_stage_greater_perth_model/'
+dir.create(output_dir, showWarnings=FALSE)
 
 # Source of the tifs
 max_stage_rasts = Sys.glob('/g/data/w85/tsunami/MODELS/inundation/WA_tsunami_inundation_DFES/greater_perth_revised2023/swals/OUTPUTS/Sumatra2004_FujiiSatake2007_timevarying-full-ambient_sea_level_0.0/RUN_20230831_172007573/max_stage*.tif')
