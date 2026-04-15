@@ -1,0 +1,2 @@
+/g/data/w85/tsunami/MODELS/inundation/WA_tsunami_inundation_DFES/kalbarri_2_coralbay/inverts/fixed_height_lines/carnarvon1.csv
+/g/data/w85/tsunami/MODELS/inundation/WA_tsunami_inundation_DFES/kalbarri_2_coralbay/inverts/fixed_height_lines/carnarvon2.csv
