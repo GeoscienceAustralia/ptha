@@ -58,13 +58,14 @@ Limit the initial stage in particular polygons. This is mostly useful for
 eliminating ponds in onshore areas that are below the model's initial sea
 level, yet not connected to the ocean and not typically wet.
 
+## [../tides](../tides): 
+
+Plot tidal time-series from TPXO9 at sites relevant to historical tsunamis.
+
 ## [../swals](../swals): 
 
 Contains code to run the tsunami model for hazard scenarios and testing, and produce raster outputs and basic plots.
 
-## [../tides](../tides): 
-
-Plot tidal time-series from TPXO9 at sites relevant to historical tsunamis.
 
 ### Setup the hydrodynamic model
 * Start by modifying the `model_multidomain_design_mod.f90` to mostly match what you want. 
