@@ -1,0 +1,145 @@
+!
+! Here we can override most variables in model_multidomain_design_mod.f90
+! (defaults are specified in the latter file).
+!
+
+&MULTIDOMAIN_GLOBAL_PROPERTIES
+
+! Small outer domain suitable for short exploratory model
+global_ll(1) = 10.0d0
+global_ll(2) = -72.0d0
+global_lw(1) = 150.0d0
+global_lw(2) = 104.0d0
+
+! Gridded variables to be stored as time series
+time_grids_to_store(1) = ''
+time_grids_to_store(2) = ''
+time_grids_to_store(3) = ''
+
+! Gridded variables containing summary statistics to be stored. Allowed values are
+! [character(len=charlen):: 'max_stage', 'max_flux', 'max_speed', 'arrival_time', &
+!  'manning_squared', 'elevation0', 'elevation_source_file_index', 'time_of_max_stage', 'min_stage']
+! The first value should be 'max_stage' (unless it is empty)
+nontemporal_grids_to_store(1) = 'max_stage'
+nontemporal_grids_to_store(2) = 'max_flux'
+nontemporal_grids_to_store(3) = 'max_speed'
+nontemporal_grids_to_store(4) = 'arrival_time'
+nontemporal_grids_to_store(5) = 'min_stage'
+nontemporal_grids_to_store(6) = 'elevation0'
+!nontemporal_grids_to_store(7) = 'manning_squared'
+!nontemporal_grids_to_store(8) = 'elevation_source_file_index'
+!nontemporal_grids_to_store(9) = 'time_of_max_stage'
+
+! How long to evolve the solution (seconds)
+final_time_test_runs = 600.0d0
+final_time_full_runs = 86400.0d0
+
+! Number of nesting levels (including one for the global domain)
+! Must match the size of arrays defined below in &MULTIDOMAIN_NESTING_PROPERTIES
+NNL = 6
+
+! List of Manning n value raster files in preference order.
+mannning_n_file_list_in_preference_order = ""
+
+! Tidal adjustment geotiff file
+tidal_adjustment_file_subtract_from_elevation = '/g/data/w85/tsunami/MODELS/tidal_prediction/wa_tidal_models_vs_obs/regional_TPXO9/post-process/processed/max_tidal_stage_processed_20260108.tif'
+
+! Polygons where we set the initial stage to a low value
+override_initial_stage_polygons_values_file = '../initial_stage/override_initial_stages.csv'
+
+! Breakwalls
+breakwalls_file_list = '../breakwalls/swals_breakwall_files.txt'
+
+! Inverts
+inverts_file_list = '../inverts/swals_invert_files.txt'
+
+! Locations to store gauge outputs
+swals_point_gauge_file = '../gauges/locations.csv'
+
+! Frequent gauge outputs, less often for other things
+approximate_writeout_timestep = 1.6d0
+print_every_nth_writeout_timestep = 200
+write_grids_every_nth_writeout_timestep = 99999999
+/
+
+&MULTIDOMAIN_NESTING_PROPERTIES
+
+! Choose the timestepping methods
+nesting_domain_timestepping_method(1) = "leapfrog_nonlinear" !"leapfrog_linear_plus_nonlinear_friction" !
+nesting_domain_timestepping_method(2) = "midpoint" ! Dispersive FV domain should use midpoint
+nesting_domain_timestepping_method(3) = "midpoint"
+nesting_domain_timestepping_method(4) = "midpoint"
+nesting_domain_timestepping_method(5) = "midpoint"
+nesting_domain_timestepping_method(6) = "midpoint"
+
+
+! Files with domain metadata for each nesting level (must have size=NNL)
+nesting_domain_extents_file(1) = "" ! Empty for global domain
+nesting_domain_extents_file(2) = "../multidomain_design_B/kalbarri2coralbay_B_domains_20260324_1_3_21_1_5/kalbarri2onslow_C_level2_edited.csv"
+nesting_domain_extents_file(3) = "../multidomain_design_B/kalbarri2coralbay_B_domains_20260324_1_3_21_1_5/kalbarri2onslow_C_level3_edited.csv"
+nesting_domain_extents_file(4) = "../multidomain_design_B/kalbarri2coralbay_B_domains_20260324_1_3_21_1_5/kalbarri2onslow_C_level4_edited.csv"
+nesting_domain_extents_file(5) = "../multidomain_design_B/kalbarri2coralbay_B_domains_20260324_1_3_21_1_5/Xmas_cocos_level2_edited.csv"
+nesting_domain_extents_file(6) = "../multidomain_design_B/kalbarri2coralbay_B_domains_20260324_1_3_21_1_5/Xmas_cocos_level3_edited.csv"
+
+! Spatial grid size refinement factors on each nesting level, relative to the
+! next coarsest level (must have size=NNL).
+dx_refinement_factors(1) = 1 ! Always 1 for global domain
+dx_refinement_factors(2) = 9 ! kalbarri2onslow_C_level2
+dx_refinement_factors(3) = 6
+dx_refinement_factors(4) = 3
+dx_refinement_factors(5) = 9 ! Xmas_cocos_level2 -- This is relative to the global domain
+dx_refinement_factors(6) = 3
+
+! Coarsening factors on each nesting level (must have size=NNL). 
+! If the input file tells us to coarsen some domains in the nesting layer, then 
+! this value defines how much they coarsen. The coarsening_factors must be an integer
+! divisor of the corresponding entry in dx_refinement_factors. Coarsening can be 
+! useful to speed up some domains in deep water, which otherwise slow models down, if
+! they don't require high resolution for accuracy. 
+! Negative values imply no coarsening will be used. 
+coarsening_factors(1) = -1 ! No coarsening on global domain
+coarsening_factors(2) = -1
+coarsening_factors(3) = 2 ! WA second-finest domains
+coarsening_factors(4) = 3 ! WA finest domains
+coarsening_factors(5) = -1
+coarsening_factors(6) = -1
+
+! Choose parent domains that will ensure proper alignment of the domains for nesting,
+! (finer domains never partially overlap parent domain cells).
+! Domains will communicate with all of their neighbours, not just the parent.
+nesting_level_parent_index(1) = 0
+nesting_level_parent_index(2) = 1 ! WA first level nesting
+nesting_level_parent_index(3) = 2
+nesting_level_parent_index(4) = 3
+nesting_level_parent_index(5) = 1 ! Xmas Island first level nesting
+nesting_level_parent_index(6) = 5
+
+nesting_domain_use_dispersion(1) = .false.
+nesting_domain_use_dispersion(2) = .false.
+nesting_domain_use_dispersion(3) = .false.
+nesting_domain_use_dispersion(4) = .false.
+nesting_domain_use_dispersion(5) = .false.
+nesting_domain_use_dispersion(6) = .false.
+
+! Finite volume limiter parameter
+theta_fv_limiter(1) = 4.0d0
+theta_fv_limiter(2) = 4.0d0
+theta_fv_limiter(3) = 4.0d0
+theta_fv_limiter(4) = 4.0d0
+theta_fv_limiter(5) = 4.0d0
+theta_fv_limiter(6) = 4.0d0
+
+! Reduced finite volume limiter parameter (only used in domains that
+! were tagged to use it in multidomain_design)
+theta_fv_limiter_reduced(1) = 4.0d0
+theta_fv_limiter_reduced(2) = 4.0d0 ! First level WA nesting
+theta_fv_limiter_reduced(3) = 1.9d0
+theta_fv_limiter_reduced(4) = 1.9d0
+theta_fv_limiter_reduced(5) = 4.0d0
+theta_fv_limiter_reduced(6) = 4.0d0 ! First level Indian Ocean Islands nesting.
+
+
+! Default file with load balancing information.
+!load_balance_file = "../multidomain_design_B/kalbarri2coralbay_B_domains_20260324_1_3_21_1_5/load_balance_default.txt"
+load_balance_file = "./load_balance_files/load_balance_partition_16MPI_20260324.txt"
+/
