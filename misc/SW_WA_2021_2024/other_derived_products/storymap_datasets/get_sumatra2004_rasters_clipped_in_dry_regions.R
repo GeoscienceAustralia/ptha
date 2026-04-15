@@ -26,7 +26,7 @@ for(i in 1:length(max_stage_rasts)){
     x[y == 0] = NA
 
     new_file = paste0(output_dir, 
-        gsub('max_stage', 'DRY_CLIPPED_max_stage', basename(max_stage_rasts[i]))
+        gsub('max_stage', 'DRY_CLIPPED_max_stage', basename(max_stage_rasts[i])))
     writeRaster(x, new_file, gdal=c('COMPRESS=DEFLATE'), overwrite=TRUE)
 }
 
