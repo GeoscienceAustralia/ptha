@@ -1,6 +1,8 @@
 # Extraction of tides at specific locations
 
-source('/home/gareth/Code_Experiments/TIDAL_PREDICTION/TPXO9/TPXO9_R_interface/predict_tide.R', chdir=TRUE) # Also located on NCI
+#source('/home/gareth/Code_Experiments/TIDAL_PREDICTION/TPXO9/TPXO9_R_interface/predict_tide.R', chdir=TRUE)
+source('/g/data/w85/tsunami/MODELS/tidal_prediction/TPXO9/TPXO9_R_interface/predict_tide.R', chdir=TRUE)
+
 
 sites_to_get = list(
     'Steep_Point_Java2006' =  list(
