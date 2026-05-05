@@ -1272,7 +1272,7 @@ TIMER_START('before_stepping')
         !print*, 'disp_nt_max = ', disp_nt_max
 TIMER_STOP('before_stepping')
 
-        ! For all sub-timesteps
+        ! Main loop over sub-timesteps required by dispersive domains
         substeps_loop: do substep = 1, disp_nt_max
 
             ! Time that we will have advanced to at the end of this substep
@@ -1282,7 +1282,7 @@ TIMER_STOP('before_stepping')
             domain_SW_loop: do j = 1, size(md%domains, kind=ip)
 
                 ! Number of substeps required by this domain, limited to the maximum number of substeps required by dispersive domains.
-                ! (since we will pack any extra shallow water steps into the current loop)
+                ! (since we will pack any extra shallow water domain substeps into the current loop)
                 nt = min(md%domains(j)%timestepping_refinement_factor, disp_nt_max)
                 dt_local = dt/(1.0_dp * nt)
 
@@ -1345,7 +1345,7 @@ TIMER_START('domain_evolve')
 
 TIMER_STOP('domain_evolve')
 
-                ! Send the halos for non-dispersive domains (dispersive domains do it after applying dispersion)
+                ! Send the halos
                 call md%send_halos(domain_index=j, send_to_recv_buffer = send_halos_immediately, time=md%domains(j)%time)
             end do domain_SW_loop
 
