@@ -5,7 +5,7 @@ Inputs are stored in `.R` files which are sourced as needed. You'll need two inp
 1. a [input/scenes.in.R](input/scenes.in.R) to define the scenes (lat-lon extents) you want. If only a subset of all the domains cover your area, it's efficient to specify which ones in the `scenes$domains` (by changing `NULL` to a vector).
 2. a scenario specific file e.g. [input/kermadec_94.in.R](input/kermadec_94.in.R). This sets up file paths to the SWALS simulation (which must have temporal stage saved) and extracts the times it saved. It also defines when to cut to each scene using a `shots` tibble/dataframe.
 
-The colourmaps are also defined here in the [input/custom_colours.R](inputs/custom_colours.R) file.
+The colourmaps are also defined here in the [input/custom_colours.R](input/custom_colours.R) file.
 
 ## The four main scripts
 1. [make_frames.R](make_frames.R) is used to generate the png frames for one scene e.g.
