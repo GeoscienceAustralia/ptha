@@ -3,7 +3,7 @@
 
 SWALS contains a range of solvers for variants of the 2D shallow water equations (optionally with dispersion). Models using multiple domains (via the `multidomain` type) can use different solvers on different domains, and they may take different time-steps. Both Cartesian and Spherical coordinates are supported for all solver types - the choice is made when compiling the code so all domains must use the same coordinate system. [See here for a study that uses a range of SWALS solvers](https://www.frontiersin.org/articles/10.3389/feart.2020.598235/full).
 
-The different solvers have different strengths and limitations, discussed below. Some solvers work well for global-scale tsunami propagation (at least for long-waves that satisfy the shallow water equations) but are inappropriate for nearshore inundation simulation. The converse holds for some others.
+The different solvers have different strengths and limitations, discussed below. Some solvers work well for global-scale tsunami propagation but are inappropriate for nearshore inundation simulation. The converse holds for some others.
 
 The SWALS code development has focussed most on:
 
