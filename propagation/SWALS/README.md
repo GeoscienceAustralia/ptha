@@ -38,9 +38,9 @@ jobs.
 
 The code includes various test suits that [can be run automatically](#compiling-and-testing), including a
 [unit test suite](./tests/unit_tests), a [parallel unit test suite](./tests/parallel_tests),
- and a [validation test suite](./tests/validation_tests). The latter focusses 
-on tsunami type problems; see [here for various NTHMP tests](./examples/nthmp) 
-(which are well known in the tsunami community), [here](./examples) for other problems, and [here](./examples/dispersive/) for tests using dispersion. 
+ and a [validation test suite](./tests/validation_tests). 
+* The validation test suite focusses on tsunami type problems. 
+* See [here for various NTHMP tests](./examples/nthmp) (which are well known in the tsunami community), [here](./examples) for other problems, and [here](./examples/dispersive/) for tests using dispersion. 
 
 Publications using SWALS include:
 * [A paper](https://www.frontiersin.org/articles/10.3389/feart.2020.598235/full) using SWALS to model 5 historic tsunamis in Australia.
