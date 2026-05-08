@@ -36,10 +36,10 @@ between MPI ranks, or the partition can be specified by the user at run-time.
 Static load balancing can be used to improve the efficiency of large parallel
 jobs.
 
-The code includes various test suits that [can be run automatically](#compiling-and-testing), including a
+SWALS includes tests that [can be run automatically](#compiling-and-testing), including a
 [unit test suite](./tests/unit_tests), a [parallel unit test suite](./tests/parallel_tests),
  and a [validation test suite](./tests/validation_tests). 
-* The validation test suite focusses on tsunami type problems. See [here for various NTHMP tests](./examples/nthmp) (which are well known in the tsunami community), [here](./examples) for other problems, and [here](./examples/dispersive/) for tests using dispersion. 
+* The validation tests focusses on tsunami type problems. See [here for NTHMP tests](./examples/nthmp) (which are well known in the tsunami community), [here](./examples) for other problems, and [here](./examples/dispersive/) for tests using dispersion. 
 
 Publications using SWALS include:
 * [A paper](https://www.frontiersin.org/articles/10.3389/feart.2020.598235/full) using SWALS to model 5 historic tsunamis in Australia.
