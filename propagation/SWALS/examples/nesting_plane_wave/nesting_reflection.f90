@@ -126,11 +126,19 @@ program nesting_reflection
     !real(dp), parameter :: nonlinear_theta = 1.3_dp
     !character(len=charlen), parameter :: compute_fluxes_inner_method = 'DE1' ! More diffusive
 
-    character(len=charlen) :: ts_method
+    character(len=charlen) :: ts_method, ts_method_outer
 
     call program_timer%timer_start('setup')
 
     call get_command_argument(1, ts_method)
+
+
+    ! If two command line arguments are provided, assume the second gives the
+    ! timestepping method on the outer grid    
+    ts_method_outer = ts_method
+    if(command_argument_count() > 1) then
+        call get_command_argument(2, ts_method_outer)
+    end if
 
     ! Periodic BC
     md%periodic_xs = [global_ll(1) , global_ll(1) + global_lw(1)]
@@ -151,7 +159,7 @@ program nesting_reflection
         md%domains(1)%dx = md%domains(1)%lw/md%domains(1)%nx
         md%domains(1)%timestepping_refinement_factor = 1_ip
         md%domains(1)%dx_refinement_factor = 1.0_dp
-        md%domains(1)%timestepping_method = ts_method
+        md%domains(1)%timestepping_method = ts_method_outer
 
         ! Main domain
         md%domains(2)%lower_left = [global_ll(1) + 1.0_dp/3.0_dp * global_lw(1), global_ll(2)]
@@ -169,7 +177,7 @@ program nesting_reflection
         md%domains(3)%dx = md%domains(1)%lw/md%domains(1)%nx
         md%domains(3)%timestepping_refinement_factor = 1_ip
         md%domains(3)%dx_refinement_factor = 1.0_dp
-        md%domains(3)%timestepping_method = ts_method 
+        md%domains(3)%timestepping_method = ts_method_outer
 
         ! Main domain
         md%domains(4)%lower_left = [global_ll(1) + 1.0_dp/3.0_dp * global_lw(1), 0.0_dp]
@@ -198,7 +206,7 @@ program nesting_reflection
         md%domains(1)%dx = md%domains(1)%lw/md%domains(1)%nx
         md%domains(1)%timestepping_refinement_factor = 1_ip
         md%domains(1)%dx_refinement_factor = 1.0_dp
-        md%domains(1)%timestepping_method = ts_method
+        md%domains(1)%timestepping_method = ts_method_outer
 
         ! Inner domain
         lower_left  = [global_ll(1) + 1.0_dp/3.0_dp * global_lw(1), global_ll(2)]

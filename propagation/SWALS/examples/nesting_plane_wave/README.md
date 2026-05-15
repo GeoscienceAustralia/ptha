@@ -4,11 +4,15 @@ This problem simulates 1D plane-wave propagation for a shallow water wave packet
 
 The [SWALS model](nesting_reflection.f90) simulates the problem with nested grids and a range of numerical methods (staggered grid schemes `linear` and `leapfrog_nonlinear`, and finite-volume schemes `rk2` and `midpoint`). The idea is to highlight any obvious problems with particular algorithms, or the grid nesting. 
 
+## Staggered grid schemes on both domains
+
 In practice we find the staggered grid algorithms provide a very accurate solution to this problem, using either the linear or the nonlinear shallow water equations. This is expected, as in general they are well suited to modelling low Froude-number flows.
 
 ![Solution with the staggered-grid `linear` flow algorithm](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/nesting_plane_wave/cycle_solution_linear.png)
 
 ![Solution with the staggered-grid `leapfrog_nonlinear` flow algorithm](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/nesting_plane_wave/cycle_solution_leapfrog_nonlinear.png)
+
+## Finite volume schemes on both domains
 
 The finite volume algorithms can also solve this problem, but are less accurate than the staggered-grid algorithms. They tend to introduce asymmetries into the numerical solution, albeit these reduce with grid refinement. 
 
@@ -16,9 +20,16 @@ The finite volume algorithms can also solve this problem, but are less accurate 
 
 ![Solution with the finite-volume `midpoint` flow algorithm](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/nesting_plane_wave/cycle_solution_midpoint.png)
 
-These asymmetries are attributable to use of the finite-volume scheme on the coarse grid. If the problem is rerun with the leapfrog scheme on the coarse grid, and the finite-volume scheme on the fine grid, then the results are excellent.
+These asymmetries are attributable to use of the finite-volume scheme on the coarse grid. If the problem is rerun with the leapfrog scheme on the coarse grid (below), and the finite-volume scheme on the fine grid, then the results are excellent.
 
 To prevent the finite-volume slope-limiters from excessively dissipating the wave packet, this SWALS model is setup to use a non total-variation-diminishing slope-limiter (setting `md%domains(..)%theta = 4.0`; the limiters are  TVD for values less than 2). Without this, the wave packet would be noticeably attenuated. The same numerical issues arise in another model (Basilisk, see code in [basilisk_model](basilisk_model)) that implements a very similar finite volume scheme as SWALS. 
 
 This problem highlights that, compared to the staggered grid schemes, the finite-volume schemes are simply less well suited to long distance wave propagation at low Froude-numbers, such as global scale tsunami propagation to far-field sites. The advantages of the finite-volume schemes arise for more strongly nonlinear problems, including inundation. In practice these kinds of numerical issues can be detected using convergence tests, i.e., checking for numerical changes in the solution as the model is run with increasingly fine grid resolutions.
 
+## Finite volume schemes on high resolution domain, staggered grid scheme on coarse domain
+
+As mentioned above, if the problem is rerun with the leapfrog scheme on the coarse grid and a finite-volume scheme on the fine grid, then the results are excellent.
+
+This solution uses a finite volume scheme (midpoint) on the inner grid and a staggered scheme (leapfrog nonlinear) on the outer grid.
+
+![Solution with a finite-volume scheme on the fine grid and a staggered scheme on the coarse grid](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/nesting_plane_wave/cycle_solution_midpoint-with-outer-grid-leapfrog_nonlinear.png)

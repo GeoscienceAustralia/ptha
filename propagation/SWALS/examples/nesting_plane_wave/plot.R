@@ -3,7 +3,7 @@ source('../../plot.R')
 # Since we call SWALS from inside R, let's pass the openmp commands.
 omp_run_command = Sys.getenv('OMP_RUN_COMMAND')
 
-ts_methods = c('rk2', 'midpoint', 'linear', 'leapfrog_nonlinear')
+ts_methods = c('rk2', 'midpoint', 'linear', 'leapfrog_nonlinear', 'midpoint leapfrog_nonlinear')
 
 for(ts_method in ts_methods){
 
@@ -26,10 +26,13 @@ for(ts_method in ts_methods){
     # we can correct for the time-offset using a space offset
     x_offset = (x[[nd]]$time[tind] - time_to_cycle)*wave_speed
 
+    # Label for plot title -- allow the possibility of more than one command
+    # argument (second is the outer grid ts method)
+    ts_method_lab = gsub(' ', '-with-outer-grid-', ts_method, fixed=TRUE)
 
     # Plot the solutions
     #pdf(paste0('cycle_solution_', ts_method, '.pdf'), width=7, height=4)
-    png(paste0('cycle_solution_', ts_method, '.png'), width=7, height=4, units='in', res=300)
+    png(paste0('cycle_solution_', ts_method_lab, '.png'), width=7, height=4, units='in', res=300)
 
     plot_ylim = range(c(range(x[[nd]]$stage[,yind,1]), range(x[[nd]]$stage[,yind,tind])))
 
@@ -43,7 +46,7 @@ for(ts_method in ts_methods){
 
     amp_loss_fraction = diff(range(x[[nd]]$stage[,yind,tind]))/diff(range(x[[nd]]$stage[,yind,1]))
 
-    png(paste0('cycle_solution_relative_', ts_method, '.png'), width=7, height=4, units='in', res=300)
+    png(paste0('cycle_solution_relative_', ts_method_lab, '.png'), width=7, height=4, units='in', res=300)
     plot(x[[nd]]$xs, x[[nd]]$stage[,yind,tind], t='o', ylim=plot_ylim,
          main=paste0('Waveform range at end as percent of start (black) = ', signif(amp_loss_fraction, 4)),
          xlab='x', 
@@ -62,7 +65,7 @@ for(ts_method in ts_methods){
 
     err = sum( (s1[k]-initial_s_shifted$y)^2)/sum(s1[k]^2 + initial_s_shifted$y^2)
 
-    png(paste0('cycle_solution_error_', ts_method, '.png'), width=7, height=4, units='in', res=300)
+    png(paste0('cycle_solution_error_', ts_method_lab, '.png'), width=7, height=4, units='in', res=300)
     plot(x[[nd]]$xs[k], s1[k] - initial_s_shifted$y, main='Error in the central part of the domain')
     dev.off()
     
