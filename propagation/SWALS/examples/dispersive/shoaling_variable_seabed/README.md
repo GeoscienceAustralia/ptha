@@ -21,7 +21,7 @@ mean we should not expect high accuracy from the simple dispersive solver in SWA
 is some tendency to understimate the top of the wave envelope, although within the range of
 other solvers studied by [Coulaud et al. (2025)](http://dx.doi.org/10.1016/j.coastaleng.2024.104645).
 
-All solvers give quite similar solutions at the finest resolution. The midpoint
+All SWALS solvers give quite similar solutions at the finest resolution. The midpoint
 solver converges more quickly than the other solvers, which is not surprising
 since it is the only one which retains second order accuracy for both
 dispersive and nonlinear terms.

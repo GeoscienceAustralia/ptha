@@ -35,7 +35,7 @@ make build
 make debug
 make clean  # Optional
 ```
-This will make an executable called [model_build](model_build) and then [model_debug](model_debug). The latter will be used in stress testing below.  If you're not going to compile again, or don't mind waiting a few minutes next time you recompile, you can `make clean` to declutter the swals directory of object files. If you also want to delete the binaries use `make clean_all`.
+This will make an executable called `model_build` and then `model_debug`. The latter will be used in stress testing below.  If you're not going to compile again, or don't mind waiting a few minutes next time you recompile, you can `make clean` to declutter the swals directory of object files. If you also want to delete the binaries use `make clean_all`.
 
 You can use different compile options `make old_nesting` to have the code use an alternative nesting strategy. See the makefile. Each of these should make a different executable.
 

@@ -13,9 +13,9 @@ For access to detailed PTHA18 information, you should instead consult the [detai
 
 The methodologies used in this study, and associated testing, are discussed in:
 * [The project report](http://dx.doi.org/10.11636/Record.2018.041)
-* [This GJI paper](https://doi.org/10.1093/gji/ggz260)
-* [This PAGEOPH paper](https://link.springer.com/article/10.1007/s00024-019-02299-w)
-* [This JGR paper](https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2025JB031949)
+* [This GJI paper](https://doi.org/10.1093/gji/ggz260) focussed on testing against deep-ocean tsunami observations.
+* [This PAGEOPH paper](https://link.springer.com/article/10.1007/s00024-019-02299-w) focussed on modelling earthquake rates and uncertainties.
+* [This JGR paper](https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2025JB031949) which tests the tsunami scenarios against observations at tide gauges in Australia
 * [This conference paper](https://www.researchgate.net/publication/337228680_A_New_Probabilistic_Tsunami_Hazard_Assessment_for_Australia)
 and [this talk](https://www.youtube.com/watch?v=brRy6YjwnlA&list=PL0jP_ahe-BFk3499UEvm-YdlOiE9HFbCg&index=4&t=0s).
 

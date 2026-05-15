@@ -14,7 +14,7 @@ For this problem the runup data provided for the NTHMP benchmark, and used in ma
 
 Comparisons with models and data in the literature do not consistently show better agreement with one or other dataset, but there is considerable variation between models. The reasons are not clear, but several factors likely contribute.
 
-* The wave forcing in this problem can be defined several ways. Some studies use empirical wavemaker data. Others specify an initial solitary wave (as for FUNWAVE herein). Others adapt the measured wave time-series to specify a boundary condition (as for SWALS herein).
+* The wave forcing in this problem can be defined several ways. Some studies use empirical wavemaker data. Others specify an initial solitary wave (as for SWALS and FUNWAVE herein). Others adapt the measured wave time-series to specify a boundary condition (and in the [nonlinear shallow water version of our SWALS tests](../../nthmp/BP06)).
 
 * The experiment involves solitary waves, which feature both dispersion and nonlinearity. They are not well represented with non-dispersive shallow water models (used in many studies). However some shallow water models can emulate physical dispersion by deliberately using a coarse grid (e.g. [Tolkova, 2014](https://doi.org/10.1007/s00024-014-0825-8)). 
 

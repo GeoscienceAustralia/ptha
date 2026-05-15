@@ -36,20 +36,19 @@ between MPI ranks, or the partition can be specified by the user at run-time.
 Static load balancing can be used to improve the efficiency of large parallel
 jobs.
 
-The code includes various test suits that [can be run automatically](#compiling-and-testing), including a
+SWALS includes tests that [can be run automatically](#compiling-and-testing), including a
 [unit test suite](./tests/unit_tests), a [parallel unit test suite](./tests/parallel_tests),
- and a [validation test suite](./tests/validation_tests). The latter focusses 
-on tsunami type problems; see [here for various NTHMP tests](./examples/nthmp) 
-(which are well known in the tsunami community), [here](./examples) for other problems, and [here](./examples/dispersive/) for tests using dispersion. 
+ and a [validation test suite](./tests/validation_tests). 
+* The validation tests focusses on tsunami type problems. See [here for NTHMP tests](./examples/nthmp) (which are well known in the tsunami community), [here](./examples) for other problems, and [here](./examples/dispersive/) for tests using dispersion. 
 
 Publications using SWALS include:
 * [A paper](https://www.frontiersin.org/articles/10.3389/feart.2020.598235/full) using SWALS to model 5 historic tsunamis in Australia.
 It includes discussion of the range of equations that are solved, the energy conservation properties of different solvers, and their degree of agreement with observations. 
 * [A paper](https://doi.org/10.1029/2025JB031949) using SWALS to model 14 historical tsunamis at 32 tide gauges in southeast and west Australia. Observed tsunamis are compared with models using both published source inversions and random PTHA18 scenarios.
 * [A paper](https://doi.org/10.1093/gji/ggac140) using SWALS model inundation hazards in Tongatapu. It includes comparison with observations of 5 historical tsunamis at Nuku'alofa tide gauge (using PTHA18 scenarios as the source models).
-* [A technical report](http://dx.doi.org/10.26186/150015) and [conference paper](https://icce-ojs-tamu.tdl.org/icce/article/view/12657/11930) using SWALS to model tsunamis hazards in Western Australia (Geraldton to Dunsborough). The technical report includes a comparison of models with observations of the 2004 and 2005 tsunamis at many tide gauges, and some model intercomparisons.
-* The linear solver in SWALS was used extensively for the [2018 Australian Probabilistic Tsunami Hazard Assessment](http://dx.doi.org/10.11636/Record.2018.041) and two associated papers: [this one in GJI](https://doi.org/10.1093/gji/ggz260) and  [this one in PAGEOPH](https://link.springer.com/article/10.1007/s00024-019-02299-w). This includes modelling of 18 tsunamis at measured at DART buoys in the deep ocean.
-* [A technical report](http://dx.doi.org/10.26186/150281) and [conference paper](https://www.researchgate.net/publication/396141903_NSW-wide_probabilistic_tsunami_inundation_hazards_from_subduction_earthquakes) using SWALS to model tsunami hazards in NSW. The report includes a comparison of the model with 9 historical 9 historical tsunamis at many tide gauges.
+* The linear solver was used extensively for the [2018 Australian Probabilistic Tsunami Hazard Assessment](http://dx.doi.org/10.11636/Record.2018.041), see also [this paper in GJI](https://doi.org/10.1093/gji/ggz260) and  [this paper in PAGEOPH](https://link.springer.com/article/10.1007/s00024-019-02299-w). Thy include modelling of 18 tsunamis at measured at DART buoys in the deep ocean.
+* [A technical report](http://dx.doi.org/10.26186/150015) and [conference paper](https://icce-ojs-tamu.tdl.org/icce/article/view/12657/11930) using SWALS to model tsunamis hazards in Western Australia (Geraldton to Dunsborough). It includes a comparison of models with observations of the 2004 and 2005 tsunamis at many tide gauges.
+* [A technical report](http://dx.doi.org/10.26186/150281) and [conference paper](https://www.researchgate.net/publication/396141903_NSW-wide_probabilistic_tsunami_inundation_hazards_from_subduction_earthquakes) using SWALS to model tsunami hazards in NSW. The report includes a comparison of the model with 9 historical tsunamis at many tide gauges.
 * [A technical report](https://doi.org/10.26186/150488) and [conference paper](https://www.researchgate.net/publication/396142067_Accommodating_Spatially_Varying_Tidal_Planes_in_Tsunami_Hazard_Assessments) using SWALS to model tsunami hazards near Gladstone in QLD. The report includes a comparison of the model with 4 historical tsunamis at tide gauges. See also some [animations from the model](https://doi.org/10.26186/150797).
 
 ## Installation prerequisites
