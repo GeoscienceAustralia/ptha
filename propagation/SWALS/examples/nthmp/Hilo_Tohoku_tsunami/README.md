@@ -12,7 +12,7 @@ the results of an inter-model comparison.
 
 The [SWALS model](model.f90) solves this problem on a single grid. To support some
 parallel reproducibility tests it is partitioned into 6 pieces (Figure 1) by
-passing a [load balance file](load_balance_partion.txt) to
+passing a [load balance file](load_balance_partition.txt) to
 `md%load_balance_file`. The boundary conditions use the specified idealised
 stage combined with a radiation treatment of the fluxes. In future it might be
 better to apply a separate flather-type condition to the eastern side, but
