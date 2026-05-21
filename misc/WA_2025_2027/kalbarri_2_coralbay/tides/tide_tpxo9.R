@@ -1,11 +1,13 @@
 # Extraction of tides at specific locations
 
-#source('/home/gareth/Code_Experiments/TIDAL_PREDICTION/TPXO9/TPXO9_R_interface/predict_tide.R', chdir=TRUE)
-source('/g/data/w85/tsunami/MODELS/tidal_prediction/TPXO9/TPXO9_R_interface/predict_tide.R', chdir=TRUE)
-
+# Get the TPXO9 interface (works on NCI + GD home machine)
+predict_tide_NCI = '/g/data/w85/tsunami/MODELS/tidal_prediction/TPXO9/TPXO9_R_interface/predict_tide.R'
+predict_tide_GD = '/home/gareth/Code_Experiments/TIDAL_PREDICTION/TPXO9/TPXO9_R_interface/predict_tide.R'
+predict_tide_file = ifelse(file.exists(predict_tide_NCI), predict_tide_NCI, predict_tide_GD)
+source(predict_tide_file, chdir=TRUE)
 
 sites_to_get = list(
-    'Steep_Point_Java2006' =  list(
+    'Steep_Point_Java2006' = list(
         # Site coordinates as decimal degrees (longitude, latitude)
         site_coordinates = c(113.18897, -26.15979),
 
@@ -16,6 +18,18 @@ sites_to_get = list(
         end_time   = strptime('2006-07-18 00:00:00', format = '%Y-%m-%d %H:%M:%S', tz='Etc/GMT-8'),
         eq_time = strptime('2006-07-17 08:19:28', format = '%Y-%m-%d %H:%M:%S', tz='Etc/GMT-8') + as.difftime(8, units='hours')
         ),
+    'Cleaverville_Java2006' = list(
+        # Site coordinates as decimal degrees (longitude, latitude)
+        site_coordinates = c(117.01728, -20.64962),
+
+        # Timezone MUST be GMT / UTC. Note that -10 means 'ahead 10 hours', so the
+        # time-zone 'Etc/GMT-10' corresponds to eastern Australia. Confusingly, the
+        # timezone is often called 'GMT+10'
+        start_time = strptime('2006-07-17 00:00:00', format = '%Y-%m-%d %H:%M:%S', tz='Etc/GMT-8'), # WA time
+        end_time   = strptime('2006-07-18 00:00:00', format = '%Y-%m-%d %H:%M:%S', tz='Etc/GMT-8'),
+        eq_time = strptime('2006-07-17 08:19:28', format = '%Y-%m-%d %H:%M:%S', tz='Etc/GMT-8') + as.difftime(8, units='hours')
+        ),
+
     'NW_Cape_Java1994' = list(
         site_coordinates = c(114.03, -21.83),
         start_time = strptime('1994-06-03 00:00:00', format = '%Y-%m-%d %H:%M:%S', tz='Etc/GMT-8'),
