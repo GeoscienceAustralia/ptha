@@ -61,7 +61,7 @@ analytical_exrate_and_MC_variance<-function(event_rate, event_stage, stage_thres
 #' random sample
 #' @param sampling_prob The chance of sampling each scenario. 
 #' @param N_MC the number of samples to take
-#' @param myseed optional random seed for reproducibility.
+#' @param myseed optional random seed for reproducibility. BEWARE THIS RESETS THE GLOBAL SEED and would be dangerous in parallel.
 #' @return a list including indices of the sampled scenarios, their stages and
 #' bis_weights, and exrates the given stage_thresholds.
 sample_scenarios_monte_carlo<-function(event_rate, event_stage, stage_thresholds, sampling_prob, N_MC, myseed=NULL){
@@ -71,7 +71,8 @@ sample_scenarios_monte_carlo<-function(event_rate, event_stage, stage_thresholds
         # Set myseed to .Random.seed (initialise the latter if needed)
         myseed = rptha::get_random_seed()
     }else{
-       .Random.seed = myseed
+       #.Random.seed = myseed
+        .Random.seed <<- myseed # DANGEROUS IN PARALLEL
     }
 
     # Use Monte Carlo sampling with N_MC scenarios to estimate exceedance-rates at stage_thresholds
