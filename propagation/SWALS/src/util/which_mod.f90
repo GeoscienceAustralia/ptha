@@ -206,7 +206,7 @@ module which_mod
 
     subroutine remove_rows_ip(ar1, indices, apply_to_rows)
         !!
-        !! Remove rows from a rank-2 allocatable array ar1. Alternatively remove columns (if apply_to_rows == .FALSE.)
+        !! Remove rows from a rank-2 allocatable array ar1. Alternatively remove columns (if apply_to_rows .EQV. .FALSE.)
         !!
         integer(ip), allocatable, intent(inout) :: ar1(:,:) !! Rank 2 array
         integer(ip), intent(in) :: indices(:) !! Indices of rows (or columns) to remove

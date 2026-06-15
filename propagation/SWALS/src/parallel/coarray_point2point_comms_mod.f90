@@ -97,7 +97,7 @@ module coarray_point2point_comms_mod
 !!             call send_to_p2p_comms(p2p, x_send, buffer_label='x_comms1', put_in_recv_buffer=.FALSE.)
 !!         end if
 !!
-!!         ! Above, since put_in_recv_buffer==.FALSE., we need to do the communication using communicate_p2p. 
+!!         ! Above, since put_in_recv_buffer is .FALSE., we need to do the communication using communicate_p2p. 
 !!         ! This has the advantage that multiple communications between the same pairs of images are 
 !!         ! combined. OTOH it would not be needed if put_in_recv_buffer=.TRUE.
 !!         call communicate_p2p(p2p)

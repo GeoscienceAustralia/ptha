@@ -323,7 +323,7 @@
 
                 ! Compute diffusive terms.
                 diffusion_max = max(abs(diffusion_turbulent), abs(diffusion_hll))
-                ! Sum the diffusions -- unless "reduced_numerical_diffusion == .true." and both terms are of the same sign,
+                ! Sum the diffusions -- unless "reduced_numerical_diffusion is .true." and both terms are of the same sign,
                 ! in which case we take the max of their absolute value
                 diffusion_total = merge(diffusion_turbulent + diffusion_hll, sign(diffusion_max, diffusion_turbulent), &
                     .not. ((diffusion_turbulent*diffusion_hll > 0) .and. reduced_numerical_diffusion))
@@ -351,7 +351,7 @@
 
                 ! Compute diffusive terms.
                 diffusion_max = max(abs(diffusion_turbulent), abs(diffusion_hll))
-                ! Sum the diffusions -- unless "reduced_numerical_diffusion == .true. " and both terms are of the same sign,
+                ! Sum the diffusions -- unless "reduced_numerical_diffusion is .true. " and both terms are of the same sign,
                 ! in which case we take the max of their absolute value
                 diffusion_total = merge(diffusion_turbulent + diffusion_hll, sign(diffusion_max, diffusion_turbulent), &
                     .not. ((diffusion_turbulent*diffusion_hll > 0) .and. reduced_numerical_diffusion))
@@ -594,7 +594,7 @@
 
                 ! Compute diffusive terms.
                 diffusion_max = max(abs(diffusion_turbulent), abs(diffusion_hll))
-                ! Sum the diffusions -- unless "reduced_numerical_diffusion == .true." and both terms are of the same sign,
+                ! Sum the diffusions -- unless "reduced_numerical_diffusion is .true." and both terms are of the same sign,
                 ! in which case we take the max of their absolute value
                 diffusion_total = merge(diffusion_turbulent + diffusion_hll, sign(diffusion_max, diffusion_turbulent), &
                     .not. ((diffusion_turbulent*diffusion_hll > 0) .and. reduced_numerical_diffusion))
@@ -623,7 +623,7 @@
 
                 ! Compute diffusive terms.
                 diffusion_max = max(abs(diffusion_turbulent), abs(diffusion_hll))
-                ! Sum the diffusions -- unless "reduced_numerical_diffusion == .true. " and both terms are of the same sign,
+                ! Sum the diffusions -- unless "reduced_numerical_diffusion is .true. " and both terms are of the same sign,
                 ! in which case we take the max of their absolute value
                 diffusion_total = merge(diffusion_turbulent + diffusion_hll, sign(diffusion_max, diffusion_turbulent), &
                     .not. ((diffusion_turbulent*diffusion_hll > 0) .and. reduced_numerical_diffusion))

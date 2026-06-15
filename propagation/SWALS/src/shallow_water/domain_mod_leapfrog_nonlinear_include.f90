@@ -220,7 +220,7 @@ EVOLVE_TIMER_START('LF_nonlinear_update')
         !
 
         ! Predefine the friction terms. In the 'truely-linear' case we will only call this once,
-        ! whereas in the not-truely-linear case it will be called every timestep (i.e. domain%friction_work_is_setup==FALSE)
+        ! whereas in the not-truely-linear case it will be called every timestep (i.e. domain%friction_work_is_setup .EQV. .FALSE.)
         if(.not. domain%friction_work_is_setup) call precompute_friction_work(domain)
 
         ! NOTE: Here we manually determine the openmp loop indices. This is
