@@ -369,29 +369,18 @@
                     s_min * depth_pos_star * depth_pos_star)
 
                 ! 'bed slope' part of pressure gradient term at i,j-1, north side
-                ! - The term is written like this in Davies and Roberts (2015),
-                !   who probably got it from Audusse and Bristeau (2004) eqn 6.12 and 6.13. The latter
-                !   technical report should probably be cited. Is Davies and Roberts (2015) missing a normal?
+                ! - The term is written like Audusse and Bristeau (2004) eqn 6.12 and 6.13. It's also used
+                !   in Davies and Roberts (2015) (but the paper has a typo in the equation, missing a normal vector).
                 bed_slope_pressure_n = half_gravity * ( &
-                    ! Next term is like S_{i-1/2+} in Audusse et al (2004), Eq 3.8 
-                    ! - It's balancing a 'flat water surface' pressure gradient in flux-conservative form.
+                    ! Next term is well-balancing the 'flux conservative part' of a 'flat water surface' pressure gradient.
+                    ! - Note that in spherical coordinates, the N/S pressure gradient is rearranged to be
+                    !   a 'flux conservative form' (having the changing cell side length inside the derivative)
+                    !   plus a source term added later where the derivative is purely in the cell side length. 
+                    !   The flux conservative part is balanced here. In Cartesian coordinates 
+                    !   the associated source term is zero (because the top/bottom cell side lengths are equal),
+                    !   and similarly for spherical coordinates in the EW direction.
                     (depth_neg_star - depth_neg)*(depth_neg_star + depth_neg) - &
-                    ! Next term is a bit like S_{ci} in Audusse, Eq 3.9. 
-                    ! - It's half as big as it's using (z_neg - bed_j_minus_1(i)) which is 
-                    !   1/2(z_{i,l}-z_{i,r}) in Audusse because extrapolation is linear.
-                    ! - The depth centering is slightly different, a bit closer to the edge
-                    ! - BUT: we add another term to this cell via its other edge (bed_slope_pressure_s),
-                    !   and their sum is S_{ci} in Cartesian coordinates 
-                    !   - basically (z_neg - z_c) = (z_c - z_pos) because extrapolation is linear
-                    !   - and also (depth_neg - depth_c) = (depth_c - depth_pos)
-                    !   - As the edge lengths are equal in Cartesian coordinates, we'll add two 
-                    !     "half size" terms that end up being the same as S_{ci}
-                    ! - In Spherical coordinates, the sum of this term and the part in bed_slope_pressure_s
-                    !   is slightly different to S_{ci} since the edge lengths change slightly, 
-                    !   so we will have a slightly weighted average of the two halve.
-                    !   But that doesn't sound problematic,
-                    !   - The depths that are "weighted slightly more" will actually take up slightly
-                    !     more of the cell. Sounds like what we want.
+                    ! Next term covers the "within a cell" bed slope, caused by the discontinuous elevation.
                     (depth_neg + depth_neg_c)*(z_neg - bed_j_minus_1(i)))
 
                 ! NOTE regarding OPENMP !
