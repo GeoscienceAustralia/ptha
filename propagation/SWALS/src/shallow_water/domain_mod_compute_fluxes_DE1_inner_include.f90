@@ -1,6 +1,6 @@
 ! Compute fluxes for 2D shallow water equations on structured grid
 !
-! Use an Audusse type method, like ANUGA, but structured
+! Use an Audusse type method, similar to ANUGA, but structured, supports spherical coords,...
 !
 ! Updated variables:
 !    domain%flux_NS, domain%flux_EW, domain%explicit_source, domain%explicit_source_VH_j_minus_1, max_dt_out
@@ -364,6 +364,14 @@
             if(flux_conservative_pressure) then
                 ! Bring the NS gh^2/2 term out of the flux_NS. Note the term is already
                 ! multiplied by edge-length. Later we put it in the 'explicit source' terms.
+                ! - In spherical coordinates, for the N-S component, this NLSW term looks like
+                !       cos(lat) d/dlat(g/2 h^2) = d/dlat(cos(lat) g/2 h^2) - g/2 h^2 d/dlat(cos(lat))
+                !   (actually for the code here, both sides are multiplied by R dlon dlat, reflecting integration over area).
+                !   The first RHS term is in flux conservative form and the second is an extra source term.
+                !   The extra source term is zero in Cartesian coordinates and for the EW part of spherical 
+                !   coordinates since there is no change in the cell edge side lengths.
+                !   The term below only treats the flux conservative part (after rearranging w. divergence theorem).
+                !   The source term is added later on (for N-S component in spherical coords only).
                 half_g_hh_edge =  inv_denom * half_gravity * (&
                     s_max * depth_neg_star * depth_neg_star - &
                     s_min * depth_pos_star * depth_pos_star)
@@ -373,12 +381,9 @@
                 !   in Davies and Roberts (2015) (but the paper has a typo in the equation, missing a normal vector).
                 bed_slope_pressure_n = half_gravity * ( &
                     ! Next term is well-balancing the 'flux conservative part' of a 'flat water surface' pressure gradient.
-                    ! - Note that in spherical coordinates, the N/S pressure gradient is rearranged to be
-                    !   a 'flux conservative form' (having the changing cell side length inside the derivative)
-                    !   plus a source term added later where the derivative is purely in the cell side length. 
-                    !   The flux conservative part is balanced here. In Cartesian coordinates 
-                    !   the associated source term is zero (because the top/bottom cell side lengths are equal),
-                    !   and similarly for spherical coordinates in the EW direction.
+                    ! - As mentioned above, in spherical coordinates the 'NS' pressure gradient picks up an extra source term
+                    !   to be flux conservative -- but that extra source is zero for Cartesian coords and the EW component of
+                    !   spherical coords. 
                     (depth_neg_star - depth_neg)*(depth_neg_star + depth_neg) - &
                     ! Next term covers the "within a cell" bed slope, caused by the discontinuous elevation.
                     (depth_neg + depth_neg_c)*(z_neg - bed_j_minus_1(i)))
@@ -394,11 +399,9 @@
                     half_g_hh_edge
 
                 ! 'bed slope' part of pressure gradient term at i,j, south-side
+                !  - Discussed in comments near bed_slope_pressure_n above.
                 bed_slope_pressure_s = half_gravity * ( &
-                    ! This term is like S_{i+1/2}- in Audusse et al. (2004), Eq 3.8
                     (depth_pos_star - depth_pos) * (depth_pos_star + depth_pos) - &
-                    ! This is like 1/2 of S_{ci} in Audisse, Eq 3.9. See comments
-                    ! in bed_slope_pressure_n for why it works out.
                     (depth_pos + depth_pos_c)*(z_pos - domain%U(i, j, ELV)) )
 
                 domain%explicit_source(i, j, VH) = domain%explicit_source(i, j, VH) - &
@@ -631,6 +634,7 @@
                     s_min * depth_pos_star * depth_pos_star)
 
                 ! Pressure gradient term at i-1,j -- east side of cell i-1,j
+                !  - Discussed in comments near bed_slope_pressure_n above.
                 bed_slope_pressure_e = half_gravity * (&
                     (depth_neg_star - depth_neg)*(depth_neg_star + depth_neg) - &
                     (depth_neg + depth_neg_c)*(z_neg - domain%U(i-1 , j, ELV)))
@@ -641,6 +645,7 @@
                     bed_slope_pressure_e * domain%distance_left_edge(i) - half_g_hh_edge
 
                 ! Pressure gradient term at i,j -- west_side
+                !  - Discussed in comments near bed_slope_pressure_n above.
                 bed_slope_pressure_w = half_gravity * (&
                     (depth_pos_star - depth_pos) * (depth_pos_star + depth_pos) - &
                     (depth_pos + depth_pos_c)*(z_pos - domain%U(i, j, ELV)) )
