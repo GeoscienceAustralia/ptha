@@ -98,7 +98,7 @@ It contains the following columns:
 * `lon`, `lat` give the hazard point location in longitude/latitude (degrees). 
 * `elev` is the bathymetry at the hazard point (negative = below MSL)
 * `gaugeID` is a hazard point ID (real number).
-* multiple columns with names like `STAGE_XXXX` where XXXX is a number, and 1/XXXX is the exceedance-rate. These corresponds to the tsunami maximum-stage which has mean exceedance-rate = 1/XXXX. For example, the column `STAGE_100` gives the tsunami maximum-stage that is exceeded once every 100 years on average, according to the mean of all the rate models in our logic-tree. The variable-rigidity earthquake model is assumed.
+* multiple columns with names like `STAGE_XXXX` where XXXX is a number, and 1/XXXX is the exceedance-rate. These corresponds to the tsunami maximum-stage which has mean exceedance-rate = 1/XXXX. For example, the column `STAGE_100` gives the tsunami maximum-stage that is exceeded once every 100 years on average, according to the mean of all the rate models in our logic-tree. **The variable-rigidity earthquake model is assumed** (i.e. variable shear modulus)
 * multiple columns with names like `STAGE_upper_ci_XXXX`. These values are similar to the above, but describe the upper limit of the 95% credible interval for the stage with the specified exceedance-rate. (i.e. 97.5 percentile)
 * multiple columns with names like `STAGE_lower_ci_XXXX`. These are similar to the above, but describe the lower limit of the 95% credible interval for the stage with the specified exceedance-rate. (i.e. 2.5 percentile)
 * multiple columns with names like `STAGE_median_XXXX`. These are similar to the above, but describe the 'epistemic median' stage with the specified exceedance-rate (i.e. 50th percentile)
@@ -141,6 +141,8 @@ For each hazard point, the PTHA18 includes a standard pdf plot which shows:
 2. A convergence check on the above
 3. The hazard deaggregation information for a range of return periods
 4. Information on the maximum-stage for each unit-source tsunami.
+
+**The variable rigidity (i.e. variable shear modulus) rates are used to construct the plot.** However, magnitudes are presented as constant rigidity magnitudes since that is how the PTHA18 magnitude binning works (see PTHA18 technical report for details).
 
 An example plot can be downloaded
 [here](https://thredds.nci.org.au/thredds/fileServer/fj6/PTHA/AustPTHA_1/EVENT_RATES/revised1_station_summary_plots/example_plot.pdf).
