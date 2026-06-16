@@ -5,8 +5,13 @@ The instructions here are indicative only - they will help to reuse the code but
 In reality the calculations were implemented and checked over time, not run as a single script.
 
 ```bash
+# Compile the model
+source SWALS_ifort_modules_2023_B.sh
+make -B -f make_model_ifort_sapphirerapids
+
+
 # Make a load balance file in the regular way
-qsub run_test_model_sapphirerapids
+qsub run_test_model_sapphirerapids.sh
 # Then
 #   cd to output directory, 
 #   run the load_balance_script.R
