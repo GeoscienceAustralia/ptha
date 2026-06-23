@@ -5,6 +5,7 @@ This model includes a areas from south of Kalbarri to Coral Bay, with high resol
 See [doc](doc) for general guidance on using the code, along with further documentation and code in the subfolders.
 
 Key subfolders are
+* [analysis](analysis) - probabilistic calculations, can be run once all the tsunami simulations are finished and associated rasters have been created.
 * [breakwalls](breakwalls) - enforce elevation high points in the model
 * [elevation](elevation) - specify location of elevation files used by the model
 * [gauges](gauges) - locations where the model stores time-series.
