@@ -47,7 +47,7 @@ make_source_data_legend<-function(elevation_source_dir){
       entry <- paste0(
         '        <paletteEntry value="', format(esfil$value[i], nsmall=1), 
         '" color="', esfil$color[i], 
-        '" label="', basename(esfil$file[i]), '"/>'
+        '" label="', paste0(esfil$value[i], '-', basename(esfil$file[i])), '"/>'
       )
       xml_lines <- c(xml_lines, entry)
     }
