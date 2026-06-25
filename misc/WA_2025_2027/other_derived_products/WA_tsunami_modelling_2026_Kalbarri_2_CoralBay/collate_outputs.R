@@ -106,7 +106,7 @@ process_single_model<-function(model_files, model_output_dir, model_name){
     dir.create(model_output_dir, recursive=TRUE, showWarnings=FALSE)
 
     # Get the domain shapefile
-    domains_shapefile_outputdir = paste0(model_output_dir, '/domains_shapefile')
+    domains_shapefile_outputdir = paste0(model_output_dir, '/')
     dir.create(domains_shapefile_outputdir, showWarnings=FALSE)
     file.copy(model_files$domains_shapefile, domains_shapefile_outputdir, recursive=TRUE)
 
@@ -121,9 +121,14 @@ process_single_model<-function(model_files, model_output_dir, model_name){
         output_vrt_basename=paste0('all_elevation_with_tidal_adjustment_combined_', model_name, '.vrt'))
 
     # Get the raster with information on the elevation source
-    elevation_source_data_output_dir = paste0(model_output_dir, '/elevation_data_source')
+    elevation_source_data_output_dir = paste0(model_output_dir, '/')
     dir.create(elevation_source_data_output_dir, showWarnings=FALSE)
-    file.copy(model_files$elevation_source_data, elevation_source_data_output_dir)
+    file.copy(model_files$elevation_source_data, elevation_source_data_output_dir, recursive=TRUE)
+
+    # Get the tidal adjustment raster
+    tidal_adjustment_output_dir = paste0(model_output_dir, '/')
+    dir.create(tidal_adjustment_output_dir, showWarnings=FALSE)
+    file.copy(model_files$tidal_adjustment, tidal_adjustment_output_dir, recursive=TRUE)
 
     # Get the JATWC inundation zone info
     jatwc_output_dir = paste0(model_output_dir, '/jatwc_inundation_zones/')
