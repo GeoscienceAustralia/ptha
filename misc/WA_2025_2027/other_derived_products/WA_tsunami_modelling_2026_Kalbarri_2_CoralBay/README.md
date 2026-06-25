@@ -23,7 +23,7 @@ Raster products typically include many tif files, but for each we also provide
 a vrt file that can be used in GDAL based open-source GIS (e.g. QGIS, R, ...)
 and will treat the tiles in unison.
 * `arrival_time` contains arrival time rasters for each source zone, including the minimum arrival time and the scenario average arrival time.
-  * For any scenario, the arrival time is defined as the time that the model first exceeds 0.61 m (i.e. 1 cm above the background sea level for almost all of the model domain). At any particular site, some scenarios will never meet this criteria. The minimum is derived from the minimum of all scenarios that do record an arrival time, and similarly for the average.
+  * For any scenario, the arrival time is defined as the time that the model first exceeds 1 cm above the background sea level. At any particular site, some scenarios may never meet this criteria. The minimum is derived from the minimum of all scenarios that do record an arrival time, and similarly for the average.
 * `domains_shapefile` contains a shapefile with boxes showing the model domains and their resolutions.
 * `elevation_in_model_no_tidal_adjustment` contains the elevation in AHD
 * `elevation_in_model_with_tidal_adjustment` contains the elevation, adjusted so that 0m is a local high tide.
