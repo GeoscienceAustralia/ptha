@@ -60,6 +60,11 @@ Then go inside the [tidal_adjustment](tidal_adjustment) directory and do
 Rscript get_tidal_adjustment.R
 ```
 
+Then copy information on the elevation source data here
+```r
+Rscript copy_elevation_source_file_index_locally.R
+```
+
 Also copy a `domains_shapefile` to the current directory. The required files were probably already created using [../../swals/make_domains_shapefile.R](../../swals/make_domains_shapefile.R). This is not necessary for the workflows below, but is convenient.
 
 Then edit [application_specific_metadata.R](application_specific_metadata.R) to match the model setup.
