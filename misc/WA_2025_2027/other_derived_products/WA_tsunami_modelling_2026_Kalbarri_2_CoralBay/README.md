@@ -9,7 +9,7 @@ Later, the second half of the modelling will cover the region from Coral Bay to
 Onslow, and we will also develop a technical report and provide a
 combined-model data package.
 
-## FIXME: Structure of the model output folders
+## Structure of the model output folders
 
 All files are loaded in a QGIS session contained in the folder
 `./QGIS_SESSION`. The same folder contains a backup copy of the QGIS session.
@@ -30,13 +30,13 @@ and will treat the tiles in unison.
 * `elevation_source_file_index` contains information on the datasets used to make the elevation in different areas.
 * `tidal_adjustment` contains the tidal adjustment used in the modelling, equivalent to assuming the tsunami occurs at a local high tide.
 * `inundation_rate_logic_tree_mean` contains the modelled rate of inundation (events / year) at the logic-tree-mean.
-* `inundation_rate_84pc` contains the modelled rate of inundation (events / year) at the 84th percentile epistemic uncertainty. For computational efficiency this is only provided for relatively high resolution domains.
-* `inundation_rate_16pc` contains the modelled rate of inundation (events / year) at the 16th percentile epistemic uncertainty. For computational efficiency this is only provided for relatively high resolution domains.
+* `inundation_rate_84pc` contains the modelled rate of inundation (events / year) at the 84th percentile epistemic uncertainty. For computational efficiency this is not provided on the global domains.
+* `inundation_rate_16pc` contains the modelled rate of inundation (events / year) at the 16th percentile epistemic uncertainty. For computational efficiency this is not provided on the global domains.
 * `jatwc_inundation_zones` contains the modelled no-threat, marine warning and land-warning zones for ATWS zones resolved by the model, and the marine-warning maximum stage (in AHD).
-* `max_depth_1in2500_84pc` contains the maximum depth (m) with exceedance-rate of 1/2500 (events/year) at the 84th percentile epistemic uncertainty. For computational efficiency results are not provided for the coarsest global domains.
-* `max_stage_AHD_1in2500_84pc` contains the maximum stage (m AHD) with exceedance-rate of 1/2500 (events/year) at the 84th percentile epistemic uncertainty. For computational efficiency results are not provided for the coarsest global domains.
-* `max_speed_1in2500_84pc` contains the maximum speed (m/s) with exceedance-rate of 1/2500 (events/year) at the 84th percentile epistemic uncertainty. For computational efficiency results are not provided for the coarsest global domains.
-* `max_flux_1in2500_84pc` contains the maximum flux (m^2/s) with exceedance-rate of 1/2500 (events/year) at the 84th percentile epistemic uncertainty. For computational efficiency results are not provided for the coarsest global domains.
+* `max_depth_1in2500_84pc` contains the maximum depth (m) with exceedance-rate of 1/2500 (events/year) at the 84th percentile epistemic uncertainty. For computational efficiency results are only provided relatively near to the area of interest.
+* `max_stage_AHD_1in2500_84pc` contains the maximum stage (m AHD) with exceedance-rate of 1/2500 (events/year) at the 84th percentile epistemic uncertainty. For computational efficiency results are only provided relatively near to the area of interest.
+* `max_speed_1in2500_84pc` contains the maximum speed (m/s) with exceedance-rate of 1/2500 (events/year) at the 84th percentile epistemic uncertainty. For computational efficiency results are only provided relatively near to the area of interest.
+* `max_flux_1in2500_84pc` contains the maximum flux (m^2/s) with exceedance-rate of 1/2500 (events/year) at the 84th percentile epistemic uncertainty. For computational efficiency results are only provided relatively near to the area of interest.
 
 Separately we provide a folder `./ATWS_ZONES` which shows the tsunami warning zones used by JATWC.
 
