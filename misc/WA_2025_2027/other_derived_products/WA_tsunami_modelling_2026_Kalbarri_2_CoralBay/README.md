@@ -27,6 +27,7 @@ and will treat the tiles in unison.
 * `domains_shapefile` contains a shapefile with boxes showing the model domains and their resolutions.
 * `elevation_in_model_no_tidal_adjustment` contains the elevation in AHD
 * `elevation_in_model_with_tidal_adjustment` contains the elevation, adjusted so that 0m is a local high tide.
+* `elevation_source_file_index` contains information on the datasets used to make the elevation in different areas.
 * `tidal_adjustment` contains the tidal adjustment used in the modelling, equivalent to assuming the tsunami occurs at a local high tide.
 * `inundation_rate_logic_tree_mean` contains the modelled rate of inundation (events / year) at the logic-tree-mean.
 * `inundation_rate_84pc` contains the modelled rate of inundation (events / year) at the 84th percentile epistemic uncertainty. For computational efficiency this is only provided for relatively high resolution domains.
