@@ -285,7 +285,8 @@ EVOLVE_TIMER_STOP('rk2n_final_update')
 
         if(domain%use_dispersion) then
 
-            ! Include dispersion in the midpoint predictor step. No iteration as its just for flux prediction
+            ! Include dispersion in the midpoint predictor step. No outer
+            ! iteration as its just for flux prediction
             call domain%solve_dispersive_terms(&
                 ! The RHS is updated on the first iteration and fixed thereafter
                 rhs_is_up_to_date = .false., &
@@ -293,10 +294,6 @@ EVOLVE_TIMER_STOP('rk2n_final_update')
                 ! with forward-in-time extrapolation
                 estimate_solution_forward_in_time = .true., &
                 forward_time = (backup_time + dt_first_step*HALF_dp))
-            !call domain%solve_dispersive_terms(&
-            !    rhs_is_up_to_date = .true., &
-            !    estimate_solution_forward_in_time = .false., &
-            !    forward_time = (backup_time + dt_first_step*HALF_dp))
         end if
 
         ! Compute fluxes
@@ -322,10 +319,6 @@ EVOLVE_TIMER_STOP('midpoint_U_from_backup')
         ! Update U
         call domain%update_U(dt_first_step)
 
-        !if(domain%use_dispersion) then 
-        !    ! Any dispersion will be treated in the evolve_multidomain_... routine
-        !end if
-
         ! Update the nesting boundary flux
         call domain%nesting_boundary_flux_integral_tstep(&
             dt_first_step,&
@@ -347,8 +340,6 @@ EVOLVE_TIMER_STOP('midpoint_U_from_backup')
         !!
         !! Linear shallow water equations leap-frog update.
         !! Update domain%U by timestep dt, using the linear shallow water equations.
-        !! Note that unlike the other timestepping routines, this does not require a
-        !! prior call to domain%compute_fluxes
         !!
         type(domain_type), intent(inout):: domain
         real(dp), intent(in):: dt
@@ -369,7 +360,8 @@ EVOLVE_TIMER_STOP('midpoint_U_from_backup')
         real(dp), intent(in):: dt
 
         ! Do we represent pressure gradients with a 'truely' linear term g * depth0 * dStage/dx,
-        ! or with a nonlinear term g * depth * dStage/dx (i.e. where the 'depth' varies)?
+        ! or with a nonlinear term g * depth * dStage/dx (i.e. where the
+        ! 'depth' varies over time, but 'depth0 = depth at MSL')?
         logical, parameter:: truely_linear = .TRUE.
 
         ! The linear solver code has become complex [in order to reduce memory footprint, and
@@ -384,7 +376,8 @@ EVOLVE_TIMER_STOP('midpoint_U_from_backup')
         real(dp), intent(in):: dt
 
         ! Do we represent pressure gradients with a 'truely' linear term g * depth0 * dStage/dx,
-        ! or with a nonlinear term g * depth * dStage/dx (i.e. where the 'depth' varies)?
+        ! or with a nonlinear term g * depth * dStage/dx (i.e. where the
+        ! 'depth' varies over time, but 'depth0 = depth at MSL')?
         logical, parameter:: truely_linear = .FALSE.
 
         ! The linear solver code has become complex [in order to reduce memory footprint, and
@@ -412,11 +405,12 @@ EVOLVE_TIMER_STOP('midpoint_U_from_backup')
         type(domain_type), intent(inout):: domain
         real(dp), intent(in):: dt
         ! Do we represent pressure gradients with a 'truely' linear term g * depth0 * dStage/dx,
-        ! or with a nonlinear term g * depth * dStage/dx (i.e. where the 'depth' varies)?
+        ! or with a nonlinear term g * depth * dStage/dx (i.e. where the
+        ! 'depth' varies over time, but 'depth0 = depth at MSL')?
         logical, parameter:: truely_linear = .true.
+
         ! The linear solver code has become complex [in order to reduce memory footprint, and
         ! include coriolis, while still having openmp work]. So it is moved here.
-
 #define LINEAR_PLUS_NONLINEAR_FRICTION
 #include "domain_mod_linear_solver_include.f90"
 #undef LINEAR_PLUS_NONLINEAR_FRICTION
@@ -430,9 +424,9 @@ EVOLVE_TIMER_STOP('midpoint_U_from_backup')
         ! Do we represent pressure gradients with a 'truely' linear term g * depth0 * dStage/dx,
         ! or with a nonlinear term g * depth * dStage/dx (i.e. where the 'depth' varies)?
         logical, parameter:: truely_linear = .false.
+
         ! The linear solver code has become complex [in order to reduce memory footprint, and
         ! include coriolis, while still having openmp work]. So it is moved here.
-
 #define LINEAR_PLUS_NONLINEAR_FRICTION
 #include "domain_mod_linear_solver_include.f90"
 #undef LINEAR_PLUS_NONLINEAR_FRICTION
