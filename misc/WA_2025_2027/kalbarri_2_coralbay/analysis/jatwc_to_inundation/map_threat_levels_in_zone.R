@@ -213,7 +213,7 @@ parallel_fun_combined<-function(combined_data_i){
     raster_tile = combined_data_i$raster_tile
     jatwc_h_ranges_index = combined_data_i$jatwc_h_ranges_index
 
-    if(grepl('max_stage', raster_tile)){
+    if(grepl('max_stage', raster_tile) | grepl('max_speed', raster_tile)){
         x = try(tile_function(raster_tile, 'maxima', jatwc_h_ranges_index))
     }else if(grepl('arrival_time', raster_tile)){
         x = try(tile_function(raster_tile, 'minima', jatwc_h_ranges_index))
@@ -227,7 +227,10 @@ my_cluster = makeCluster(MC_CORES)
 export_job = clusterExport(my_cluster, varlist=ls())
 # Combined max-stage and arrival time into one batch of work
 combined_files = c(max_stage_rasters_touching_warning_zone, 
-    gsub('max_stage', 'arrival_time', max_stage_rasters_touching_warning_zone))
+    gsub('max_stage', 'arrival_time', max_stage_rasters_touching_warning_zone),
+    gsub('max_stage', 'max_speed', max_stage_rasters_touching_warning_zone))
+#print('FIXME: HACK TO RUN ONLY MAX SPEED CALCS, REVERT THIS')
+#combined_files = gsub('max_stage', 'max_speed', max_stage_rasters_touching_warning_zone)
 # Spread the jatwc_h_ranges_index over parallel jobs too
 combined_indices = seq(1, length(asfm$JATWC_H_ranges))
 combined_data = expand.grid(combined_files, combined_indices)
