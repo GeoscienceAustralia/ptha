@@ -81,7 +81,7 @@ Rscript compute_scenario_statistics_in_zone.R 'Ningaloo Coast'
 ```
 
 ## Step 2
-The script [map_threat_levels_in_zone.R](map_threat_levels_in_zone.R) can make (temporary) rasters for each threat category. These rasters give the maximum water-level over all scenarios in that threat level category, without any consideration of exceedance-rates from the PTHA. They represent an intermediate step in the calculations. Run with, e.g.:
+The script [map_threat_levels_in_zone.R](map_threat_levels_in_zone.R) can make (temporary) rasters for each threat category. These rasters give the maximum water-level over all scenarios in that threat level category. We similarly compute the max-speed and min arrival time. These calculations ignore exceedance rate information from PTHA18, so while the marine warning and no threat outputs are interesting, the land warning outputs are not typically useful because they are not limited to 1/2500 84% (so could be very extreme). Run with, e.g.:
 ```r
 Rscript map_threat_levels_in_zone.R 'Geraldton Coast'
 Rscript map_threat_levels_in_zone.R 'Gascoyne Coast'
