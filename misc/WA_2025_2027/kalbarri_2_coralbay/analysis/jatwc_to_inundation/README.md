@@ -126,6 +126,15 @@ Rscript compute_max_depths_for_marine_warning_scenarios.R "Geraldton Coast"
 ```
 Beware that the rasters produced with this script apply only to the given coastal zone, and will be discontinuous with the rasters produced for neighbouring coastal zones. For example, the "Lancelin Coast" results will overlap into the "Geraldton Coast" zone, but the former are derived for scenarios having "Lancelin Coast Marine Warning", which is a different set of scenarios than those producing "Geraldton Coast Marine Warning".
 
+# How to compute the minimum JATWC-H statistic that floods each cell
+
+It is interesting to see the smallest JATWC-H statistic that causes flooding in each cell. We can make a set of rasters for each coastal zone as:
+```r
+Rscript map_min_jatwc_h_causing_flooding.R "Geraldton Coast"
+Rscript map_min_jatwc_h_causing_flooding.R "Gascoyne Coast"
+Rscript map_min_jatwc_h_causing_flooding.R "Ningaloo Coast"
+```
+
 # Notes on the code
 
 When writing this code I was trying to transition away from legacy R spatial packages (`raster`, `sp`) towards `sf` and `terra` and `stars`. But at the time of writing `terra` would not compile on NCI, and I was inexperienced with `sf` and `stars`. So various compromises were made. 
