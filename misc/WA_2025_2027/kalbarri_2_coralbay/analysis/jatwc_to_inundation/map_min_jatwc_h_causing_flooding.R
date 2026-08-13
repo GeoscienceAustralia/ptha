@@ -2,8 +2,7 @@
 # Make rasters where each pixel has the smallest JATWC-H value in each coastal
 # zone that causes flooding. Run with (e.g.):
 #
-#     Rscript compute_scenario_statistics_in_zone.R 'Bunbury Geographe Coast'
-#     Rscript map_threat_levels_in_zone.R 'Bunbury Geographe Coast'
+#     Rscript map_min_jatwc_h_causing_flooding.R 'Geraldton Coast'
 #
 
 library(sf)
