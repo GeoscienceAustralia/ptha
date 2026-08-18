@@ -45,10 +45,26 @@ model_outputs = list(
             'Gascoyne-Coast' = '../../kalbarri_2_coralbay/analysis/convert_max_stage_outputs_to_AHD/marine_warning_max_stage_AHD/Gascoyne-Coast/',
             'Ningaloo-Coast' = '../../kalbarri_2_coralbay/analysis/convert_max_stage_outputs_to_AHD/marine_warning_max_stage_AHD/Ningaloo-Coast/'
             ),
+        marine_warning_max_speed = list(
+            'Geraldton-Coast' = '../../kalbarri_2_coralbay/analysis/jatwc_to_inundation/Inundation_zones/Geraldton-Coast/',
+            'Gascoyne-Coast'  = '../../kalbarri_2_coralbay/analysis/jatwc_to_inundation/Inundation_zones/Gascoyne-Coast/',
+            'Ningaloo-Coast'  = '../../kalbarri_2_coralbay/analysis/jatwc_to_inundation/Inundation_zones/Ningaloo-Coast/'
+            ),
+        marine_warning_max_stage_above_background_sealevel = list(
+            'Geraldton-Coast' = '../../kalbarri_2_coralbay/analysis/jatwc_to_inundation/Inundation_zones/Geraldton-Coast/',
+            'Gascoyne-Coast'  = '../../kalbarri_2_coralbay/analysis/jatwc_to_inundation/Inundation_zones/Gascoyne-Coast/',
+            'Ningaloo-Coast'  = '../../kalbarri_2_coralbay/analysis/jatwc_to_inundation/Inundation_zones/Ningaloo-Coast/'
+            ),
+        min_jatwc_h_statistic_causing_inundation = list(
+            'Geraldton-Coast' = '../../kalbarri_2_coralbay/analysis/jatwc_to_inundation/Inundation_zones/Geraldton-Coast/',
+            'Gascoyne-Coast'  = '../../kalbarri_2_coralbay/analysis/jatwc_to_inundation/Inundation_zones/Gascoyne-Coast/',
+            'Ningaloo-Coast'  = '../../kalbarri_2_coralbay/analysis/jatwc_to_inundation/Inundation_zones/Ningaloo-Coast/'
+            ),
         max_stage_AHD_1in2500_84pc = '../../kalbarri_2_coralbay/analysis/convert_max_stage_outputs_to_AHD/kalbarri2coralbay_highres_domains_max_stage_AHD_percentile_0.84_exrate_0.0004_hazard/',
         max_depth_1in2500_84pc = '../../kalbarri_2_coralbay/analysis/probabilistic_inundation/kalbarri2coralbay_highres_domains_depth_percentile_0.84_exrate_0.0004_hazard',
         max_speed_1in2500_84pc = '../../kalbarri_2_coralbay/analysis/probabilistic_inundation/kalbarri2coralbay_highres_domains_max_speed_percentile_0.84_exrate_0.0004_hazard',
         max_flux_1in2500_84pc =  '../../kalbarri_2_coralbay/analysis/probabilistic_inundation/kalbarri2coralbay_highres_domains_max_flux_percentile_0.84_exrate_0.0004_hazard',
+        max_stage_above_background_sealevel_1in2500_84pc =  '../../kalbarri_2_coralbay/analysis/probabilistic_inundation/kalbarri2coralbay_highres_domains_max_stage_percentile_0.84_exrate_0.0004_hazard',
         inundation_rate_logic_tree_mean = '../../kalbarri_2_coralbay/analysis/probabilistic_inundation/ptha18-kalbarri2coralbay-hazard/highres_depth_with_variance/ptha18-kalbarri2coralbay-hazard-depth-LogicTreeMean-sum_of_source_zones/',
         inundation_rate_84pc = '../../kalbarri_2_coralbay/analysis/probabilistic_inundation/ptha18-kalbarri2coralbay-hazard/highres_depth_epistemic_uncertainty/84pc/ptha18-kalbarri2coralbay-hazard-depth_exrate_0.001_0.84_sum_of_source_zones/',
         inundation_rate_16pc = '../../kalbarri_2_coralbay/analysis/probabilistic_inundation/ptha18-kalbarri2coralbay-hazard/highres_depth_epistemic_uncertainty/16pc/ptha18-kalbarri2coralbay-hazard-depth_exrate_0.001_0.16_sum_of_source_zones/'
@@ -143,6 +159,25 @@ process_single_model<-function(model_files, model_output_dir, model_name){
         copy_tifs_and_make_vrt(model_files$marine_warning_max_stage_AHD[[jatwc_zone]],
             paste0(jatwc_zone_output_dir, '/', jatwc_zone, '_marine_warning_max_stage_AHD'),
             output_vrt_basename=paste0(jatwc_zone, '_marine_waring_max_stage_AHD.vrt'))
+
+        # 'marine-warning-max-speed' tifs
+        copy_tifs_and_make_vrt(model_files$marine_warning_max_speed[[jatwc_zone]],
+            paste0(jatwc_zone_output_dir, '/', jatwc_zone, '_marine_warning_max_speed'),
+            output_vrt_basename=paste0(jatwc_zone, '_marine_waring_max_speed.vrt'),
+            tif_name_restriction_grep="marine_warning_max_speed_")
+
+        # 'marine-warning-max-stage-above-background-sealevel'
+        copy_tifs_and_make_vrt(model_files$marine_warning_max_stage_above_background_sealevel[[jatwc_zone]],
+            paste0(jatwc_zone_output_dir, '/', jatwc_zone, '_marine_warning_max_stage_above_background_sealevel'),
+            output_vrt_basename=paste0(jatwc_zone, '_marine_waring_max_stage_above_background_sealevel.vrt'),
+            tif_name_restriction_grep="marine_warning_max_stage_")
+
+        # Min_jatwc_h causing inundation
+        copy_tifs_and_make_vrt(model_files$min_jatwc_h_statistic_causing_inundation[[jatwc_zone]],
+            paste0(jatwc_zone_output_dir, '/', jatwc_zone, '_min_jatwc_h95_statistic_causing_inundation'),
+            output_vrt_basename=paste0(jatwc_zone, '_min_jatwc_h95_statistic_causing_inundation.vrt'),
+            tif_name_restriction_grep="min_jatwc_h_causing_flooding_")
+
     }
 
     # Get the arrival times
@@ -177,6 +212,11 @@ process_single_model<-function(model_files, model_output_dir, model_name){
     copy_tifs_and_make_vrt(model_files$max_flux_1in2500_84pc,
         output_folder = paste0(model_output_dir, '/max_flux_1in2500_84pc'),
         output_vrt_basename = paste0('all_max_flux_1in2500_84pc_', model_name, '.vrt'))
+    # max_stage (above background sea level)
+    copy_tifs_and_make_vrt(model_files$max_stage_above_background_sealevel_1in2500_84pc,
+        output_folder = paste0(model_output_dir, '/max_stage_above_background_sealevel_1in2500_84pc'),
+        output_vrt_basename = paste0('all_max_stage_above_background_sealevel_1in2500_84pc_', model_name, '.vrt'))
+
 
     # rate of inundation (logic tree mean)
     copy_tifs_and_make_vrt(model_files$inundation_rate_logic_tree_mean,

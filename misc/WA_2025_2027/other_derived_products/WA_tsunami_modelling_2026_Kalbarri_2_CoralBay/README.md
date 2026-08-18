@@ -9,6 +9,10 @@ Later, the second half of the modelling will cover the region from Coral Bay to
 Onslow, and we will also develop a technical report and provide a
 combined-model data package.
 
+**Results in this data package from Northwest Cape to Onslow use very coarse
+resolution and are not suitable for quantifiying hazards near the coast. They will be
+updated in "2nd half" of the modelling.**
+
 ## Structure of the model output folders
 
 All files are loaded in a QGIS session contained in the folder
@@ -22,19 +26,20 @@ The model outputs are organised in a consistent way for each model, under
 Raster products typically include many tif files, but for each we also provide
 a vrt file that can be used in GDAL based open-source GIS (e.g. QGIS, R, ...)
 and will treat the tiles in unison.
-* `arrival_time` contains arrival time rasters for each source zone, including the minimum arrival time and the scenario average arrival time.
-  * For any scenario, the arrival time is defined as the time that the model first exceeds 1 cm above the background sea level. At any particular site, some scenarios may never meet this criteria. The minimum is derived from the minimum of all scenarios that do record an arrival time, and similarly for the average.
+* `arrival_time` contains arrival time (seconds post earthquake) for each source zone, including the minimum and scenario average arrival time.
+  * For any scenario, the arrival time is defined as the time that the model first exceeds 1 cm above the background sea level. At any particular site, some scenarios may never meet this criteria - they do not record an arrival time. The minimum and average are derived from all scenarios that do record an arrival time.
 * `domains_shapefile` contains a shapefile with boxes showing the model domains and their resolutions.
-* `elevation_in_model_no_tidal_adjustment` contains the elevation in AHD
-* `elevation_in_model_with_tidal_adjustment` contains the elevation, adjusted so that 0m is a local high tide.
+* `elevation_in_model_no_tidal_adjustment` contains the elevation in m AHD
+* `elevation_in_model_with_tidal_adjustment` contains the elevation, adjusted so that 0 m corresponds to a local high tide.
 * `elevation_source_file_index` contains information on the datasets used to make the elevation in different areas.
-* `tidal_adjustment` contains the tidal adjustment used in the modelling, equivalent to assuming the tsunami occurs at a local high tide.
+* `tidal_adjustment` contains the tidal adjustment (in m) used in the modelling, equivalent to assuming the tsunami occurs at a local high tide.
 * `inundation_rate_logic_tree_mean` contains the modelled rate of inundation (events / year) at the logic-tree-mean.
 * `inundation_rate_84pc` contains the modelled rate of inundation (events / year) at the 84th percentile epistemic uncertainty. For computational efficiency this is not provided on the global domains.
 * `inundation_rate_16pc` contains the modelled rate of inundation (events / year) at the 16th percentile epistemic uncertainty. For computational efficiency this is not provided on the global domains.
-* `jatwc_inundation_zones` contains the modelled no-threat, marine warning and land-warning zones for ATWS zones resolved by the model, and the marine-warning maximum stage (in AHD).
+* `jatwc_inundation_zones` contains the modelled no threat, marine warning and land warning zones for ATWS zones resolved by the model. It also contains rasters depicting the marine warning maximum stage (m AHD, and separately m above the background sealevel), the marine warning maximum speed (m/s), and the minimum jatwc-h95 statistic in the coastal zone that causes flooding (m).
 * `max_depth_1in2500_84pc` contains the maximum depth (m) with exceedance-rate of 1/2500 (events/year) at the 84th percentile epistemic uncertainty. For computational efficiency results are only provided relatively near to the area of interest.
 * `max_stage_AHD_1in2500_84pc` contains the maximum stage (m AHD) with exceedance-rate of 1/2500 (events/year) at the 84th percentile epistemic uncertainty. For computational efficiency results are only provided relatively near to the area of interest.
+* `max_stage_above_background_sealevel_1in2500_84pc` contains the maximum stage (m above the background sealevel, which varies spatially to approximate highest astronomical tide) with exceedance-rate of 1/2500 (events/year) at the 84th percentile epistemic uncertainty. For computational efficiency results are only provided relatively near to the area of interest.
 * `max_speed_1in2500_84pc` contains the maximum speed (m/s) with exceedance-rate of 1/2500 (events/year) at the 84th percentile epistemic uncertainty. For computational efficiency results are only provided relatively near to the area of interest.
 * `max_flux_1in2500_84pc` contains the maximum flux (m^2/s) with exceedance-rate of 1/2500 (events/year) at the 84th percentile epistemic uncertainty. For computational efficiency results are only provided relatively near to the area of interest.
 
