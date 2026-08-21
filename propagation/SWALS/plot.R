@@ -819,7 +819,7 @@ multidomain_image<-function(multidomain_dir, variable, time_index,
                     have_read_elevation = TRUE
                 }
                 # Make NA if max-flux is zero AND the elevation is above a threshold
-                var[(max_flux_==0) & (elevation > NA_if_max_flux_is_zero_and_elev_above_threshold)] = NA
+                var[(max_flux == 0) & (elevation > NA_if_max_flux_is_zero_and_elev_above_threshold)] = NA
             }
         }
 
