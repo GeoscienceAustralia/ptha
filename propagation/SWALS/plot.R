@@ -667,10 +667,21 @@ make_max_stage_raster<-function(swals_out, proj4string='EPSG:4326',
 #' @param NA_if_stage_not_above_elev logical. If TRUE, the set regions with
 #' stage <= (elev + dry_depth) to NA
 #' @param NA_if_max_flux_is_zero logical. If TRUE, then set regions with 
-#' max_flux == 0 to NA. This can be useful if you
-#' have a model with a time-varying earthquake source, where in subsiding areas
-#' that are dry the max_stage may be greater than the final elevation (=elevation0).
-#' These sites are distinguished by having zero max_flux.
+#' max_flux == 0 to NA. This can be a useful hack, if you have a model with a time-varying
+#' earthquake source but did not save the elevation every timestep. Then in subsiding areas
+#' that are dry, the max_stage may be greater than the final elevation (=elevation0) and
+#' the plot could make that region appear wet. This option removes those areas, which
+#' are distinguished by having zero max_flux. (In principle the "correct" solution would
+#' be to store the time-varying elevation instead, but in many practical situations this is fine).
+#' @param NA_if_max_flux_is_zero_and_elev_above_threshold. This is a variant on
+#' the previous option (NA_if_max_flux_is_zero) and addresses the same situation,
+#' irrespective of the value of the latter. It is useful in cases where parts of the
+#' modelled ocean have max_flux being zero, because the tsunami has not yet reached
+#' them, BUT we do not want those areas to be set to NA for the plot. If
+#' !is.null(NA_if_max_flux_is_zero_and_elev_above_threshold), then it should  be a
+#' real number giving a threshold elevation (e.g., NA_if_max_flux_is_zero_and_elev_above_threshold = 0.2).
+#' In that case, regions with (max_flux==0 & (elevation> NA_if_max_flux_is_zero_and_elev_above_threshold)) 
+#' will be set to NA.
 #' @param use_fields logical. If TRUE, use image.plot from the fields package.
 #' Otherwise use graphics::image
 #' @param clip_to_zlim logical. If TRUE, clip the variable limits to be within
@@ -693,6 +704,7 @@ multidomain_image<-function(multidomain_dir, variable, time_index,
     var_transform_function = NULL, 
     NA_if_stage_not_above_elev = FALSE, 
     NA_if_max_flux_is_zero = FALSE, 
+    NA_if_max_flux_is_zero_and_elev_above_threshold = NULL,
     use_fields=FALSE, clip_to_zlim=FALSE,
     buffer_is_priority_domain=FALSE, asp=1, fields_axis_args=list(), 
     dry_depth = 1.0e-03, nc_files = NULL){
@@ -753,6 +765,21 @@ multidomain_image<-function(multidomain_dir, variable, time_index,
         # Set areas outside of priority domain to NA
         var[is_priority != 1] = NA
 
+        local_read_elevation = function(){
+            # Read the appropriate elevation data -- make a function to avoid
+            # copy-paste of code
+            if('elev' %in% names(fid$var)){
+                elevation = ncvar_get(fid, 'elev', start=c(1,1, time_index), 
+                                      count=c(-1,-1,1))
+            }else{
+                elevation = ncvar_get(fid, 'elevation0', start=c(1,1), 
+                                      count=c(-1,-1))
+            }
+            return(elevation)
+        }
+
+        have_read_elevation = FALSE # Use this to track whether we read the elevation below
+
         if(NA_if_stage_not_above_elev){
             # Read stage and elevation, and set var to NA there
             if(variable %in% c('max_stage', 'stage')){
@@ -761,27 +788,38 @@ multidomain_image<-function(multidomain_dir, variable, time_index,
                 stage = ncvar_get(fid, 'stage', start=c(1,1, time_index), 
                                   count=c(-1,-1,1))
             }
-            if('elev' %in% names(fid$var)){
-                elevation = ncvar_get(fid, 'elev', start=c(1,1, time_index), 
-                                      count=c(-1,-1,1))
-            }else{
-                elevation = ncvar_get(fid, 'elevation0', start=c(1,1), 
-                                      count=c(-1,-1))
-            }
-
+            elevation = local_read_elevation()
+            have_read_elevation = TRUE
             var[stage < elevation + dry_depth] = NA
         }
 
-        if(NA_if_max_flux_is_zero){
+        if(NA_if_max_flux_is_zero | !is.null(NA_if_max_flux_is_zero_and_elev_above_threshold)){
             # Use NA values at sites where max_flux is zero. This can be useful if you
             # have a model with a time-varying earthquake source, where in subsiding areas
             # that are dry the max_stage may be greater than the final elevation (=elevation0).
             # These sites are distinguished by having zero max_flux.
+
             if('max_flux' %in% names(fid$var)){
                 max_flux = ncvar_get(fid, 'max_flux')
-                var[max_flux ==0] = NA
             }else{
                 stop('max_flux not provided in output file, cannot use it for multidomain_image')
+            }
+
+            if(is.null(NA_if_max_flux_is_zero_and_elev_above_threshold)){
+                # Simple case, do not consider the elevation as well
+                var[max_flux ==0] = NA
+            }else{
+                # Consider both the elevation and the max-flux
+                if(!is.numeric(NA_if_max_flux_is_zero_and_elev_above_threshold)){
+                    stop('If specifying NA_if_max_flux_is_zero_and_elev_above_threshold then it should be a single real number')
+                }
+
+                if(!have_read_elevation){
+                    elevation = local_read_elevation()
+                    have_read_elevation = TRUE
+                }
+                # Make NA if max-flux is zero AND the elevation is above a threshold
+                var[(max_flux == 0) & (elevation > NA_if_max_flux_is_zero_and_elev_above_threshold)] = NA
             }
         }
 
