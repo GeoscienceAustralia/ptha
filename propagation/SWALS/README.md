@@ -219,8 +219,12 @@ The validation tests  in [./examples/](./examples) provide templates for develop
 * [./examples/nthmp/BP09/](./examples/nthmp/BP09) which simulates the Okushiri Island tsunami using multiple nested grids, and compares with observations
 * [./examples/nthmp/Tauranga_harbour_Tohoku_tsunami/](./examples/nthmp/Tauranga_harbour_Tohoku_tsunami) which simulates the Tohoku tsunami at Tauranga harbour, NZ, and compares with velocity and tide-gauge observations. 
 * [./examples/periodic_multidomain/](./examples/periodic_multidomain) which illustrates a global multidomain with periodic east-west boundaries. This also optionally permits a rise-time to be used in the earthquake co-seismic deformation.
-* The model code used in [this study modelling historic tsunamis in Australia](https://www.frontiersin.org/articles/10.3389/feart.2020.598235/full) can be [found here](../../misc/nearshore_testing_2020/). It implements a global-to-local scale model with an initial earthquake forcing.
-* A model used for [work in Western Australia](https://icce-ojs-tamu.tdl.org/icce/article/view/12657/11930) that makes complicated nesting relatively easy can be [found here](https://github.com/GeoscienceAustralia/ptha/tree/master/misc/SW_WA_2021_2024/greater_perth_revised2023).
+* The model code used in [a 2020 study modelling historic tsunamis in Australia](https://www.frontiersin.org/articles/10.3389/feart.2020.598235/full) can be [found here](../../misc/nearshore_testing_2020/), with a [more recent variant of the code here](../../misc/nearshore_testing_ptha_2025/) used in a [2025 study testing PTHA18 at nearshore tide gauges in Australia](https://doi.org/10.1029/2025JB031949). This code implements a global-to-local scale model with an initial earthquake forcing.
+* Models from some applied studies with complicated nesting:
+    * [Greater Perth (from around 2023)](../../misc/SW_WA_2021_2024/greater_perth_revised2023)
+    * [NSW statewide (from around 2024)](../../misc/nsw_2023_2024/)
+    * [Gladstone (from around 2024-2025)](../../misc/glastone_2024_2025/)
+    * [Kalbarri to Coral Bay (from around 2026)](../../misc/WA_2025_2027/kalbarri_2_coralbay)
 
 The above models can be run with OpenMP and/or MPI (or coarrays), and illustrate use of the multidomain class. 
 
