@@ -11,6 +11,8 @@ elevation. Similarly they can be converted to "depth above initial condition",
 which is the minimum of the depth and the "maximum waterlevel above the model's
 background sea level (1.1 m AHD)". 
 
+## Background on "depth above initial condition"
+
 The "depth above initial condition" is only different to the depth at sites
 where the elevation is below the model's background sea level (1.1 m AHD). But
 at these sites it gives a better indication of the tsunami size. To see why,
