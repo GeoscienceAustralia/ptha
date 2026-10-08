@@ -38,12 +38,13 @@ above initial condition" to make it easier to identify sites that are flooded
 at 1.1 m AHD and yet have a small tsunami. 
 
 In sites where the model's background sea level is know to be too large, it is
-reasonable to suppose that the actual tsunami depth will be less than the
-modelled depths here (since real tsunamis will occur with a lower background
-sea level). For instance, if the modelled 1.1m AHD sealevel exceeds the local
-high tide (say 0.6 m AHD) by 50 cm, and the modelled depth above initial
-condition is only 30 cm for a marine warning (i.e. substantially less than the
-overestimate of the tide), then it seems likely that the site won't be flooded
-during any marine warning. More precise results would require the modelling to
-account for spatial variations in the tide.
+reasonable to suppose that a model using the local background sea level would
+have smaller modelled depths. For instance, suppose the 1.1m AHD sealevel used
+by the model exceeds the local high tide (0.6 m AHD) by 50 cm. Say the modelled
+depth above initial condition is only 30 cm for a marine warning (i.e.
+substantially less than the overestimate of the tide). Then if we made a new
+model which correctly represented the 0.6 m high tide (with no other changes),
+it probably would not predict flooding during marine warnings at this site.
+More precise results would require the modelling to account for spatial
+variations in the tide.
 
