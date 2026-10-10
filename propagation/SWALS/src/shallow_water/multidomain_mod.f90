@@ -280,24 +280,26 @@ module multidomain_mod
     subroutine check_periodic(x, y, periodic_xs, periodic_ys, periodic_point, adjust_coordinates)
         !! Given an x, y point, and size=2 arrays periodic_xs, periodic_ys defining
         !! the x and y extent of a periodic domain, compute x/y values inside the periodic domain.
-        !! If the initial x or y was outside the ranges provided by periodic_xs and periodic_ys), 
+        !! If the initial x or y was outside the ranges provided by periodic_xs and periodic_ys, 
         !! then set periodic_point to .true., otherwise set it to .false. 
         !! If adjust_coordinates is true, then we update x/y with their adjusted values inside the periodic domain,
         !! noting constraints discussed below.
         real(dp), intent(inout) :: x, y 
             !! coordinate value
         real(dp), intent(in) :: periodic_xs(2), periodic_ys(2)
-            !! Range of coordinate values defining the periodic domain. 
+            !! Range of coordinate values defining the periodic domain.
             !! For non-periodic extents just use a value that exceeds 
             !! the domain extent, e.g. [-HUGE(1.0_dp), HUGE(1.0_dp)] 
         logical, intent(out) :: periodic_point
             !! On output will be TRUE if the x or y coordinate was 
             !! adjusted, FALSE otherwise.
         logical, intent(in) :: adjust_coordinates
-            !! If true then early in the routine we will change the x/y coordinate values to 
+            !! If .true. then early in the routine we will change the x/y coordinate values to 
             !! be inside the main domain, assuming x and y are "just outside" the main domain. 
-            !! By "just outside" we mean that, e.g.,  If periodic_xs = [0, 360], then the 
-            !! input x can be in the range (-360, 720), but we can't have more coordinate wrapping.
+            !! By "just outside" we mean the offset is less than the range of the domain.
+            !! E.G. if periodic_xs = [0, 360], the periodic domain has an x-range of 360, an the 
+            !! input x can be in the range (-360, 720) (offset up to 360 degrees from periodic_xs). 
+            !! But the code will not work for input x values that are further outside periodic_xs.
 
         if(periodic_xs(2) <= periodic_xs(1)) then
             print*, 'periodic_xs(2) should be > periodic_xs(1)'
