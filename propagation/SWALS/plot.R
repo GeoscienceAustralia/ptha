@@ -707,16 +707,12 @@ multidomain_image<-function(multidomain_dir, variable, time_index,
     NA_if_max_flux_is_zero_and_elev_above_threshold = NULL,
     use_fields=FALSE, clip_to_zlim=FALSE,
     buffer_is_priority_domain=FALSE, asp=1, fields_axis_args=list(), 
-    dry_depth = 1.0e-03,
-    nc_files = NULL
-    ){
+    dry_depth = 1.0e-03, nc_files = NULL){
 
     .library_quiet('ncdf4')
     .library_quiet(fields)
-
     # Find all netcdf
-    provided_nc_files <- !(is.null(nc_files) || is.na(nc_files))
-    if (!provided_nc_files) {
+    if (is.null(nc_files)) {
         nc_files = Sys.glob(paste0(multidomain_dir, '/*/Grid*.nc'))
     }
 
@@ -741,7 +737,6 @@ multidomain_image<-function(multidomain_dir, variable, time_index,
         xs = ncvar_get(fid, 'x')
         ys = ncvar_get(fid, 'y')
       
-
         # Get the variable of interest 
         if(fid$var[[variable]]$ndim > 2){
             var = ncvar_get(fid, variable, start=c(1,1, time_index), 
