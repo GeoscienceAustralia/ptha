@@ -1,0 +1,24 @@
+&MODELCONFIG
+    ! Comment
+    input_elevation_raster = '/g/data/w85/tsunami/MODELS/AustPTHA_c/DATA/ELEV/merged_dem/merged_gebco_ga250_dem_patched.tif'
+    input_stage_raster = 'puysegur2_row_0003046_Mw_84_HS.tif'
+    global_ll = 140.0 -60.0
+    global_ur = 200.0 -20.0
+    global_nx = 3600 2400
+    approximate_writeout_frequency = 30.0
+    output_basedir='OUTPUTS/puysegur2_row_003046_Mw_84_HS'
+    final_time = 28800.0
+    timestepping_method = 'leapfrog_linear_plus_nonlinear_friction'
+    manning_n = 0.03
+    linear_friction_coeff = 0.00000
+    linear_solver_is_truely_linear = TRUE
+    cfl = 0.7
+    hazard_points_file = ''
+    skip_header_hazard_points_file=1
+    record_max_U = TRUE
+    output_grid_timeseries = TRUE
+    adaptive_computational_extents=TRUE
+    negative_elevation_raster = FALSE
+    grid_output_spatial_stride = 1
+/
+

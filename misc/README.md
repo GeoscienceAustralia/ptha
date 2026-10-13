@@ -22,3 +22,4 @@ The code structure usually reflects the computational environment in which our c
 
 * [./probabilistic_inundation_tonga2020](./probabilistic_inundation_tonga2020) - A probabilistic inundation hazard analysis for Tongatapu. I suggest to use an improved variant of this analysis which is available in [./monte_carlo_paper_2021](./monte_carlo_paper_2021)
 
+* [./single_grid_animation](./single_grid_animation) - Code to make an animation for a single grid SWALS model, which does not use a multidomain, but instead uses the SWALS [generic_example code](../propagation/SWALS/examples/generic_example/)).
