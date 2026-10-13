@@ -1,13 +1,13 @@
 library(dplyr)
 library(tibble)
 
-
+# Optionally label cities in each scene
 cities <- data.frame(
-  name = c("Onslow", "Karratha", "Exmouth", "Barrow\nIsland", "Coral Bay", "Geraldton", "Carnarvon"),
-  lon = c(115.12, 116.85, 114.17, 115.46, 113.76, 114.58, 113.65),
-  lat = c(-21.63, -20.74, -21.95, -20.79, -23.13, -28.80, -24.89),
-  colour = c("black", "black", "black", "black", "black", "black", "black"),
-  cex = c(2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5)
+  name = c("Hobart"),
+  lon = c(147.33),
+  lat = c(-42.88),
+  colour = c("black"),
+  cex = c(2.5)
 )
 
 scenes <- bind_rows(
