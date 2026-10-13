@@ -707,12 +707,16 @@ multidomain_image<-function(multidomain_dir, variable, time_index,
     NA_if_max_flux_is_zero_and_elev_above_threshold = NULL,
     use_fields=FALSE, clip_to_zlim=FALSE,
     buffer_is_priority_domain=FALSE, asp=1, fields_axis_args=list(), 
-    dry_depth = 1.0e-03, nc_files = NULL){
+    dry_depth = 1.0e-03,
+    nc_files = NULL
+    ){
 
     .library_quiet('ncdf4')
     .library_quiet(fields)
+
     # Find all netcdf
-    if (is.null(nc_files)) {
+    provided_nc_files <- !(is.null(nc_files) || is.na(nc_files))
+    if (!provided_nc_files) {
         nc_files = Sys.glob(paste0(multidomain_dir, '/*/Grid*.nc'))
     }
 
@@ -737,6 +741,7 @@ multidomain_image<-function(multidomain_dir, variable, time_index,
         xs = ncvar_get(fid, 'x')
         ys = ncvar_get(fid, 'y')
       
+
         # Get the variable of interest 
         if(fid$var[[variable]]$ndim > 2){
             var = ncvar_get(fid, variable, start=c(1,1, time_index), 
@@ -745,8 +750,13 @@ multidomain_image<-function(multidomain_dir, variable, time_index,
             var = ncvar_get(fid, variable)
         }
 
-        # Find out where the priority domain is
         is_priority = ncvar_get(fid, 'is_priority_domain')
+
+        # Hack to allow for single domain models that don't use the multidomain type
+        force_priority = (length(nc_files) == 1) & (!any(is_priority == 1))
+        if (force_priority) {
+            is_priority = matrix(1, ncol=ncol(var), nrow=nrow(var))
+        }
 
         if(buffer_is_priority_domain){
             # In some situations this can remove 'gaps' in the image that result
