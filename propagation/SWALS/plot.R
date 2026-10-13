@@ -745,8 +745,13 @@ multidomain_image<-function(multidomain_dir, variable, time_index,
             var = ncvar_get(fid, variable)
         }
 
-        # Find out where the priority domain is
         is_priority = ncvar_get(fid, 'is_priority_domain')
+
+        # Hack to allow for single domain models that don't use the multidomain type
+        force_priority = (length(nc_files) == 1) & (!any(is_priority == 1))
+        if (force_priority) {
+            is_priority = matrix(1, ncol=ncol(var), nrow=nrow(var))
+        }
 
         if(buffer_is_priority_domain){
             # In some situations this can remove 'gaps' in the image that result
