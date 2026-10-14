@@ -21,22 +21,6 @@ get_osm_backdrop_reproj <- function(lower_left, upper_right, dbox, backdrop, zoo
         return(osm_backdrop_reproj)
     }
 
-    # # first check if we can get it from a larger cached
-    # candidate_osm_files <-
-    # for (file in candidate_osm_files) {
-    #     osm_backdrop_reproj <- readRDS(file)
-    #     requested_extent <- ext(lower_left[1], upper_right[1], lower_left[2], upper_right[2])
-
-    # }
-
-    # # Check if cached extent covers the requested extent
-    # if (ext(osm_backdrop_reproj) >= requested_extent) {
-    #     # Crop to requested extent
-    #     cropped_backdrop <- crop(osm_backdrop_reproj, requested_extent)
-    #     return(cropped_backdrop)
-    # }
-
-
     if (!file.exists(osm_cachefile)) {
         # Get a piece that is bigger than we need, to avoid gaps in plots when
         # the plot limits are extended by R (which depends on the figure size
