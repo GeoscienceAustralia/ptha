@@ -1,0 +1,30 @@
+#!/bin/bash
+#PBS -P w85
+#PBS -q normal
+#PBS -l walltime=00:10:00
+#PBS -l mem=190GB
+#PBS -l ncpus=48
+#PBS -l wd
+#PBS -l storage=scratch/w85+gdata/w85
+
+set -euo pipefail
+
+source ../../modules_R_431.sh
+
+md_dir=../OUTPUTS/test/small_initialise-test_load_balance-ambient_sea_level_0/RUN_20260922_111737683
+# md_dir=../OUTPUTS/test/small_tidalAdjustment-full-ambient_sea_level_0/RUN_20260918_205722865
+# md_dir=../OUTPUTS/test/extreme_tidalAdjustment_DEBUG-full-ambient_sea_level_0/RUN_20260922_153207712
+# md_dir=../OUTPUTS/test/convergence/finer_sunda2_row_0105007_Mw_92_HS_load-balance-test-ambient_sea_level_0/RUN_20260924_163449497
+
+cd ${md_dir}
+
+Rscript ../../../../post-process/make_domains_shapefile.R .
+Rscript ../../../../post-process/make_rasters.R . 48 elevation0 elevation_source_file_index
+Rscript ../../../../post-process/make_rasters.R . 48 max_stage
+# Rscript ../../../../post-process/make_rasters.R . 48 max_speed
+Rscript ../../../../post-process/load_balance_script.R
+
+gdalbuildvrt -resolution highest elevation0.vrt elevation0*.tif
+gdalbuildvrt -resolution highest elevation_source_file.vrt elevation_source_file*.tif
+gdalbuildvrt -resolution highest max_stage.vrt max_stage*.tif
+# gdalbuildvrt -resolution highest max_speed.vrt max_speed*.tif

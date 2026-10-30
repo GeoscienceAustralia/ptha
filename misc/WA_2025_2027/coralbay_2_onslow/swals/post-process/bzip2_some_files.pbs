@@ -1,0 +1,13 @@
+#!/bin/bash
+#PBS -P w85
+#PBS -q normal
+#PBS -l walltime=48:00:00
+#PBS -l mem=190GB
+#PBS -l ncpus=48
+#PBS -l jobfs=50GB
+#PBS -l wd
+#PBS -l storage=scratch/w85+gdata/w85
+
+source ../../modules_R_431.sh
+
+Rscript bzip2_some_files.R

@@ -1,0 +1,3 @@
+/g/data/w85/tsunami/MODELS/inundation/WA_tsunami_inundation_DFES/coralbay_2_onslow/inverts/shapes/mangrove_bay_nwc.csv
+/g/data/w85/tsunami/MODELS/inundation/WA_tsunami_inundation_DFES/coralbay_2_onslow/inverts/shapes/onslow_mcgrath_ave.csv
+/g/data/w85/tsunami/MODELS/inundation/WA_tsunami_inundation_DFES/coralbay_2_onslow/inverts/shapes/west_of_ashburton_river.csv

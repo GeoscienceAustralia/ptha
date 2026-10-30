@@ -1,0 +1,27 @@
+#!/bin/bash
+#PBS -P w85
+#PBS -q normalsr
+#PBS -l walltime=1:00:00
+#PBS -l mem=1000GB
+#PBS -l ncpus=832
+#PBS -l wd
+#PBS -l storage=scratch/w85+gdata/w85
+
+source ../modules_ifx_2025_llvm.sh
+
+stage_file=../sources/hazard/random_sunda2/scenario_initial_conditions/sunda2_row_0105007_Mw_92_HS.tif
+
+multidomain_design_namelist=./multidomain_design_control/convergence_half-dx.nml
+
+model_name=test/convergence/finer_sunda2_row_0105007_Mw_92_HS_load-balance
+
+ambient_sea_level=0
+
+# Run the model
+mpiexec -n 48 -map-by numa:SPAN -bind-to numa -x OMP_NUM_THREADS=13 -x OMP_PROC_BIND=true \
+    ./model_build \
+    $stage_file \
+    $multidomain_design_namelist \
+    $model_name \
+    test \
+    $ambient_sea_level > outfile.log
