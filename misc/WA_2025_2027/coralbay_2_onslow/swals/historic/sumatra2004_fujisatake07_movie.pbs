@@ -1,0 +1,33 @@
+#!/bin/bash
+#PBS -P w85
+#PBS -q normalsr
+#PBS -l walltime=6:00:00
+#PBS -l mem=1000GB
+#PBS -l ncpus=208
+#PBS -l wd
+#PBS -l storage=scratch/w85+gdata/w85
+
+
+# Run this script from the swals directory
+path_swals=.
+source ../modules_ifx_2025_llvm.sh
+
+stage_file=../sources/like_historic/sumatra2004/FujiSatake2007/FujiSatake2007_time_varying_forcing_realistic.csv
+
+# Use movie name list
+multidomain_design_namelist=$path_swals/multidomain_design_control/movie.nml
+
+# Model name
+model_name=historic/sumatra2004_FujiSatake2007_timevarying_movie
+
+# Ambient sea level of 0.0m, approximation of expected sea level
+ambient_sea_level=0
+
+# Run the model
+mpiexec -n 16 -map-by numa:SPAN -bind-to numa -x OMP_NUM_THREADS=13 -x OMP_PROC_BIND=TRUE \
+    $path_swals/model_build \
+    $stage_file \
+    $multidomain_design_namelist \
+    $model_name \
+    full \
+    $ambient_sea_level > outfile.log

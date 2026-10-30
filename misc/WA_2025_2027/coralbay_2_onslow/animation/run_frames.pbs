@@ -1,0 +1,23 @@
+#!/bin/bash
+#PBS -P w85
+#PBS -q normalsr
+#PBS -l walltime=01:00:00
+#PBS -l mem=1000GB
+#PBS -l ncpus=208
+#PBS -l jobfs=10gb
+#PBS -l wd
+#PBS -l storage=scratch/w85+gdata/w85
+
+
+source ../modules_R_431.sh
+
+# Ensure you've downloaded the open street map data first
+# no internet on NCI compute nodes
+
+# Run make frames for each scene you need
+Rscript make_frames.R midwest_gascoyne;
+Rscript make_frames.R nw_australia;
+Rscript make_frames.R cape_range;
+Rscript make_frames.R onslow;
+Rscript make_frames.R coral_bay;
+Rscript make_frames.R indian_ocean;
