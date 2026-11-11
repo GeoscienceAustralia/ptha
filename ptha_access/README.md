@@ -20,12 +20,12 @@ The methodologies used in this study, and associated testing, are discussed in:
 and [this talk](https://www.youtube.com/watch?v=brRy6YjwnlA&list=PL0jP_ahe-BFk3499UEvm-YdlOiE9HFbCg&index=4&t=0s).
 
 For ideas on how to use the PTHA18 results for inundation hazard assessment, see:
-* [Paper on efficient Monte Carlo methods with an application in Tongatapu](https://doi.org/10.1093/gji/ggac140) 
+* [Paper on efficient Monte Carlo methods with an application in Tongatapu](https://doi.org/10.1093/gji/ggac140), with [code here](../misc/monte_carlo_paper_2021/)
 * [Technical report covering both scenario-based and Monte Carlo approaches](https://repository.oceanbestpractices.org/handle/11329/2062)
-* [Conference paper on Monte Carlo methods with an application in Western Australia](http://dx.doi.org/10.9753/icce.v37.papers.18)
-* [Technical report on an inundation hazard assessment in Western Australia](http://dx.doi.org/10.26186/150015)
-* [Technical report on an inundation hazard assessment for NSW](https://dx.doi.org/10.26186/150281)
-* [Technical report on an inundation hazard assessment for Gladstone (QLD)](https://doi.org/10.26186/150488)
+* [Conference paper on Monte Carlo methods with an application in Western Australia](http://dx.doi.org/10.9753/icce.v37.papers.18), with [code here](../misc/SW_WA_2021_2024/)
+* [Technical report on an inundation hazard assessment in Western Australia](http://dx.doi.org/10.26186/150015), with [code here](../misc/SW_WA_2021_2024/)
+* [Technical report on an inundation hazard assessment for NSW](https://dx.doi.org/10.26186/150281), with [code here](../misc/nsw_2023_2024/)
+* [Technical report on an inundation hazard assessment for Gladstone (QLD)](https://doi.org/10.26186/150488), with [code here](../misc/gladstone_2024_2025/)
 
 Code used to conduct the analysis is available open-source
 in the [ptha package](https://github.com/GeoscienceAustralia/ptha). This includes
