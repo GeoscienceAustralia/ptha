@@ -14,8 +14,9 @@ The steps to run are outlined below.
   * Use `post-process/load_balance_script.R` to make a load balance file and inspect the elevation0 and max_stage rasters (or use ./post-process/process_initial_run.pbs to do both at once).
 * Use [./post-process/report_domain_runtimes.R](./post-process/report_domain_runtimes.R) to inspect the domains with the worst run times. If one or a few domains take significantly longer than the rest consider coarsening them or splitting them. To split a domain, append 3 more or 8 more integers to it's line in the load balance file (to make 4 or 9 splits in the domain's rectangle). Then re-run SWALs using that load balance file. Then run the `load_balance_script.R` again on that output to load balance the partitions of this domain.
 * Update the namelist files in [multidomain design control](./multidomain_design_control/) to point to this load balance file (find and replace does them all at once).
-* Use [./post-process/make_rasters.R](./post-process/make_rasters) to make the elevation rasters. Inspect them in GIS, the bilinear interpolation may look different from what you expected. Adjust if required and re make the model.
+* Use [./post-process/make_rasters.R](./post-process/make_rasters.R) to make the elevation rasters. Inspect them in GIS, the bilinear interpolation may look different from what you expected. Adjust if required and re make the model.
 * You can confirm the load balance wouldn't be improved by running `qsub test/small_TEST_ONLY_check_load_balance.pbs` and computing the load balance for this run. It should not have be able to improve significantly.
+* Additionally, confirm that the `test/small_TEST_ONLY_check_load_balance.pbs` run does not have significant proportion of it's time in parallel communication by inspecting its log files. For example use `grep comms1 *.log` from inside it's multidomain folder. Inefficient models may have fat halos or could require a domain split.
 * It's also worth inspecting the tidally adjust elevation that the model will actually use. Pay attention to low lying areas that are disconnected from the ocean. You can patch these dry by setting the initial stage low.
 
 ## 2. Run the extreme and small test cases
@@ -57,7 +58,7 @@ Proceed if you're satisfied with finalising the model's elevation and load balan
     * `Rscript plot_gauges_java2006.R ../swals/OUTPUTS/path-to-model-multidomain-dir-for-java2006/gauges_plot_XXXXX.RDS 0.5 1 6` which plots the model and observations, here with y-axes covering +- 0.5m and x-axes (time) covering 1 to 6 hours post-earthquake.
   * Use [./post-process/make_rasters.R](./post-process/make_rasters.R) to make rasters with max-quantities of interest, then visualise in GIS and check for anything unexpected
 
-## 4. Create the PBS scripts to run relevant scenarios in [../sources/](../sources/), and then submit them
+## 4. Create the PBS scripts to run relevant scenarios in `../sources/`, and then submit them
 Use `Rscript create_random_ptha_qsub_scripts_hazard.R` to make scripts to run the hazard scenarios.
 
 ## 5. After the submitted scripts have run
@@ -73,7 +74,7 @@ Check they finished and that the mass/energy/etc are OK
 * Tips for rerunning models
   * Before re-running the model, you must delete its multidomain directory
   * After the new runs complete, repeat step 4 to check all the runs are OK, and if needed continue debugging.
-* Scripts to make qsub scripts for the particular models that failed for me are in [post-process/make_jobs_failed_runs_using_lowts.R](post-process/make_jobs_failed_runs_using_lowts.R) and [post-process/make_jobs_failed_runs_using_alternative_nesting](post-process/make_jobs_failed_runs_using_alternative_nesting). 
+* Scripts to make qsub scripts for the particular models that failed for me are in [post-process/make_jobs_failed_runs_using_lowts.R](post-process/make_jobs_failed_runs_using_lowts.R) and [post-process/make_jobs_failed_runs_using_lowerts.R](./post-process/make_jobs_failed_runs_using_lowerts.R). 
 
 ## 7. Create rasters
 From inside the `post-process` directory and submit `qsub create_tarred_rasters_from_tarred_multidomains.pbs`

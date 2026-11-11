@@ -24,7 +24,7 @@
 #
 # INPUTS
 #
-domain_indices_to_process = seq(1, 146)
+domain_indices_to_process = seq(1, 158)
 raster_output_dir = './coralbay2onslow_arrival_time_min_and_scenario_average'
 
 #

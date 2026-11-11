@@ -10,4 +10,4 @@ Key subfolders:
 
 * [kalbarri_2_onslow](kalbarri_2_onslow) - A *preliminary and experimental version* of the model, covering the full area but at lower resolution and without breakwalls/inverts/etc. This was used to get the code working with variable rigidity PTHA18 scenarios, de-risk the main calculations implemented in other folders, check the sensitivity of the results to including horizontal components in the tsunami sources, and test the tidal adjustment technique.
 
-* OTHERS HERE
+* [coralbay_2_onslow](coralbay_2_onslow) - A high resolution model covering Coral Bay to Onslow, including Barrow Island. It was extended south to include Carnarvon with a modified estuary entrance compared to kalbarri_2_coralbay.

@@ -38,7 +38,7 @@ This folder contains the following data, along with some related scripts:
     * elevation as seen by the model, including a spatially varying vertical adjustment so that the initial shoreline is an fairly high tide (maximum from tidal model TPXO9v5a).
 
 * ./domains_shapefile
-    * Shapefile showing the locations of domains in the model. For outputs that consist of sets of rasters, this provides an overview of where each raster is located. It was created using the script [../../swals/make_domains_shapefile.R](../../swals/make_domains_shapefile.R) and manually copied here (for convenience only).
+    * Shapefile showing the locations of domains in the model. For outputs that consist of sets of rasters, this provides an overview of where each raster is located. It was created using the script [../../swals/post-process/make_domains_shapefile.R](../../swals/post-process/make_domains_shapefile.R) and manually copied here (for convenience only).
 
 * ./tidal_adjustment
     * Raster showing the difference between the elevation with/without tidal adjustment. 
@@ -65,7 +65,7 @@ Then copy information on the elevation source data here
 Rscript copy_elevation_source_file_index_locally.R
 ```
 
-Also copy a `domains_shapefile` to the current directory. The required files were probably already created using [../../swals/make_domains_shapefile.R](../../swals/make_domains_shapefile.R). This is not necessary for the workflows below, but is convenient.
+Also copy a `domains_shapefile` to the current directory. The required files were probably already created using [../../swals/post-process/make_domains_shapefile.R](../../swals/post-process/make_domains_shapefile.R). This is not necessary for the workflows below, but is convenient.
 
 Then edit [application_specific_metadata.R](application_specific_metadata.R) to match the model setup.
 
