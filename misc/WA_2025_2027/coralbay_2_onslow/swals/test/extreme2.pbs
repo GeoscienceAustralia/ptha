@@ -1,0 +1,33 @@
+#!/bin/bash
+#PBS -P w85
+#PBS -q normalsr
+#PBS -l walltime=12:00:00
+#PBS -l mem=1000GB
+#PBS -l ncpus=208
+#PBS -l wd
+#PBS -l storage=scratch/w85+gdata/w85
+
+source ../modules_ifx_2025_llvm.sh
+
+# Initial stage 
+stage_file=../sources/test_sources/extreme_ptha18_source/sunda2_row_0107985_Mw_94_HS.tif
+
+## With tidal adjustment
+multidomain_design_namelist=./multidomain_design_control/hazard_detailed_outputs.nml
+
+## No tidal adjustment
+#multidomain_design_namelist=./multidomain_design_control/historical_tsunamis.nml
+
+# Model name
+model_name=test/extreme2_sunda2_row_0107985_Mw94_tidaladjustment
+# Ambient sea level of 0.0m AHD, approximation of expected sea level
+ambient_sea_level=0
+
+# Run the model
+mpiexec -n 16 -map-by numa:SPAN -bind-to numa -x OMP_NUM_THREADS=13 -x OMP_PROC_BIND=true \
+    ./model_build \
+    $stage_file \
+    $multidomain_design_namelist \
+    $model_name \
+    full \
+    $ambient_sea_level > outfile.log
