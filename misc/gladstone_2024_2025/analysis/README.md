@@ -1,7 +1,8 @@
 # Analysis
 
-## Check the exceedance-rate curves vs PTHA18
+## Check the exceedance-rate curves vs PTHA18 (max-stage-at-a-point)
 Start by running the tests in [probabilistic_inundation/test](probabilistic_inundation/test) and subdirectories. If these aren't good, consider doing more runs. Multiple batches can be combined using multiple importance sampling, see the [../../nsw_2023_2024](../../nsw_2023_2024) for an example of this.
+- In previous models, similar analyses were included in a folder named `max_stage_at_a_point`
 
 ## Compute the probabilistic inundation
 These are split into:
